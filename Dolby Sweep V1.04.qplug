@@ -1,0 +1,648 @@
+-- Dolby Sweep Generator Plugin for Q-SYS
+-- by James Puig / james.puig@dolby.com
+-- Jul '20
+
+PluginInfo = 
+{
+   Name = "Dolby~Dolby Sweep",
+    Version = "1.0",
+     BuildVersion = "1.0.4.1",
+    Id = "0e5ea38f-6c26-469b-aa3b-00503f1f263a",
+    Description = "Dolby Sweep Generator",
+     Manufacturer = "Dolby",
+    Author = "James Puig - james.puig@dolby.com",
+    Type = Reflect and Reflect.Types.AudioIO or 0,
+}
+
+	
+
+function GetColor(props)
+    return {164,212,176 }  --Is Audio
+end
+
+function GetPrettyName(props)
+    return "Dolby Sweep Generator"
+end
+
+function GetProperties()
+	props = {}
+	return {	
+  		
+  		{
+      		Name = "Type",
+      		Type = "enum",
+      		Choices = { "Mono", "Stereo","Multi-channel" }, 
+      		Value = "Mono",
+    	},
+    	{
+      		Name = "Count",
+      		Type = "integer",
+      		Value = 8,
+      		Min = 2,
+      		Max=256,
+    	},
+    
+    }
+end
+
+function RectifyProperties(props) 
+ 	props.Count.IsHidden = props.Type.Value ~= "Multi-channel"
+ 	props.plugin_show_debug.IsHidden = true
+  	return props
+end
+
+function GetComponents(props)
+	return { {   Name = "Sine", Type = "sine" } }
+end
+
+local function getPinsNames(props)
+  local names = {}
+  if props.Type.Value == "Multi-channel" then 
+  	for num = 1,props.Count.Value do
+  		table.insert(names,string.format("Output Channel %i", num))	end
+  elseif props.Type.Value == "Stereo" then 
+  	table.insert(names,"Output Left")
+  	table.insert(names,"Output Right")
+  else table.insert(names,"Output") end
+  return names		 		
+end
+
+function GetPins(props) 
+  local pins = {}
+  local names = getPinsNames(props)
+  for _,name in pairs(names) do		
+ 	table.insert(pins, { Name = name, Direction = "output" } )
+   end	
+  return pins
+end
+
+function GetWiring(props) 
+  local wiring = {}
+  local names = getPinsNames(props)
+  for _,name in pairs(names) do		
+    table.insert( wiring, { "Sine Output", name } )
+  end
+  return wiring
+end
+
+function GetControls(props)
+	 return  { 
+		{ 
+			Name = "start",
+     		ControlType = "Button",
+      		ButtonType = "Toggle",
+		},
+		{
+			Name = "enable",
+      		ControlType = "Button",
+      		ButtonType = "Toggle",
+      		UserPin = true,
+      		PinStyle = "Both",
+ 		},
+		{
+			Name = "trigger",
+      		ControlType = "Button",
+      		ButtonType = "Trigger",
+      		UserPin = true,
+      		PinStyle = "Both",
+		},
+		{
+			Name = "mute",
+      		ControlType = "Button",
+      		ButtonType = "Toggle",
+      		UserPin = true,
+      		PinStyle = "Both",
+		},	
+		{
+			Name = "period",
+      		ControlType = "Text",
+ 		},	
+		{
+			Name = "frequency",
+      		ControlType = "Knob",
+			ControlUnit ="Hz",
+			Min = 10,
+			Max = 22000,
+    		UserPin = true,
+      		PinStyle = "Output",
+		},		
+		{
+			Name = "level",
+      		ControlType = "Knob",
+			ControlUnit ="dB",
+			Min = -100,
+			Max = 20,
+    		UserPin = true,
+      		PinStyle = "Both",
+		},
+	}
+ end
+
+function GetControlLayout(props)	
+	local left1=5
+	local left2=149
+	local top =5
+	local graphics = {
+			{
+ 				Type="GroupBox",
+ 				Text="Run",
+ 				HTextAlign="Left",
+ 				StrokeWidth=1,
+ 				CornerRadius=8,
+ 				Position={left1,top},
+ 				Size={136,100},
+ 			},
+			{
+ 				Type="GroupBox",
+ 				Text="Sweep",
+ 				HTextAlign="Left",
+ 				StrokeWidth=1,
+ 				CornerRadius=8,
+ 				Position={left2,top},
+ 				Size={208+64,100},
+ 			},
+			{
+ 				Type="Label",
+ 				Text="Free-Run",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position={ left1+4, top+40+24} ,
+ 				Size={64,16},
+ 			},
+			{
+ 				Type="Label",
+ 				Text="One-Shot/Sync",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position= { left1+4+64, top+40+24 },
+ 				Size={64,32},
+ 			},
+ 			{
+ 				Type="Label",
+ 				Text="Mute",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position= { left2+4, top+40+24 },
+ 				Size={64,16},
+ 			},
+ 			{
+ 				Type="Label",
+ 				Text="Period",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position= { left2+4+64, top+40+24 },
+ 				Size={64,16},
+ 			},
+  			{
+ 				Type="Label",
+ 				Text="Frequency",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position= { left2+4+128, top+40+24 },
+ 				Size={64,16},
+ 			},
+ 				{
+ 				Type="Label",
+ 				Text="RMS Level (dBFS)",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position= { left2+4+128+64, top+40+24 },
+ 				Size={64,32},
+ 			},
+ 	}
+ 	left1 = left1 + 18
+ 	left2 = left2 + 18
+ 	top = top + 20	
+ 	local layout = {}
+ 		layout["enable"] =	{
+   			PrettyName = "Enable",
+    		Style = "Button",
+    		ButtonStyle = "Toggle",
+    		Position = { left1,top+20 },
+    		Color = { 242, 137, 174 },
+    		Size = { 36,16 },
+  		}
+  		layout["trigger"] =	{
+   			PrettyName = "Trigger",
+    		Style = "Button",
+    		ButtonStyle = "Trigger",
+    		Position = { left1+64,top+20 },
+    		Color = { 255, 255, 255 },
+    		Size = { 36,16 },
+  		}
+  		layout["mute"] =	{
+   			PrettyName = "Mute",
+    		Style = "Button",
+    		ButtonStyle = "Toggle",
+    		Position = { left2,top+20 },
+    		Color = { 223, 0, 36 },
+    		Size = { 36,16 },
+  		}
+    	layout["period"] =	{
+    		PrettyName = "Duty Cycle",
+    		Style = "Knob",
+   			Color = { 254, 248, 174 },
+     		Position = { left2+64,top },
+    		Size = { 36,36 },
+  		}
+    	layout["frequency"] =	{
+   			PrettyName = "Frequency",
+    		Style = "Knob",
+    		IsReadOnly = true,
+     		Position = { left2+128,top },
+    		Size = { 36,36 },
+  		}
+    	layout["level"] =	{
+   			PrettyName = "RMS Level (dBFS)",
+    		Style = "Knob",
+    		Position = { left2+128+64,top },
+    		Size = { 36,36 },
+  		}
+       return layout, graphics
+end
+
+if not Controls and Reflect then return end
+
+
+  do
+
+	--///////////////////////  QKNob Class ////////////////////////////// 
+
+ 
+ 	--################ Class classes ##########################
+  	-- https://github.com/jonstoler/class.lua
+ 	--################ Class classes ##########################
+  
+  do
+
+    Class = {}
+
+	-- default (empty) constructor
+    function Class:init(...) end
+
+	-- create a subclass
+    function Class:extend(obj)
+      local obj = obj or {}
+
+      local function copyTable(table, destination)
+        local table = table or {}
+        local result = destination or {}
+        for k, v in pairs(table) do
+          if not result[k] then
+            if type(v) == "table" and k ~= "__index" and k ~= "__newindex" then
+              result[k] = copyTable(v)
+            else
+              result[k] = v
+            end
+          end
+        end
+        return result
+      end
+
+      copyTable(self, obj)
+      obj._ = obj._ or {}
+      local mt = {}
+
+      -- create new objects directly, like o = Object()
+      mt.__call = function(self, ...)
+        return self:new(...)
+      end
+
+      -- allow for getters and setters
+      mt.__index = function(table, key)
+        local val = rawget(table._, key)
+        if val and type(val) == "table" and (val.get ~= nil or val.value ~= nil) then
+          if val.get then
+            if type(val.get) == "function" then
+              return val.get(table, val.value)
+            else
+              return val.get
+            end
+          elseif val.value then
+            return val.value
+          end
+        else
+          return val
+        end
+      end
+
+      mt.__newindex = function(table, key, value)
+        local val = rawget(table._, key)
+        if val and type(val) == "table" and ((val.set ~= nil and val._ == nil) or val.value ~= nil) then
+          local v = value
+          if val.set then
+            if type(val.set) == "function" then
+              v = val.set(table, value, val.value)
+            else
+              v = val.set
+            end
+          end
+          val.value = v
+          if val and val.afterSet then 
+          	val.afterSet(table, v) 
+          end
+        else
+          table._[key] = value
+        end
+      end
+
+      setmetatable(obj, mt)
+
+      return obj
+    end
+
+	-- set properties outside the constructor or other functions
+    function Class:set(prop, value)
+      if not value and type(prop) == "table" then
+        for k, v in pairs(prop) do
+          rawset(self._, k, v)
+        end
+      else
+        rawset(self._, prop, value)
+      end
+    end
+
+	-- create an instance of an object with constructor parameters
+    function Class:new(...)
+      local obj = self:extend({})
+      if obj.init then obj:init(...) end
+      return obj
+    end
+
+
+    function class(attr)
+      attr = attr or {}
+      return Class:extend(attr)
+    end
+
+  end 
+
+
+  do
+
+    -- declare local variables & functions
+    local setposition,getposition,formatstr,formatval,todigits,compare
+    local privates = setmetatable({}, {__mode = "k"}) 
+
+    QKnob = class()
+
+    QKnob:set("Value",{
+        value = 0,	
+        get = function(self,value) return value end, 
+        set = function(self, newVal,oldVal) 
+          newVal = formatval(self,newVal)
+          privates[self].ctrl.Value = newVal 
+          if not privates[self].nested then 
+          	privates[self].nested = true
+          	self.Position = setposition(self,newVal) 
+          	self.String = newVal
+          	privates[self].nested = false 		
+          end
+          return newVal 
+        end,
+        } ) 
+
+    QKnob:set("String",{ 	
+        value = "",
+        get = function(self,value) return value end, 
+        set = function(self, newVal,oldVal)	
+          newVal = formatstr(self,newVal)
+          privates[self].ctrl.String = newVal 
+          if not privates[self].nested then
+          	privates[self].nested = true
+          	self.Value = newVal
+          	self.Position = setposition(self,self.Value)
+          	privates[self].nested = false 		
+          end
+          return newVal 
+        end,
+      })			
+
+    QKnob:set("Position",{ 	
+        value = 0,
+        get = function(self,value) return value end, 
+        set = function(self, newVal,oldVal)
+          local val = getposition(self,newVal)
+          newVal = setposition(self,val)	 
+          privates[self].ctrl.Position = newVal 
+          if not privates[self].nested then
+          	privates[self].nested = true 		
+          	self.Value = getposition(self,newVal) 
+          	self.String = self.Value
+          	privates[self].nested = false		
+          end
+          return newVal 
+        end,
+        } ) 			
+
+
+    function QKnob:SetString(val) 
+      return val 
+    end	
+
+    function QKnob:init(ctlName, Min, Max, numDecs )
+      local ctrldef = nil
+      for _,def in ipairs(GetControls(Properties)) do
+        if def.Name == ctlName then	 ctrldef = def break end	
+      end 
+      assert(ctrldef,"GetComponents: "..ctlName.." not found")
+      assert(ctrldef.ControlType=="Text","GetComponents: "..ctlName..".Type is not 'Text'")
+      privates[self] = { ctrl = Controls[ctlName], nested = false, min=Min, max=Max, 
+        numdecs = numDecs, tm = Timer.New() }
+      self.EventHandler = nil		
+      privates[self].ctrl.EventHandler = function() 
+         local newVal = formatstr(self,privates[self].ctrl.String)
+		 if self.String ~=newVal then 	
+        	self.String =  newVal
+    		if self.EventHandler then
+            	self.EventHandler(privates[self].ctrl)
+        	end
+        end
+      end
+      self.String = privates[self].ctrl.String 
+      privates[self].tm.EventHandler = function()
+        compare(self)
+      end
+      privates[self].tm:Start(1/1000)
+    end
+
+    todigits = function (a) 
+      local _
+      a = tostring(a) or "" 
+      a,_ = a:gsub("[^%d.-]", "") 
+      return tonumber(a) or 0  
+    end
+
+    setposition = function(self,value)
+      local p = (value-privates[self].min)/(privates[self].max-privates[self].min) 
+      return p<0 and 1+p or p 
+    end
+
+    getposition = function(self,value)
+      value = value * ( privates[self].max-privates[self].min ) + privates[self].min 
+      return value
+    end
+
+    compare = function(self)
+      if math.abs(privates[self].ctrl.Position - self.Position)>=1e-3 and not privates[self].nested then
+        self.Position = privates[self].ctrl.Position 
+    	if self.EventHandler then
+            self.EventHandler(privates[self].ctrl)
+        end
+      end 				
+    end
+
+    formatval = function(self,val)
+      val = todigits(val)
+      val = val < privates[self].min and privates[self].min or val
+      val = val > privates[self].max and privates[self].max or val 		
+      if privates[self].numdecs then
+        val = tonumber(string.format("%."..privates[self].numdecs.."f",val))
+      end
+      return val	
+    end
+
+    formatstr = function(self,val)
+      val = todigits(val)
+      val = val < privates[self].min and privates[self].min or val
+      val = val > privates[self].max and privates[self].max or val 		
+      local neg = val<0 and true or false
+      val = math.abs(val)
+      local num = 0 
+      num = val<100 and 1 or num
+      num = val<10  and 2 or num
+      num = val< 1  and 3 or num
+      if privates[self].numdecs then
+        num = num>privates[self].numdecs and privates[self].numdecs or num 
+      end
+      val = string.format("%."..num.."f",val)	
+      if not privates[self].numdecs then
+        val = tonumber(val)<1 and val:sub(2) or val
+        val = tonumber(val)==0 and 0 or val
+      end
+      if neg then val = '-'.. val end
+      val = self:SetString(tostring(val))
+      return tostring(val)
+    end
+
+  end
+
+
+    function QKnob:SetString(val) 
+      return val .. 's' 
+    end	
+
+    local period = QKnob:new('period',1,8,1)
+
+    --     CONSTANTS
+
+    local emul = System.IsEmulating
+
+    local OCTAVE = 11
+    --local numloops = emul and OCTAVE*6 or OCTAVE*24
+    local numloops = emul and 130 or 130 * 4
+
+    local start = Controls.start
+    local enable = Controls.enable
+    local trigger =Controls.trigger
+    local mute =Controls.mute
+    local frequency = Controls.frequency
+    local level = Controls.level
+
+    --     Local Variables
+    local timer = Timer.New()
+    local running = false
+    local step = 0
+
+    --     Internal funtions & events
+
+    local function Start()
+      timer:Start(period.Value/numloops) 		
+      Sine.mute.Value = 0
+      running = true
+    end
+
+    local function Stop()
+      timer:Stop()
+      Sine.mute.Value = 1
+      Sine.level.Position = 0
+      running = false
+    end
+
+    local function initplugin()
+      if start.Value == 0 then	
+        start.Value = 1
+        level.Value = -40
+        period.Value = 4
+        frequency.Value = 20
+      end
+      Sine.level.Value = 0
+      enable.EventHandler()
+    end
+
+    timer.EventHandler= function(ctimer)
+      local freq = 10 * 2^( step * OCTAVE/numloops )		
+      if freq > 22000 then freq = 22000 end
+      frequency.Value = freq
+      Sine.frequency.Value = freq
+      step = step +  1 
+      if freq == 22000 then 
+        step = 0
+        if enable.Value == 0 then 
+          Stop() 
+        end
+      end 
+    end
+
+    --     EVENTS
+
+    enable.EventHandler = function(ctrl)
+      if enable.Value == 0 then 
+        Stop()	
+      else 
+        trigger.EventHandler(enable) 
+      end	
+    end
+
+    trigger.EventHandler = function(ctrl)
+      if ctrl ~= enable then 
+        Stop()	
+        step = 0 
+        frequency.Value = 10 
+        Sine.frequency.Value = 10			
+      end
+      Timer.CallAfter(Start,0.1)
+      Sine.mute.Value = mute.Value
+    end
+
+    period.EventHandler = function(ctrl)
+      if running then 
+        Stop()
+        Timer.CallAfter(Start,0.1)
+        Sine.mute.Value = mute.Value
+      end
+    end
+
+    mute.EventHandler = function(ctrl)
+      Sine.mute.Value = mute.Value == 1 or not running
+    end
+
+
+    --     PLUGIN INITIALIZATION
+
+    initplugin()
+
+  end
+
