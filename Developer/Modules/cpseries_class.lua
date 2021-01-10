@@ -11,7 +11,7 @@
     error("variable '"..index.."' is not declared", 2) end
     local m = getmetatable(table) or {} setmetatable(table,m)
     m.__index = searchelem m = {}  m.__index = searchelem  m.__table = table
-    for _,elem in p
+	for _,elem in pairs(table) do setmetatable(elem,m)  end end
 
 	do
 
