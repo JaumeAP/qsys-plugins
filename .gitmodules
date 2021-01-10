@@ -1,3 +1,6 @@
 [submodule "class"]
 	path = class
 	url = https://github.com/jonstoler/class.lua
+[submodule "Developer/Modules/class"]
+	path = Developer/Modules/class
+	url = https://github.com/jonstoler/class.lua
