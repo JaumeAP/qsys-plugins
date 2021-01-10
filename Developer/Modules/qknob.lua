@@ -1,7 +1,7 @@
 
 	--///////////////////////  QKNob Class ////////////////////////////// 
 
-  require("class")
+  require("class/class")
 
   do
 
