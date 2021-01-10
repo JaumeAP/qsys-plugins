@@ -2,7 +2,16 @@
    --			CPSeries Class
   -- ##############################################################
 
-
+  function setmeta(table) 
+    local function searchelem(table,index) local m = getmetatable(table)
+    local list = m.__table or table for count,elem in pairs(list) do
+      for key,value in pairs(elem)  do if elem == table then if index=="index" then return count end 
+        if index=="key" then return key end if index=="value" then return value end end 
+        if key == index then if index~="state" then return elem end return nil end end end 
+    error("variable '"..index.."' is not declared", 2) end
+    local m = getmetatable(table) or {} setmetatable(table,m)
+    m.__index = searchelem m = {}  m.__index = searchelem  m.__table = table
+    for _,elem in p
 
 	do
 
