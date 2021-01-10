@@ -1,0 +1,176 @@
+-- Dolby Fader for Q-SYS
+-- by james.puig@dolby.com
+-- Sept '20
+
+PluginInfo = {
+    Name = "Dolby~Dolby Fader",
+    Version = "1.1",
+    BuildVersion = "1.1.0.1",
+    Id = "a07f3b34-09af-4c25-af2d-be47d00bb4e9",
+    Author = "(c) Jaume Puig, Barcelona",
+    Description = "Dolby Fader Component Plugin",
+}
+
+function GetColor(props)
+  return { 204, 204, 204 }
+end
+
+function GetPrettyName(props)
+  return "Dolby Fader " --.. PluginInfo.Version
+end
+
+function GetProperties()
+  return props
+end
+
+function RectifyProperties(props)
+   	props.plugin_show_debug.IsHidden = true
+  return props
+end
+
+function GetComponents(props)
+  local comps = {}
+  table.insert(comps,
+      {
+        Name = "Step", 
+    	  Type = "stepper",
+        Properties = 
+        {
+        	control_type = 2,   --// Integer
+        	num_steps = 100,
+        },
+  })
+  return comps
+end
+
+function GetControls(props)
+  local ctrls = {}
+  
+  table.insert(ctrls, {
+  			Name = "ref",
+       		ControlType = "Button",
+       		ButtonType = "Momentary",
+  })
+  
+  table.insert(ctrls, {
+  			Name = "level",
+       		ControlType = "Text",
+  			UserPin = true,
+  			PinStyle = "Both",
+  })
+  
+  table.insert(ctrls, {
+  			Name = "gain",
+       		ControlType = "Knob",
+       		ControlUnit = "dB",
+   			Min = -100,
+  			Max =  20, 	
+  			PinStyle = "Both",
+  })
+  
+  table.insert(ctrls, {
+  			Name = "increase",
+       		ControlType = "Button",
+       		ButtonType = "Momentary",
+  			IconType="Icon",
+  			Icon="Plus",
+  			IconColor={0,0,0},		 	
+  })
+  
+  table.insert(ctrls, {
+  			Name = "decrease",
+       		ControlType = "Button",
+       		ButtonType = "Momentary",
+  			IconType="Icon",
+  			Icon="Minus",
+  			IconColor={0,0,0},		
+  })
+  return ctrls
+end
+
+function GetControlLayout(props)
+  local layout   = {}
+  local graphics = {}
+  	local left= -4
+  	local top = -4
+  
+  	layout['ref'] = { 
+  		 	PrettyName = "Ref Level",
+  		 	Style = "Button",
+  			ButtonStype = "Momentary",
+  			Color = {242,137,174},
+  			Size={36,16},	
+  			Position = {left+26,top+48},	
+  	}
+  	layout['level'] = { 
+  			PrettyName='Dolby Level', 
+  			Style = "Knob",
+  			Color = {0,226,113},
+      		Position = { left+90, top+28},
+      		Size={36,36}, 	
+      }
+  	layout['increase'] = { 
+  		 	PrettyName = "Increase",
+  		 	Style = "Button",
+  			ButtonStype = "Momentary",
+  			Color = {255,255,255},
+    			Position={left+154,top+28}, 			
+  			Size={36,16},				
+  	}
+  	layout['decrease'] = { 
+  		 	PrettyName = "Decrease",
+  		 	Style = "Button",
+  			ButtonStype = "Momentary",
+  			Color = {255,255,255},
+   			Size={36,16},
+   			Position={left+154,top+48 }, 			
+  	}
+      layout["gain"] =	{
+     			PrettyName = "Gain",
+     			Style = "Knob",
+      		Position={left+214,top + 28 }, 
+      		Size = { 36,36 },
+    	 }
+  	
+  	graphics = {
+  		{
+   			Type="GroupBox",
+   			Text="Knob",
+   			HTextAlign="Left",
+   			StrokeWidth=1,
+   			CornerRadius=8,
+   			Position={left+8,top+8},
+   			Size={265,100},
+   		},
+   		{
+   			Type="Label",
+   			Text="Reference",
+   			Position={left+12,top+72},
+   			Size={64,16}, 			
+   		},
+   		{
+   			Type="Label",
+   			Text="Dolby\nLevel",
+   			Position={left+76, top+72},
+   			Size={64,32}, 			
+   		},
+    		{
+   			Type="Label",
+   			Text="Inc/Dec",
+   			Position={left+140, top + 72},
+   			Size={64,16}, 			
+   		},
+    		{
+   			Type="Label",
+   			Text="RMS Level (dBFS)",
+   			Position={left+202,top+72},
+   			Size={64,32}, 			
+   		},
+  	}	
+  return layout, graphics
+end
+
+if not Controls and Reflect then return end
+
+require "dolbyfader"
+

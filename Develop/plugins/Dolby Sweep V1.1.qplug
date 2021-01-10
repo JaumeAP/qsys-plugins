@@ -1,0 +1,278 @@
+-- Dolby Sweep Generator Plugin for Q-SYS
+-- by James Puig / james.puig@dolby.com
+-- Jul '20
+
+PluginInfo = 
+{
+   Name = "Dolby~Dolby Sweep",
+    Version = "1.0",
+     BuildVersion = "1.0.4.1",
+    Id = "0e5ea38f-6c26-469b-aa3b-00503f1f263a",
+    Description = "Dolby Sweep Generator",
+     Manufacturer = "Dolby",
+    Author = "James Puig - james.puig@dolby.com",
+    Type = Reflect and Reflect.Types.AudioIO or 0,
+}
+
+	
+
+function GetColor(props)
+    return {164,212,176 }  --Is Audio
+end
+
+function GetPrettyName(props)
+    return "Dolby Sweep Generator"
+end
+
+function GetProperties()
+	props = {}
+	return {	
+  		
+  		{
+      		Name = "Type",
+      		Type = "enum",
+      		Choices = { "Mono", "Stereo","Multi-channel" }, 
+      		Value = "Mono",
+    	},
+    	{
+      		Name = "Count",
+      		Type = "integer",
+      		Value = 8,
+      		Min = 2,
+      		Max=256,
+    	},
+    
+    }
+end
+
+function RectifyProperties(props) 
+ 	props.Count.IsHidden = props.Type.Value ~= "Multi-channel"
+ 	props.plugin_show_debug.IsHidden = true
+  	return props
+end
+
+function GetComponents(props)
+	return { {   Name = "Sine", Type = "sine" } }
+end
+
+local function getPinsNames(props)
+  local names = {}
+  if props.Type.Value == "Multi-channel" then 
+  	for num = 1,props.Count.Value do
+  		table.insert(names,string.format("Output Channel %i", num))	end
+  elseif props.Type.Value == "Stereo" then 
+  	table.insert(names,"Output Left")
+  	table.insert(names,"Output Right")
+  else table.insert(names,"Output") end
+  return names		 		
+end
+
+function GetPins(props) 
+  local pins = {}
+  local names = getPinsNames(props)
+  for _,name in pairs(names) do		
+ 	table.insert(pins, { Name = name, Direction = "output" } )
+   end	
+  return pins
+end
+
+function GetWiring(props) 
+  local wiring = {}
+  local names = getPinsNames(props)
+  for _,name in pairs(names) do		
+    table.insert( wiring, { "Sine Output", name } )
+  end
+  return wiring
+end
+
+function GetControls(props)
+	 return  { 
+		{ 
+			Name = "start",
+     		ControlType = "Button",
+      		ButtonType = "Toggle",
+		},
+		{
+			Name = "enable",
+      		ControlType = "Button",
+      		ButtonType = "Toggle",
+      		UserPin = true,
+      		PinStyle = "Both",
+ 		},
+		{
+			Name = "trigger",
+      		ControlType = "Button",
+      		ButtonType = "Trigger",
+      		UserPin = true,
+      		PinStyle = "Both",
+		},
+		{
+			Name = "mute",
+      		ControlType = "Button",
+      		ButtonType = "Toggle",
+      		UserPin = true,
+      		PinStyle = "Both",
+		},	
+		{
+			Name = "period",
+      		ControlType = "Text",
+ 		},	
+		{
+			Name = "frequency",
+      		ControlType = "Knob",
+			ControlUnit ="Hz",
+			Min = 10,
+			Max = 22000,
+    		UserPin = true,
+      		PinStyle = "Output",
+		},		
+		{
+			Name = "level",
+      		ControlType = "Knob",
+			ControlUnit ="dB",
+			Min = -100,
+			Max = 20,
+    		UserPin = true,
+      		PinStyle = "Both",
+		},
+	}
+ end
+
+function GetControlLayout(props)	
+	local left1=5
+	local left2=149
+	local top =5
+	local graphics = {
+			{
+ 				Type="GroupBox",
+ 				Text="Run",
+ 				HTextAlign="Left",
+ 				StrokeWidth=1,
+ 				CornerRadius=8,
+ 				Position={left1,top},
+ 				Size={136,100},
+ 			},
+			{
+ 				Type="GroupBox",
+ 				Text="Sweep",
+ 				HTextAlign="Left",
+ 				StrokeWidth=1,
+ 				CornerRadius=8,
+ 				Position={left2,top},
+ 				Size={208+64,100},
+ 			},
+			{
+ 				Type="Label",
+ 				Text="Free-Run",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position={ left1+4, top+40+24} ,
+ 				Size={64,16},
+ 			},
+			{
+ 				Type="Label",
+ 				Text="One-Shot/Sync",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position= { left1+4+64, top+40+24 },
+ 				Size={64,32},
+ 			},
+ 			{
+ 				Type="Label",
+ 				Text="Mute",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position= { left2+4, top+40+24 },
+ 				Size={64,16},
+ 			},
+ 			{
+ 				Type="Label",
+ 				Text="Period",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position= { left2+4+64, top+40+24 },
+ 				Size={64,16},
+ 			},
+  			{
+ 				Type="Label",
+ 				Text="Frequency",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position= { left2+4+128, top+40+24 },
+ 				Size={64,16},
+ 			},
+ 				{
+ 				Type="Label",
+ 				Text="RMS Level (dBFS)",
+ 				HTextAlign="Center",
+ 				VTextAlign="Center",
+ 				StrokeWidth=0,
+ 				CornerRadius=0,
+ 				Position= { left2+4+128+64, top+40+24 },
+ 				Size={64,32},
+ 			},
+ 	}
+ 	left1 = left1 + 18
+ 	left2 = left2 + 18
+ 	top = top + 20	
+ 	local layout = {}
+ 		layout["enable"] =	{
+   			PrettyName = "Enable",
+    		Style = "Button",
+    		ButtonStyle = "Toggle",
+    		Position = { left1,top+20 },
+    		Color = { 242, 137, 174 },
+    		Size = { 36,16 },
+  		}
+  		layout["trigger"] =	{
+   			PrettyName = "Trigger",
+    		Style = "Button",
+    		ButtonStyle = "Trigger",
+    		Position = { left1+64,top+20 },
+    		Color = { 255, 255, 255 },
+    		Size = { 36,16 },
+  		}
+  		layout["mute"] =	{
+   			PrettyName = "Mute",
+    		Style = "Button",
+    		ButtonStyle = "Toggle",
+    		Position = { left2,top+20 },
+    		Color = { 223, 0, 36 },
+    		Size = { 36,16 },
+  		}
+    	layout["period"] =	{
+    		PrettyName = "Duty Cycle",
+    		Style = "Knob",
+   			Color = { 254, 248, 174 },
+     		Position = { left2+64,top },
+    		Size = { 36,36 },
+  		}
+    	layout["frequency"] =	{
+   			PrettyName = "Frequency",
+    		Style = "Knob",
+    		IsReadOnly = true,
+     		Position = { left2+128,top },
+    		Size = { 36,36 },
+  		}
+    	layout["level"] =	{
+   			PrettyName = "RMS Level (dBFS)",
+    		Style = "Knob",
+    		Position = { left2+128+64,top },
+    		Size = { 36,36 },
+  		}
+       return layout, graphics
+end
+
+if not Controls and Reflect then return end
+
+require "dolbysweep"
