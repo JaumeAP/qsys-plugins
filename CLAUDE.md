@@ -73,7 +73,8 @@ Definition-side callbacks (all take/return the `props` table):
 | `GetControls(props)` | Pins/controls: `Button`/`Knob`/`Text`, `PinStyle`, `UserPin`, min/max… |
 | `GetComponents(props)` | Embedded DSP blocks the plugin instantiates (`gain`, `sine`, `stepper`, `mixer`, `meter2`, `flip_flop`, `router`, `custom_controls`…) |
 | `GetControlLayout(props)` | Returns `layout, graphics` — positions/sizes/styles for the schematic & UCI |
-| `GetControlPins(props)` | (when present) pin metadata |
+| `GetPins(props)` | (when present) external component pins, e.g. `{ Name, Direction }` |
+| `GetWiring(props)` | (when present) internal wiring from an embedded component's pin to a plugin pin |
 
 Runtime side: at the bottom of the file a guard then a `require`:
 

@@ -181,8 +181,8 @@
 
 		if Controls.start.Value == false then
 			Controls.start.Value = true
-			dolby.Value = 7.0
-			dolby.EventHandler(DolbyCP)
+			DKNob.Value = 7.0
+			DKNob.EventHandler(DolbyCP)
 			Controls.mute.Value = 0
 			Controls.selector[1].Value = 1
 			Controls.selector[1].EventHandler(DolbyCP)
