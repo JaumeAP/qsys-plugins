@@ -1,0 +1,19 @@
+# Files that were once part of this repo's .claude/ tooling and have
+# since been deliberately removed here. One path per line, relative to
+# .claude/ (comments start with #). On import (config-export-import.md
+# step 2.2), any path in this list still present under the target
+# repo's .claude/ gets deleted -- an older bundle may have installed it
+# there before it was retired, and a plain blind-copy of the current
+# bundle would otherwise leave that stale copy in place forever,
+# orphaned and (for a hook) unregistered. If the deleted path is under
+# hooks/, also remove its settings.json registration.
+#
+# hooks/local-merge-reminder.sh, hooks/sync-command-reminder.sh --
+# removed 2026-07-26: both mechanized a "merge the working branch
+# directly into the default branch, no pull request" policy that was
+# deliberately left out of this repo's CLAUDE.md when the config bundle
+# was first imported, to keep this repo's PR-based workflow. Leaving
+# the hooks in place kept nudging the declined policy despite CLAUDE.md
+# no longer stating it.
+hooks/local-merge-reminder.sh
+hooks/sync-command-reminder.sh
