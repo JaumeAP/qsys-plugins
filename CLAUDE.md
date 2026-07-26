@@ -74,7 +74,7 @@ invoke it when the task calls for it:
 request — deleted from `.claude/skills/`, its `skillOverrides` entry
 dropped from `settings.json`, and its path added to
 `.claude/removed-files.txt` so future imports of an older bundle prune it
-from target repos too. Git/GitHub workflow now follows plain judgement +
+from target repos too. Git workflow now follows plain judgement +
 the rest of this file's rules, not a dedicated skill.)
 
 (`file-operations` is also bundled but needs no pointer here — its own

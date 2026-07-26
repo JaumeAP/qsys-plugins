@@ -10,7 +10,7 @@
 #
 # Generic uninitialized-submodule handling (2026-07-24): if any submodule is
 # still uninitialized after the plain attempt (typically a private repo not
-# yet in this session's GitHub scope), emit an actionable instruction --
+# yet accessible to this session), emit an actionable instruction --
 # owner/repo looked up generically from .gitmodules (path + URL), never
 # hardcoded to any particular project's submodules, since this hook is
 # meant to travel unchanged across repos via the config export bundle. A
@@ -48,7 +48,7 @@ if ! grep -q '^-' <<<"$status"; then
   exit 0
 fi
 
-msg="Alguns submoduls encara no estan inicialitzats despres de l'intent automatic (sovint un repo privat encara fora de l'scope de GitHub d'aquesta sessio):"
+msg="Alguns submoduls encara no estan inicialitzats despres de l'intent automatic (sovint un repo privat encara fora de l'abast d'aquesta sessio):"
 while IFS= read -r line; do
   [ -z "$line" ] && continue
   path="$(awk '{print $2}' <<<"$line")"
