@@ -1,6 +1,6 @@
-# CLAUDE.md — qsys-plugins
+# CLAUDE.md
 
-Guidance for AI assistants working in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## What this repo is
 
@@ -118,10 +118,14 @@ These are provided by the Q-SYS host, not defined in this repo:
   override `QKnob:SetString` for unit suffixes (e.g. dolbysweep appends `'s'`).
 - **`strict.lua`**: installs a metatable on `_G` that raises on read/write of
   undeclared globals; declare intentional globals with `Global("name", ...)`.
+  Not currently `require`d by any plugin — opt in if you need it while debugging.
 - **`cpseries.lua` + `cpseries_class.lua`**: TCP client + per-model
   (`CP650`/`CP750`/`CP850`…) command protocol; `Model` enum built with
   `setmeta(Model)`; reuses `dolbyfader`'s `DKNob` and `DolbyFaderEventHandler`
-  hook to push fader changes over the socket.
+  hook to push fader changes over the socket. Note: the plugin does
+  `require "CPSeries"` (capitalized) against the file `cpseries.lua` — this only
+  resolves on case-insensitive filesystems (Windows/macOS, where Designer runs);
+  keep new `require`s in this module lowercase to match the filename.
 
 The Dolby fader math (in `dolbyfader.lua`) maps the Dolby 0.0-10.0 scale ↔ dB:
 `≤4 → val*20-90`, else `(val-7)*10/3` (and its inverse). Reference level = 7.0.
@@ -174,6 +178,7 @@ Typical loop:
 
 ## Git
 
-- Default working branch for AI-assisted changes: `claude/claude-md-docs-25dexu`.
+- AI-assisted changes land on a task-specific `claude/...` branch (named per
+  session/PR); there is no single long-lived AI branch to target.
 - The repo uses one submodule (`Developer/Modules/class`). Commit submodule
   pointer changes deliberately; don't bump it incidentally.
