@@ -26,10 +26,6 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/config-ingest-reminder.sh"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/sync-command-reminder.sh"
           }
         ]
       }
@@ -68,14 +64,6 @@
       }
     ],
     "PreToolUse": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/local-merge-reminder.sh"
-          }
-        ]
-      },
       {
         "matcher": "Write|Edit",
         "hooks": [
