@@ -12,11 +12,12 @@
 #
 # A .skill package may contain exactly ONE SKILL.md (the claude.ai/Skills
 # API upload path rejects more than one). This bundle carries TWO
-# skills as files: file-operations is offered as an optional choice on
-# import since 2026-07-27, not force-installed (see
-# config-export-import.md step 2.5); github-rules is mandatory/blind-copy
-# (moved back the same day, explicit user request, after briefly being
-# optional too -- see step 2.2). changelog-rules and find-skills were
+# skills as files, file-operations and github-rules, both
+# mandatory/blind-copy as of 2026-07-27 (each was briefly made an
+# optional import choice the same day, then moved back by explicit user
+# request -- github-rules first, file-operations shortly after -- see
+# config-export-import.md step 2.2; step 2.5, the optional group, is
+# currently empty). changelog-rules and find-skills were
 # also part of this bundle until 2026-07-27, when both were removed
 # entirely (explicit user request, neither had actually been invoked in
 # a session-long audit) -- see removed-files.txt and CLAUDE.md's
@@ -97,13 +98,12 @@ repeated here.
   installed into the target's own `.claude/scripts/` too, so the target
   repo can export its own bundle later instead of only ever being an
   import destination.
-- `references/skills/<name>/<name>.md` -- two generic skills.
-  `file-operations` is offered as an optional choice on import
-  (2026-07-27, no longer force-installed -- see
-  `references/config-export-import.md` step 2.5); `github-rules` is
-  mandatory/blind-copy (step 2.2), moved back the same day after briefly
-  being optional too. (`changelog-rules` and `find-skills` used to be
-  bundled here too, removed entirely 2026-07-27 -- see
+- `references/skills/<name>/<name>.md` -- two generic skills,
+  `file-operations` and `github-rules`, both mandatory/blind-copy (step
+  2.2) as of 2026-07-27, each briefly made an optional import choice the
+  same day before being moved back (`github-rules` first,
+  `file-operations` shortly after). (`changelog-rules` and `find-skills`
+  used to be bundled here too, removed entirely 2026-07-27 -- see
   `removed-files.txt`.) Each one's entry point is named `<name>.md` here
   instead of `SKILL.md`, because a `.skill` package may only contain one
   `SKILL.md` (this one) -- nesting more would fail validation on upload.

@@ -64,11 +64,13 @@ sub-items are numbered too (e.g. `3.1`, `3.2`), never dashes/bullets.
 
 These generic skills travel with this file and the rest of the `.claude/`
 config (see `.claude/config-export-import.md`) — still always bundled as
-files on export. `file-operations` is offered as an optional choice on
-import into another repo since 2026-07-27 (explicit user request), not
-force-installed the way it was before. `github-rules` is the exception:
-moved back to mandatory/blind-copy the same day (also explicit user
-request), after briefly being optional too. This repo itself always keeps
+files on export. Both `file-operations` and `github-rules` were briefly
+made optional choices on import into another repo (2026-07-27, explicit
+user request), then each moved back to mandatory/blind-copy the same day
+(also explicit user request, `github-rules` first, `file-operations`
+shortly after) — as of now neither is optional, the "optional generic
+skill" group is empty (see `.claude/config-export-import.md` step 2.5).
+This repo itself always keeps
 and uses both regardless. Pointers
 only, not summaries — same
 drift-safety reason as above; each skill is the authority on its own topic,
