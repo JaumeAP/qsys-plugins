@@ -221,7 +221,7 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   ├── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale)
     │   ├── dolbysweep.lua            Sweep tone generator runtime
     │   ├── cpseries.lua              CPSeries application layer (TCP connection lifecycle, Controls wiring)
-    │   ├── cpseries_class.lua        CPSeries class (per-model protocol state machine)
+    │   ├── cpseries_commlib.lua      CPSeries class (per-model protocol state machine)
     │   ├── cpseries_models.lua       Per-model wire config (TCP port, KEY=VALUE vs "param value")
     │   └── cpseries_protocol.lua     Per-model message formatting and GET framing
     ├── tools/
@@ -442,7 +442,7 @@ reasoning applies to any of them if a future plugin uses one.
   `period`, `timer`; `CPSeries` adds `DKNob`, `DolbyFaderEventHandler`
   (via its own `require "dolbyfader"`), `CPSeries`, `CPModels`,
   `CPProtocol`, `DolbyCP`, `sock`, and `Print` (declared defensively, even
-  though `Print` is normally already host-provided, so `cpseries_class.lua`'s
+  though `Print` is normally already host-provided, so `cpseries_commlib.lua`'s
   override — see below — never depends on load order). Verified by loading
   each Developer head file's runtime pass under a stubbed host (2026-07-27);
   the repo's own `Developer/tests/` doesn't exercise this path (its
@@ -458,9 +458,11 @@ reasoning applies to any of them if a future plugin uses one.
 - **`cpseries_models.lua` / `cpseries_protocol.lua`**: per-model wire config
   (TCP port, `KEY=VALUE` vs `"param value"` dialect) and message formatting/
   GET framing. Neither touches `Controls` — they're pure protocol logic,
-  shared between `cpseries.lua` and `cpseries_class.lua`.
-- **`cpseries_class.lua`**: the per-model (`CP650`/`CP750`/`CP850`/`CP950`/
-  `CP950A`) protocol state machine. `Model` is a plain array with real
+  shared between `cpseries.lua` and `cpseries_commlib.lua`.
+- **`cpseries_commlib.lua`** (renamed from `cpseries_class.lua` 2026-07-27,
+  explicit user request; `require("cpseries_class")` in `cpseries.lua` and
+  `Developer/tests/test_modules.lua` updated to match, no behavior change):
+  the per-model (`CP650`/`CP750`/`CP850`/`CP950`/
   `index`/`key`/`value` fields (the old `setmeta`/`searchelem` reflection hack
   was removed 2026-07-27 along with the CP950/CP950A bump); doesn't reference
   `Controls` at all. It also reassigns the global `Print` (no `local`) to a
@@ -534,7 +536,7 @@ one's structure:
   reads it as `Properties["InputCount"]` both before and after, bracket
   notation either way, so the rename bought nothing. `cpseries`'s "TCP Log"
   property (`Developer/plugins/Dolby CPSeries Control V4.0.qplug`, read via
-  `Properties["TCP Log"]` in `Developer/Modules/cpseries_class.lua`) was
+  `Properties["TCP Log"]` in `Developer/Modules/cpseries_commlib.lua`) was
   never renamed and was never broken — proof the constraint never existed.
   Leave "TCP Log" as-is; do not "fix" it, and do not rename other spaced
   property names on this basis alone.
@@ -615,10 +617,17 @@ the four `.qplug`/`Developer/Modules/*.lua` files this rewrite covered.
   hand-editing: Designer's own "Save as compiled plugin", or the standalone
   `plugin_tool_release.exe encrypt input.qplug output.qplugx` CLI now
   vendored at `vendor/qsys-plugins/PluginEncryptionTool/release/` (Windows
-  binary + DLLs — not runnable from this Linux dev environment, but real and
-  official; confirmed via its own README, `vendor/qsys-plugins/
+  binary + DLLs — not runnable from this Linux dev environment directly, but
+  real and official; confirmed via its own README, `vendor/qsys-plugins/
   PluginEncryptionTool/README.md`). Do **not** try to hand-edit `.qplugx`
   with either path available.
+- **CI alternative (added 2026-07-27, explicit user request):**
+  `.github/workflows/build-qplugx.yml` runs that same `plugin_tool_release.exe`
+  on a `windows-latest` GitHub Actions runner instead — manual trigger
+  (`workflow_dispatch`) only, picks one root `.qplug` or `all`, uploads the
+  resulting `.qplugx` as a workflow artifact. It never commits the `.qplugx`
+  back to the repo; downloading and adding it is a separate, deliberate step.
+  This is the repo's first CI workflow.
 
 ### Developer workflow
 
