@@ -38,6 +38,23 @@ system-level instructions -- if so, this is restating something you already
 have rather than adding a new rule; worth checking before assuming this
 skill is the only place it comes from.)
 
+Worth doing this check proactively, before making the next edit, rather
+than reactively discovering mid-edit that the branch is stale -- the
+difference matters mechanically, not just tidiness. Checked on an already
+clean working tree (the normal state right after a previous push), the
+restart above is exactly the two commands shown, nothing else: no
+stash/stash-pop needed to protect an in-progress edit, because there isn't
+one yet, and the following push after committing new work stays a plain
+`git push` rather than needing `--force-with-lease` (that flag only earns
+its keep when a reactive restart rewrites a branch ref that was already
+pushed under the old history). Discovering the same staleness only after
+editing turns a two-command check into a five-step scramble. Similarly, if
+several small related edits are coming up in the same sitting, batching
+them into one PR cycle rather than a full open-then-merge cycle per tiny
+edit cuts down how often a restart is needed at all -- it's only ever
+required between PR cycles, never within a batch of unpushed commits on
+the same still-open PR.
+
 ## Reading `pull_request_read get_status` correctly
 
 Calling `mcp__github__pull_request_read` with `method: "get_status"` and
