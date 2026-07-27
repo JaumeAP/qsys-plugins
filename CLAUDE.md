@@ -133,7 +133,10 @@ system, package manager, or CI here — plugins are authored in Lua, tested in
 Q-SYS Designer's emulator, and distributed as `.qplug` / `.qplugx` files.
 
 There *is* a small test suite under `Developer/tests/` (added 2026-07-27):
-plain Lua 5.4, no framework, run with `Developer/tests/run.sh`. It stubs the
+plain Lua 5.3 — matching Q-SYS Designer's own embedded Lua version, not 5.4
+(confirmed 2026-07-27 against Q-SYS Help, which points to the Lua 5.3
+Reference Manual for native Lua support) — no framework, run with
+`Developer/tests/run.sh`. It stubs the
 Q-SYS host globals so plugin logic can be driven from a terminal. It does not
 replace testing in Designer — it only covers the plugins' own logic, not real
 DSP behaviour, timing, or the Designer UI — but it catches regressions before
@@ -217,7 +220,7 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │                                 post-guard module split for a plugin that needs a
     │                                 module at design time, not just runtime -- none of
     │                                 the four plugins here currently need that group
-    └── tests/                        Lua 5.4 test suite, no framework (see its README)
+    └── tests/                        Lua 5.3 test suite, no framework (see its README)
         ├── run.sh                    Syntax pass over every source, then every test
         ├── qsys_stub.lua             Stand-in for the Q-SYS host globals
         ├── harness.lua               Path resolution + check counter

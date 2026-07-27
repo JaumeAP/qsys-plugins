@@ -1,6 +1,6 @@
 -- Shared plumbing for the test scripts: path resolution relative to this
 -- file (so the suite runs from any working directory) and a check/report
--- counter. No external dependencies -- plain Lua 5.4, no busted, no luarocks.
+-- counter. No external dependencies -- plain Lua 5.3, no busted, no luarocks.
 
 local M = { failures = 0, checks = 0 }
 
