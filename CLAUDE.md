@@ -713,8 +713,6 @@ Typical loop:
 
 ### Git
 
-- AI-assisted changes land on a task-specific `claude/...` branch (named per
-  session/PR); there is no single long-lived AI branch to target.
 - `Developer/Modules/class` (a vendored OOP base) was the last submodule and
   was removed; five new ones were added 2026-07-27 under `vendor/` — four
   from QSC's own `qsys-plugins` org (`BasePlugin`, `ExamplePlugin`,
