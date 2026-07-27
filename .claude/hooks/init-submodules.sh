@@ -37,11 +37,23 @@ if [ ! -f .gitmodules ]; then
   exit 0
 fi
 
+# Recursive (revised 2026-07-27, same day as the original non-recursive
+# fix): qsys-plugins/BasePlugin and qsys-plugins/ExamplePlugin each declare
+# their own nested "PluginCompile" submodule. This repo used to also vendor
+# PluginCompile a third time at the top level (vendor/qsys-plugins/
+# PluginCompile) specifically so plain `--init` alone would reach it without
+# needing --recursive -- that avoided the nested clones but kept three
+# .gitmodules-visible copies of the same repo. The top-level duplicate was
+# removed instead: PluginCompile's content is now reached solely through
+# the two nested paths, so --recursive is required to populate it, and no
+# longer risks re-cloning something already vendored elsewhere in this
+# repo's own .gitmodules -- there's nothing left to duplicate against.
+#
 # Bounded with `timeout` so a stuck submodule fetch (dead remote, auth
 # prompt with no TTY, etc.) can't hang the session start indefinitely.
 timeout 60s git submodule update --init --recursive >/dev/null 2>&1 || true
 
-status="$(git submodule status 2>/dev/null || true)"
+status="$(git submodule status --recursive 2>/dev/null || true)"
 
 if ! grep -q '^-' <<<"$status"; then
   echo '{}'

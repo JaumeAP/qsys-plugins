@@ -1,0 +1,189 @@
+-- Dolby Fader for Q-SYS
+-- by james.puig@dolby.com
+-- Sept '20
+-- v2.0: rebuilt to the plugin structure/naming convention confirmed against
+-- QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin} templates and the
+-- community vendor/q-sys-community/q-sys-plugin-guide (2026-07-27): mandatory
+-- section order, PascalCase Controls/fns/globals, camelCase locals. Breaking:
+-- Controls renamed Ref/Level/Gain/Increase/Decrease (were ref/level/gain/
+-- increase/decrease) -- a design already wired to the old pin names needs
+-- those pins reconnected. Two bugs fixed along the way: GetControlLayout had
+-- a 'ButtonStype' typo on Ref/Increase/Decrease (should be 'ButtonStyle'),
+-- so those three buttons rendered with the default style instead of the
+-- intended Momentary style; GetProperties() returned the undefined global
+-- 'props' (always nil), now returns {} explicitly.
+-- Signal chain: a Text control ('Level') mirrors the Dolby 0.0-10.0 scale,
+-- kept in sync with the 'Gain' Knob (dB) and an embedded stepper component
+-- via qknob.lua/dolbyfader.lua. No network I/O in this plugin.
+
+PluginInfo = {
+	Name = "Dolby~Dolby Fader",
+	Version = "2.0",
+	BuildVersion = "2.0.0.0",
+	Id = "a07f3b34-09af-4c25-af2d-be47d00bb4e9",
+	Author = "(c) Jaume Puig, Barcelona",
+	Description = "Dolby Fader Component Plugin",
+}
+
+function GetColor(props)
+	return { 204, 204, 204 }
+end
+
+function GetPrettyName(props)
+	return "Dolby Fader "
+end
+
+function GetProperties()
+	return {}
+end
+
+function RectifyProperties(props)
+	props.plugin_show_debug.IsHidden = true
+	return props
+end
+
+function GetControls(props)
+	local ctrls = {}
+
+	table.insert(ctrls, {
+		Name = "Ref",
+		ControlType = "Button",
+		ButtonType = "Momentary",
+	})
+
+	table.insert(ctrls, {
+		Name = "Level",
+		ControlType = "Text",
+		UserPin = true,
+		PinStyle = "Both",
+	})
+
+	table.insert(ctrls, {
+		Name = "Gain",
+		ControlType = "Knob",
+		ControlUnit = "dB",
+		Min = -100,
+		Max = 20,
+		PinStyle = "Both",
+	})
+
+	table.insert(ctrls, {
+		Name = "Increase",
+		ControlType = "Button",
+		ButtonType = "Momentary",
+		IconType = "Icon",
+		Icon = "Plus",
+		IconColor = { 0, 0, 0 },
+	})
+
+	table.insert(ctrls, {
+		Name = "Decrease",
+		ControlType = "Button",
+		ButtonType = "Momentary",
+		IconType = "Icon",
+		Icon = "Minus",
+		IconColor = { 0, 0, 0 },
+	})
+
+	return ctrls
+end
+
+function GetControlLayout(props)
+	local layout = {}
+	local graphics = {}
+	local left = -4
+	local top = -4
+
+	layout['Ref'] = {
+		PrettyName = "Ref Level",
+		Style = "Button",
+		ButtonStyle = "Momentary",
+		Color = { 242, 137, 174 },
+		Size = { 36, 16 },
+		Position = { left + 26, top + 48 },
+	}
+	layout['Level'] = {
+		PrettyName = 'Dolby Level',
+		Style = "Knob",
+		Color = { 0, 226, 113 },
+		Position = { left + 90, top + 28 },
+		Size = { 36, 36 },
+	}
+	layout['Increase'] = {
+		PrettyName = "Increase",
+		Style = "Button",
+		ButtonStyle = "Momentary",
+		Color = { 255, 255, 255 },
+		Position = { left + 154, top + 28 },
+		Size = { 36, 16 },
+	}
+	layout['Decrease'] = {
+		PrettyName = "Decrease",
+		Style = "Button",
+		ButtonStyle = "Momentary",
+		Color = { 255, 255, 255 },
+		Size = { 36, 16 },
+		Position = { left + 154, top + 48 },
+	}
+	layout["Gain"] = {
+		PrettyName = "Gain",
+		Style = "Knob",
+		Position = { left + 214, top + 28 },
+		Size = { 36, 36 },
+	}
+
+	graphics = {
+		{
+			Type = "GroupBox",
+			Text = "Knob",
+			HTextAlign = "Left",
+			StrokeWidth = 1,
+			CornerRadius = 8,
+			Position = { left + 8, top + 8 },
+			Size = { 265, 100 },
+		},
+		{
+			Type = "Label",
+			Text = "Reference",
+			Position = { left + 12, top + 72 },
+			Size = { 64, 16 },
+		},
+		{
+			Type = "Label",
+			Text = "Dolby\nLevel",
+			Position = { left + 76, top + 72 },
+			Size = { 64, 32 },
+		},
+		{
+			Type = "Label",
+			Text = "Inc/Dec",
+			Position = { left + 140, top + 72 },
+			Size = { 64, 16 },
+		},
+		{
+			Type = "Label",
+			Text = "RMS Level (dBFS)",
+			Position = { left + 202, top + 72 },
+			Size = { 64, 32 },
+		},
+	}
+
+	return layout, graphics
+end
+
+function GetComponents(props)
+	local comps = {}
+	table.insert(comps, {
+		Name = "Step",
+		Type = "stepper",
+		Properties = {
+			control_type = 2, --// Integer
+			num_steps = 100,
+		},
+	})
+	return comps
+end
+
+if not Controls and Reflect then return end
+
+require "dolbyfader"

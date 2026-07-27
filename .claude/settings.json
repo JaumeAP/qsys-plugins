@@ -6,7 +6,34 @@
       "Bash(git submodule *)",
       "Bash(git clone *)",
       "Bash(git fetch *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)",
+      "Bash(git branch *)",
+      "Bash(git remote *)",
+      "Bash(git add *)",
+      "Bash(git mv *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(lua *)",
+      "Bash(lua5.4 *)",
+      "Bash(luac *)",
+      "Bash(luac5.4 *)",
+      "Bash(luarocks *)",
+      "Bash(apt-get update *)",
+      "Bash(apt-get install *)",
+      "Bash(mkdir *)"
+    ],
+    "ask": [
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)"
     ]
   },
   "hooks": {

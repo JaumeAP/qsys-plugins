@@ -3,7 +3,7 @@ Plugins for QSYS
 ### Dolby Fader
 Command component that emulates Dolby CP Proessors fader (0.0 to 10.0)
 ### Dolby CPSeries Control 
-Component that controls All CP Dolby Processors from CP650 to CP950
+Component that controls All CP Dolby Processors from CP650 to CP950A
 ### Dolby Sweet
 Dolby Sweet Tone Generator
 ### Multi-Flipflop
