@@ -150,11 +150,16 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 ├── README.md                         Short plugin catalog
 ├── .vscode/settings.json             Associates *.qplug with the Lua language
 │
-├── *.qplug / *.qplugx                Distributable plugins (repo root)
-│   ├── DolbyFader.qplug              (v1.0 build — root copy)
-│   ├── Dolby Sweep V1.04.qplug
-│   ├── MultiFlip-Flop.qplug
-│   └── Dolby CPSeries Control V2.2.qplugx   Packaged/encrypted (JSON envelope)
+├── *.qplug / *.qplugx                Distributable plugins (repo root), built by
+│   │                                 Developer/tools/build_distributable.sh
+│   ├── DolbyFader.qplug              (v2.0)
+│   ├── Dolby Sweep V2.0.qplug
+│   ├── MultiFlip-Flop.qplug          (v2.0)
+│   ├── Dolby CPSeries Control V4.0.qplug
+│   └── Dolby CPSeries Control V2.2.qplugx   Packaged/encrypted (JSON envelope) —
+│                                     stale (last hand-compiled at v2.2); a
+│                                     .qplugx can only be regenerated inside
+│                                     Designer, never hand-edited
 │
 ├── Dolby CP Emulator/                Q-SYS User Components (.quc) that emulate
 │   ├── CP650 Emulator.quc            real Dolby processors for bench testing
@@ -163,20 +168,27 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 │
 └── Developer/                        Working sources (edit here)
     ├── plugins/                      Plugin definition files (layout + skeleton)
-    │   ├── DolbyFader V1.1.qplug
-    │   ├── Dolby CPSeries Control V3.0.qplug
-    │   ├── Dolby Sweep V1.1.qplug
-    │   ├── MultiFlip-Flop V1.1.qplug
+    │   ├── DolbyFader V2.0.qplug
+    │   ├── Dolby CPSeries Control V4.0.qplug
+    │   ├── Dolby Sweep V2.0.qplug
+    │   ├── MultiFlip-Flop V2.0.qplug
     │   └── reference.lua             Template/cheat-sheet of every component & control type
     ├── Modules/                      Runtime logic pulled in by plugins via require()
+    │   ├── qsys_enums.lua            Centralized ControlType/ButtonType/ControlUnit/etc.
+    │   │                             enums; required BEFORE the runtime guard (needed at
+    │   │                             design time by GetControls/GetControlLayout), unlike
+    │   │                             every other module here
     │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base)
     │   ├── strict.lua                Global-variable guard (errors on undeclared globals)
     │   ├── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale)
     │   ├── dolbysweep.lua            Sweep tone generator runtime
-    │   ├── cpseries.lua              CPSeries TCP control runtime (network state machine)
+    │   ├── cpseries.lua              CPSeries application layer (TCP connection lifecycle, Controls wiring)
     │   ├── cpseries_class.lua        CPSeries class (per-model protocol state machine)
     │   ├── cpseries_models.lua       Per-model wire config (TCP port, KEY=VALUE vs "param value")
     │   └── cpseries_protocol.lua     Per-model message formatting and GET framing
+    ├── tools/
+    │   └── build_distributable.sh    Builds a root distributable from a Developer/ head +
+    │                                 named modules, pre-guard and post-guard (see below)
     └── tests/                        Lua 5.4 test suite, no framework (see its README)
         ├── run.sh                    Syntax pass over every source, then every test
         ├── qsys_stub.lua             Stand-in for the Q-SYS host globals
@@ -185,13 +197,19 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
         ├── test_plugin_defs.lua      Get* callbacks of the plugins/ definition files
         ├── test_dist_cpseries.lua    Root CP Series distributable, both host passes
         ├── test_dist_fader.lua       Root Dolby Fader distributable, both host passes
+        ├── test_dist_sweep.lua       Root Dolby Sweep distributable, both host passes
+        ├── test_dist_flipflop.lua    Root MultiFlip-Flop distributable, both host passes
         └── wire_trace.lua            Diffs two builds by the bytes they put on the wire
 ```
 
-**`Developer/` holds the source of truth.** The root-level `.qplug`/`.qplugx`
-files are exported/distributable snapshots and are often an older build than the
-`Developer/plugins/` version (e.g. root `DolbyFader.qplug` is v1.0, the
-Developer copy is v1.1). Make changes under `Developer/`, then export.
+**`Developer/` holds the source of truth.** The root-level `.qplug` files are
+single-file distributable builds with their `Developer/Modules/*.lua`
+dependencies inlined and `require` stripped (built by
+`Developer/tools/build_distributable.sh`, see "Developer workflow" below) —
+never hand-edit them, or they drift from `Developer/` and the next rebuild
+silently discards the hand edit. `Dolby CPSeries Control V2.2.qplugx` is the
+one exception: it is a *packaged* (`.qplugx`) build that predates this
+convention and can only be regenerated inside Designer.
 
 ### How a Q-SYS plugin is structured
 
@@ -225,7 +243,17 @@ require "dolbyfader"                            -- runtime pass: load event logi
 When Q-SYS runs the component, the global `Controls` table (and `Properties`)
 exist, so execution falls through to `require`, loading the matching module from
 `Developer/Modules/`. `MultiFlip-Flop` is the exception — its runtime logic is
-inline in the `.qplug` rather than a separate module.
+inline in the `.qplug`, guarded by `if Controls then ... end` instead (both
+guard styles are valid; `MultiFlip-Flop` predates the other three plugins'
+guard-then-`require` split and there was no reason to change a working,
+self-contained file's shape just to match them).
+
+One wrinkle since `qsys_enums.lua` (below): a design-time function
+(`GetControls`/`GetControlLayout`) that reads an enum from it needs that
+module loaded *before* the guard, not after — the guard returns early on the
+definition pass, so anything `require`d only after it never runs then. Every
+plugin now has `require "qsys_enums"` right after `PluginInfo`, unconditional,
+ahead of the guard.
 
 `reference.lua` is the canonical example: it enumerates every property type,
 component type, control type and layout key, and shows the `package.path`
@@ -241,10 +269,24 @@ These are provided by the Q-SYS host, not defined in this repo:
 - Embedded component handles by name (e.g. `Sine`, `Step`, `Gain`) with their
   own sub-controls (`Sine.frequency.Value`, `Step.value.Value`).
 - `Timer` — `Timer.New()`, `:Start(interval)`, `:Stop()`, `Timer.CallAfter(fn,s)`.
-- `TcpSocket` — `TcpSocket:New()`, `.WriteTimeout`, connect/read/write events
-  (used by the CPSeries network control).
+- `TcpSocket` — `TcpSocket.New()` (dot notation — confirmed 2026-07-27 against
+  three independent sources after the code and a reverse-engineered spec
+  disagreed; `TcpSocket:New()` with a colon happened to still work in
+  practice, since `New` doesn't dispatch on `self`, but it is not the
+  documented construction syntax), `.WriteTimeout`, connect/read/write events;
+  instance methods use colon (`sock:Connect(...)`, `sock:Write(...)`).
 - `System.IsEmulating` — true in the Designer emulator; used to shorten loops.
 - `Print(...)`, `Reflect` (definition-time reflection, `Reflect.Types.*`).
+
+Both `Timer` and `TcpSocket` objects are documented as needing to stay
+**global, never `local`** — a `local` one can be garbage-collected once
+nothing else references it, silently killing a poll loop or a socket after
+roughly 22 iterations. In practice every long-lived one in this repo (`sock`/
+`DolbyCP` in `cpseries.lua`, `timer`/`period` in `dolbysweep.lua`, the private
+`Timer.New()` inside `qknob.lua`) is also reachable through a closure chain
+already rooted in a global `Controls.*.EventHandler` field, so none of them
+were actually at risk of collection — but they're all global anyway now, per
+the convention below, since it costs nothing and removes the doubt.
 
 ### Key module patterns
 
@@ -255,7 +297,12 @@ These are provided by the Q-SYS host, not defined in this repo:
   `QKnob:set(name, {value=, get=, set=})` declares a computed property backed
   by a private per-instance table, and `QKnob:new(...)` creates an instance and
   calls `obj:init(...)`. Same external API as before (`QKnob:new(...)`,
-  `QKnob:set(...)`, `QKnob:SetString` override), just self-contained.
+  `QKnob:set(...)`, `QKnob:SetString` override), just self-contained. These
+  method names (`:new`, `:init`, `:set`) were deliberately left lowercase in
+  the 2026-07-27 plugin-convention rewrite — they're this repo's own internal
+  class API, not something the QSC-derived convention (below) governs, and
+  renaming them would touch every plugin that uses `QKnob` for zero
+  convention-compliance gain.
 - **`qknob.lua`**: wraps a `Text` control as a first-class numeric knob. Keeps
   `Value`/`String`/`Position` in sync via `__index`/`__newindex` metatables and
   a 1 ms polling `Timer` that mirrors external position changes. Subclasses
@@ -263,16 +310,83 @@ These are provided by the Q-SYS host, not defined in this repo:
 - **`strict.lua`**: installs a metatable on `_G` that raises on read/write of
   undeclared globals; declare intentional globals with `Global("name", ...)`.
   Not currently `require`d by any plugin — opt in if you need it while debugging.
-- **`cpseries.lua` + `cpseries_class.lua`**: TCP client + per-model
-  (`CP650`/`CP750`/`CP850`…) command protocol; `Model` enum built with
-  `setmeta(Model)`; reuses `dolbyfader`'s `DKNob` and `DolbyFaderEventHandler`
-  hook to push fader changes over the socket. Note: the plugin does
-  `require "CPSeries"` (capitalized) against the file `cpseries.lua` — this only
-  resolves on case-insensitive filesystems (Windows/macOS, where Designer runs);
-  keep new `require`s in this module lowercase to match the filename.
+- **`cpseries_models.lua` / `cpseries_protocol.lua`**: per-model wire config
+  (TCP port, `KEY=VALUE` vs `"param value"` dialect) and message formatting/
+  GET framing. Neither touches `Controls` — they're pure protocol logic,
+  shared between `cpseries.lua` and `cpseries_class.lua`.
+- **`cpseries_class.lua`**: the per-model (`CP650`/`CP750`/`CP850`/`CP950`/
+  `CP950A`) protocol state machine. `Model` is a plain array with real
+  `index`/`key`/`value` fields (the old `setmeta`/`searchelem` reflection hack
+  was removed 2026-07-27 along with the CP950/CP950A bump); doesn't reference
+  `Controls` at all.
+- **`cpseries.lua`**: the application layer — owns the `TcpSocket`, the
+  `CPSeries` instance, and all the `Controls.*` wiring; reuses `dolbyfader`'s
+  `DKNob` and `DolbyFaderEventHandler` hook to push fader changes over the
+  socket. Note: the plugin does `require "CPSeries"` (capitalized) against the
+  file `cpseries.lua` — this only resolves on case-insensitive filesystems
+  (Windows/macOS, where Designer runs); keep new `require`s in this module
+  lowercase to match the filename.
 
 The Dolby fader math (in `dolbyfader.lua`) maps the Dolby 0.0-10.0 scale ↔ dB:
 `≤4 → val*20-90`, else `(val-7)*10/3` (and its inverse). Reference level = 7.0.
+
+### Plugin structure/naming convention (mandatory, since 2026-07-27)
+
+Every plugin in this repo was rebuilt on 2026-07-27 to a convention sourced
+from a QSC-derived plugin spec (`components_emulator/docs/qsys-plugins.md` in
+the separate `qsc-q-sys` repo — a reverse-engineering toolkit, not an
+official QSC SDK; treat it as the best available reference, not ground truth
+— the one point that mattered enough to verify independently, `TcpSocket`
+construction syntax, was checked against three outside sources before being
+applied, see above). Follow it for every new plugin and every edit that
+touches an existing one's structure:
+
+- **Mandatory section order** in every `.qplug`: file header comment →
+  `PluginInfo` → (design-time-safe `require`s, e.g. `qsys_enums`) →
+  Design-time Identity (`GetColor`/`GetPrettyName`) → Properties
+  (`GetProperties`/`RectifyProperties`) → Controls (`GetControls`) → Layout
+  (`GetControlLayout`) → Components/Pins/Wiring (`GetComponents`/`GetPins`/
+  `GetWiring`, omit the section if none) → a `-- CHANGELOG` comment block →
+  the runtime guard → the runtime `require`. Mark each section with a
+  `--*** Name ***` comment.
+- **Naming**: Controls (the `Name` field in `GetControls`/`GetControlLayout`
+  keys/`Controls.*` accesses), functions, and globals/aliases are
+  `PascalCase`. Locals are `camelCase`. Constants are `UPPER_SNAKE`. A
+  socket/timer object is a `camelCase` noun (`sock`, `timer`) but still
+  **global**, per the GC-safety note above — "socket/timer=camelCase-noun" is
+  the one deliberate exception to "globals=PascalCase".
+- **Property names may not contain spaces** — properties, not controls; a
+  control's `Name` may have spaces (e.g. `Name = "TCP Log"` is fine), a
+  property's may not (`GetProperties`'s own `{ Name = ..., Type = ... }`
+  entries). `MultiFlip-Flop`'s "Input Count" property became `InputCount` for
+  exactly this reason.
+- **Enums, not string literals**, for anything `qsys_enums.lua` defines
+  (`ControlType.BUTTON` not `"Button"`, `ButtonType.MOMENTARY` not
+  `"Momentary"`, etc.) — require it unconditionally, before the guard, since
+  `GetControls`/`GetControlLayout` need it at design time.
+- **`_G["Name"]` for embedded components** — `Step`, `Sine`, and other
+  `GetComponents`-declared handles are already global (Lua globals live in
+  `_G`, so bare `Step` and `_G["Step"]` are the same value); the convention's
+  own reference examples write `CompName = _G["CompName"]` as a documentation
+  convention, not a functional requirement. This repo does not add that
+  redundant self-assignment — a bare reference to the already-global name is
+  enough, and inventing a second name for the same value would be dead
+  weight for no behavioral gain.
+- **`QKnob`'s own method names stay as they were** (`:new`, `:init`, `:set`,
+  lowercase) — see "Key module patterns" above for why.
+- **Breaking changes get a major version bump** (per the repo-wide
+  `changelog-rules` skill) and a note in the `-- CHANGELOG` block. Renaming a
+  `Controls` entry or a property is breaking: any Q-SYS design already wired
+  to the old name needs those pins/properties reconnected after updating.
+- **`PluginInfo.Id` is still preserved** across all of this — the naming
+  convention changes identifiers inside the file, never the plugin's
+  identity.
+
+This mostly *supersedes* the older "match existing tab-heavy formatting"
+habit for these four plugins (they're rebuilt to a consistent, more open
+style now) — but don't use that as license to casually reflow files this
+convention doesn't touch; it's still the right default for anything outside
+the four `.qplug`/`Developer/Modules/*.lua` files this rewrite covered.
 
 ### `.qplug` vs `.qplugx`
 
@@ -303,27 +417,35 @@ Typical loop:
 4. Load the plugin in Q-SYS Designer; test in the emulator
    (`System.IsEmulating` is true) or against a `Dolby CP Emulator/*.quc` on the
    bench.
-5. Bump `Version`/`BuildVersion` in `PluginInfo`, export the compiled
-   `.qplug`/`.qplugx`, and update the root-level distributable copy. Rebuild
-   the root copy from the `Developer/` sources rather than editing it by
-   hand — it is a single-file build with the modules inlined and their
-   `require` lines stripped, so hand edits drift from the source of truth.
+5. Bump `Version`/`BuildVersion` in `PluginInfo`, then rebuild the root
+   distributable with `Developer/tools/build_distributable.sh <head.qplug>
+   <output.qplug> [pre-guard modules...] -- <post-guard modules...>` — never
+   hand-edit the root file, it's a single-file build with
+   `Developer/Modules/*.lua` inlined and `require` stripped, so a hand edit
+   just gets discarded on the next rebuild. `qsys_enums` (needed at design
+   time) goes in the pre-guard group; everything else goes post-guard. See
+   any of the four root `.qplug` files' build for the exact module list, or
+   re-run the command from that plugin's own rewrite commit message.
    After rebuilding, re-run `Developer/tests/run.sh`: the `test_dist_*` files
    execute the built artifact, which is the only thing that catches a module
-   inlined before something it depends on (that still compiles).
+   inlined before something it depends on (that still compiles). If a
+   `.qplugx` also needs updating, that step still only happens inside
+   Designer — this script only produces `.qplug`.
 
 ### Conventions when editing
 
 - **Preserve `PluginInfo.Id`** — it is the stable plugin UUID; changing it makes
   Designer treat the plugin as a different one. Bump `Version`/`BuildVersion`
   instead.
-- Match the existing (tab-heavy, deeply-indented) formatting of each file rather
-  than reflowing it.
+- Follow the "Plugin structure/naming convention" section above for the four
+  rebuilt plugins; for anything else, match the existing (tab-heavy,
+  deeply-indented) formatting of the file rather than reflowing it.
 - Keep runtime logic in the `Developer/Modules/*.lua` module; keep the `.qplug`
   focused on `PluginInfo` + the `Get*` definition callbacks + the final
-  `require`.
+  `require`. `MultiFlip-Flop` is still the one exception (inline runtime).
 - Guard runtime code with `if not Controls and Reflect then return end` so the
-  definition pass never executes event logic.
+  definition pass never executes event logic (`MultiFlip-Flop`: `if Controls
+  then ... end`, see above).
 - Comments and identifiers are English; keep it that way.
 - After changing anything a plugin `require`s, verify the corresponding
   distributable at the repo root is regenerated (it is easy to leave it stale).
