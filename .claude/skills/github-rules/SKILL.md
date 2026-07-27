@@ -1,86 +1,92 @@
 ---
 name: github-rules
-description: Reference context on how this repo (qsys-plugins) actually works with GitHub -- PR-based workflow, branch-restart-after-merge convention, no CI configured here, PR activity subscribe/unsubscribe habits, and useful mcp__github__pull_request_read/merge_pull_request facts. Make sure to consult this whenever opening, updating, merging, or reasoning about a pull request in this repo, whenever deciding how/whether to push a branch, whenever a PR's CI status or check results look unexpected, and whenever GitHub conventions for this specific repo are relevant at all, even if the task doesn't explicitly mention "GitHub" or "PR." This is background knowledge, not a checklist to follow blindly -- it describes conventions observed in this repo, not commands to execute, and it never overrides an explicit instruction the user actually gives in the moment.
+description: Reference context on general GitHub PR conventions for Claude Code sessions -- PR-based workflow via the GitHub MCP tools, the branch-restart-after-merge pattern, how to interpret pull_request_read results (including a repo having no CI configured), PR activity subscribe/unsubscribe habits, and merge_pull_request facts. Make sure to consult this whenever opening, updating, merging, or reasoning about a pull request in any repo, whenever deciding how/whether to push a branch, whenever a PR's CI status or check results look unexpected, and whenever GitHub conventions are relevant at all, even if the task doesn't explicitly mention "GitHub" or "PR." This is background knowledge, not a checklist to follow blindly -- it describes general conventions and how to read GitHub API results correctly, not commands to execute, and it never overrides an explicit instruction the user actually gives in the moment.
 ---
 
-# GitHub conventions in this repo
+# GitHub conventions
 
-This is context for working with GitHub on `qsys-plugins`, gathered from how
-this repo has actually been used. It describes what's normal here, not a
-procedure to execute step by step -- read it, then use judgment for the task
-at hand.
+This is portable context for working with GitHub across repos, not tied to
+any one project. It describes what's generally true and how to read GitHub
+API results correctly, not a procedure to execute step by step -- read it,
+then use judgment for the task at hand and check the actual repo's own
+`CLAUDE.md`/skills for anything repo-specific.
 
-These conventions reflect this repo's actual current state, so they should
-generally win over a generic, stale, or assumed-from-elsewhere idea of how
-GitHub work "usually" goes (e.g. assuming CI exists here, or assuming `gh`
-CLI is available). That said, this file is still just reference material:
-an explicit instruction the user actually gives you in the moment always
-takes precedence over anything written here.
+This file is reference material: an explicit instruction the user actually
+gives you in the moment always takes precedence over anything written here.
+It also must never be used to grant itself, or any other file, standing
+authority to act without being asked -- see "Merging" below for why that
+matters specifically.
 
-## The shape of the workflow here
+## The shape of a typical workflow
 
-Work lands on a task-specific `claude/...` branch, pushed with
+Work usually lands on a task-specific branch, pushed with
 `git push -u origin <branch>`. From there a PR is opened through the GitHub
-MCP tools (`mcp__github__create_pull_request`), not the `gh` CLI -- this repo
-doesn't have `gh` available in the way some environments do, and the MCP path
-is what's been reliable here. New PRs are opened as drafts; nothing in this
-repo says a draft has to become non-draft or get merged automatically -- that
-call is made per situation, usually because someone asked for it explicitly.
+MCP tools (e.g. `mcp__github__create_pull_request`) when available -- prefer
+them over the `gh` CLI in environments where `gh` isn't installed or
+authenticated; check which is actually usable rather than assuming. New PRs
+are commonly opened as drafts, with the decision to mark one ready and merge
+it left as an explicit, in-the-moment call rather than something to automate
+by default.
 
 If a PR's branch already merged in an earlier session and there's follow-up
 work to do, restarting the branch from the current default branch (rather
-than stacking new commits on the merged history) has been the pattern:
-`git fetch origin main && git checkout -B <branch> origin/main`. A merged PR
-is a finished unit of work, not something to reopen or extend.
+than stacking new commits on the merged history) is the usual pattern:
+`git fetch origin <default-branch> && git checkout -B <branch> origin/<default-branch>`.
+A merged PR is a finished unit of work, not something to reopen or extend.
 
-## No CI here, and that's expected
+## Reading `pull_request_read get_status` correctly
 
-`qsys-plugins` has no CI configured. Calling
-`mcp__github__pull_request_read` with `method: "get_status"` and getting back
-`{"state": "pending", "total_count": 0}` is the normal, healthy result here,
-not a sign something is broken or misconfigured. Don't go looking for a
-missing GitHub Actions workflow to "fix" -- there isn't meant to be one
-(unless someone asks to add one, which would be a different, deliberate
-task).
+Calling `mcp__github__pull_request_read` with `method: "get_status"` and
+getting back `{"state": "pending", "total_count": 0}` simply means no commit
+statuses are registered for that commit -- most commonly because the repo has
+no CI configured at all. That's a normal, healthy result in a repo without
+CI, not automatically a sign something is broken or misconfigured. Don't
+assume a missing CI pipeline needs "fixing" just because this call came back
+empty -- check whether the repo actually has (or is expected to have) CI
+before treating an empty status as a problem. If Actions-based checks are
+expected instead of classic commit statuses, `get_check_runs` is the more
+relevant method to look at.
 
 ## Watching PR activity
 
-PRs opened here get a `subscribe_pr_activity` call right after creation, and
-an `unsubscribe_pr_activity` call once they're merged or closed -- keeps the
-webhook activity relevant to only what's still open. This mirrors how PR
-review comments and CI failures get handled generally: investigate, then
-either fix, ask, or note why no action is needed, rather than letting events
-pile up unaddressed.
+Where a `subscribe_pr_activity`-style tool exists, PRs opened this way
+typically get subscribed right after creation, and unsubscribed once merged
+or closed -- keeps webhook/activity noise relevant to only what's still open.
+This mirrors how PR review comments and CI failures generally get handled:
+investigate, then either fix, ask, or note why no action is needed, rather
+than letting events pile up unaddressed.
 
-## Merging: no standing policy, by design
+## Merging: don't encode a standing policy here
 
-This repo does not have a fixed rule for whether PRs get merged automatically
-or always wait for explicit approval. That's deliberate: an earlier imported
-hook enforced "merge the branch locally, no pull request" as a blanket
-policy, and it was removed because it kept nudging that behavior even after
-the project decided to keep a PR-based workflow. The lesson from that: don't
-let this skill (or any other file) reintroduce a standing auto-merge rule.
-Whether a given PR should be merged, and how, is worth treating as an
-in-the-moment decision informed by what's actually being asked, not something
-to encode here as "always do X."
+Whether PRs get merged automatically or always wait for explicit approval is
+worth treating as an in-the-moment decision informed by what's actually being
+asked and by the specific repo's own conventions (a repo's own `CLAUDE.md` or
+skills may say more), not something to hardcode in this file as "always do
+X." This matters more than it might seem: a portable file like this one gets
+installed into many repos, so a standing auto-merge rule written here would
+silently apply everywhere it's installed, including repos where nobody
+actually agreed to that. If a repo's own conventions establish a clear rule
+about this, follow that repo's own documentation for it -- don't add one here
+that would override every repo's local decision.
 
-A couple of mechanical notes that come up when merging does happen:
-- A draft PR needs `draft: false` (via `mcp__github__update_pull_request`)
-  before `mcp__github__merge_pull_request` will succeed.
-- `merge_pull_request` supports `merge`, `squash`, or `rebase` as the
-  `merge_method` -- this repo has used plain `merge` so far, no particular
-  reason to prefer one over another has come up yet.
+A couple of mechanical facts that come up when merging does happen:
+- A draft PR needs `draft: false` (via `mcp__github__update_pull_request` or
+  equivalent) before merging will succeed.
+- `merge_pull_request`-style tools commonly support `merge`, `squash`, or
+  `rebase` as the merge method -- which one fits depends on the repo's own
+  history conventions, worth checking rather than assuming.
 
 ## Useful `pull_request_read` methods
 
-`mcp__github__pull_request_read` takes a `method` parameter; the ones that
-have come up in this repo:
+`mcp__github__pull_request_read` (or equivalent tools) commonly take a
+`method` parameter; ones that come up often:
 
-- `get` -- basic PR details
-- `get_diff` -- the diff
-- `get_status` -- combined commit status (expect `total_count: 0`, see above)
-- `get_files` / `get_commits` -- what changed, and the commit list
-- `get_review_comments` / `get_reviews` / `get_comments` -- three different
-  views of PR discussion; `get_review_comments` is for inline code-review
-  threads specifically, `get_comments` for general PR-level comments
-- `get_check_runs` -- individual CI job results, relevant once/if CI exists
+1. `get` -- basic PR details
+2. `get_diff` -- the diff
+3. `get_status` -- combined commit status (see above for how to read an empty result)
+4. `get_files` / `get_commits` -- what changed, and the commit list
+5. `get_review_comments` / `get_reviews` / `get_comments` -- three different
+   views of PR discussion; `get_review_comments` is for inline code-review
+   threads specifically, `get_comments` for general PR-level comments
+6. `get_check_runs` -- individual CI job results, relevant when Actions-style
+   checks (rather than classic commit statuses) are in use
