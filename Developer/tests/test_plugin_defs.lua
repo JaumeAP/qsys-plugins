@@ -41,14 +41,14 @@ for _, model in ipairs(model_prop.Choices) do
 	local ok, ctrls = pcall(GetControls, props)
 	h.check(ok, model .. ": GetControls does not throw")
 	local count
-	for _, c in ipairs(ctrls) do if c.Name == "selector" then count = c.Count end end
+	for _, c in ipairs(ctrls) do if c.Name == "Selector" then count = c.Count end end
 	h.check(count == expected, model .. ": " .. expected .. " selector buttons (got " .. tostring(count) .. ")")
 
 	local ok2, layout = pcall(GetControlLayout, props)
 	h.check(ok2, model .. ": GetControlLayout does not throw (" .. tostring(layout) .. ")")
 	if ok2 then
 		local laid = 0
-		for k in pairs(layout) do if k:match("^selector ") then laid = laid + 1 end end
+		for k in pairs(layout) do if k:match("^Selector ") then laid = laid + 1 end end
 		h.check(laid == expected, model .. ": " .. expected .. " selector entries laid out (got " .. laid .. ")")
 	end
 end

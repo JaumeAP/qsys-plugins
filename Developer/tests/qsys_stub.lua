@@ -53,17 +53,17 @@ function M.install(opts)
 
 	local controls = {}
 	for _, name in ipairs(opts.controls or {}) do
-		-- `start` latches the one-time init and is compared against `false`,
+		-- `Start` latches the one-time init and is compared against `false`,
 		-- so it must start as a boolean. Spelled out rather than written as
-		-- `name == "start" and false or nil`, which yields nil, not false.
-		if name == "start" then
+		-- `name == "Start" and false or nil`, which yields nil, not false.
+		if name == "Start" then
 			controls[name] = M.control(false)
 		else
 			controls[name] = M.control(nil)
 		end
 	end
-	controls.selector = {}
-	for i = 1, (opts.selectors or 0) do controls.selector[i] = M.control(0) end
+	controls.Selector = {}
+	for i = 1, (opts.selectors or 0) do controls.Selector[i] = M.control(0) end
 	Controls = controls
 
 	Step = { value = M.control(0), increase = M.control(0), decrease = M.control(0) }
@@ -120,10 +120,10 @@ function M.install(opts)
 	return env
 end
 
--- The control set the CP Series plugin declares.
+-- The control set the CP Series plugin declares (PascalCase since v4.0).
 M.CPSERIES_CONTROLS = {
-	"start", "ref", "level", "gain", "increase", "decrease", "address",
-	"status", "status.led", "refresh", "select", "mute",
+	"Start", "Ref", "Level", "Gain", "Increase", "Decrease", "Address",
+	"Status", "Status.Led", "Refresh", "Select", "Mute",
 }
 
 -- The control set the Dolby Fader plugin declares (PascalCase since v2.0).

@@ -1,3 +1,4 @@
+--*** File header comment ***
 -- CP Series Control Plugin for Q-SYS
 -- by James Puig / james.puig@dolby.com
 -- Febr '20
@@ -14,111 +15,116 @@
 --        format list published a nil format name, which the plugin's event
 --        handler asserts on, crashing the component. The name mirror is now
 --        left alone when the format index resolves to no list entry.
+-- v4.0 - rebuilt to the QSC-derived plugin structure/naming convention (see
+--        CHANGELOG block below for details). Signal chain: DKNob (a QKnob
+--        wrapping the 'Level' Text control) mirrors the Dolby 0.0-10.0
+--        fader scale against the 'Gain' Knob (dB); CPSeries (cpseries_class,
+--        cpseries_models, cpseries_protocol) drives a TcpSocket connection
+--        to the processor and reports fader/mute/format/formname/formlist
+--        back through DolbyCP.EventHandler in cpseries.lua.
+
+--*** PluginInfo ***
 
 PluginInfo =
 {
-   Name = "Dolby~CP Series Control",
-    Version = "3.0",
-    BuildVersion = "3.0.0.3",
-    Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
-    Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
-    Manufacturer = "Dolby",
-    Author = "James Puig - james.puig@dolby.com",
+	Name = "Dolby~CP Series Control",
+	Version = "4.0",
+	BuildVersion = "4.0.0.0",
+	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
+	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
+	Manufacturer = "Dolby",
+	Author = "James Puig - james.puig@dolby.com",
 }
 
-	-- Constants  --
+-- Enums are needed at design time (GetControls/GetControlLayout), so this
+-- module is required unconditionally, before the runtime guard below --
+-- unlike the rest of Developer/Modules, which only loads after it.
 
-	-- Supported processor models, as plain records. `Model` is an ordered
-	-- array (iterate with ipairs / #Model) AND is keyed by symbol
-	-- (Model.CP650, ...); every entry carries value (display name), key
-	-- and index.
-	Model = {}
-	for i,m in ipairs({
-		{ key = 'CP650',  value = 'CP 650'  },
-		{ key = 'CP750',  value = 'CP 750'  },
-		{ key = 'CP850',  value = 'CP 850'  },
-		{ key = 'CP950',  value = 'CP 950'  },
-		{ key = 'CP950A', value = 'CP 950A' },
-	}) do
-		m.index = i
-		Model[i] = m
-		Model[m.key] = m
-	end
+--*** Constants ***
 
-	local ButtonLabel = { {'01','04','05','10','11','U1','U2','NS'},
-					  {'Dig1','Dig2','Dig3','Dig4','Ana','NS','Mic'},
-					  { '1','2','3','4','5','6','7','8' },
-					  { '1','2','3','4','5','6','7','8' },
-					  { '1','2','3','4','5','6','7','8' } }
+-- Supported processor models, as plain records. `Model` is an ordered
+-- array (iterate with ipairs / #Model) AND is keyed by symbol
+-- (Model.CP650, ...); every entry carries value (display name), key
+-- and index.
+Model = {}
+for i, m in ipairs({
+	{ key = 'CP650',  value = 'CP 650'  },
+	{ key = 'CP750',  value = 'CP 750'  },
+	{ key = 'CP850',  value = 'CP 850'  },
+	{ key = 'CP950',  value = 'CP 950'  },
+	{ key = 'CP950A', value = 'CP 950A' },
+}) do
+	m.index = i
+	Model[i] = m
+	Model[m.key] = m
+end
 
- -- Control Functions
+local ButtonLabel = { { '01', '04', '05', '10', '11', 'U1', 'U2', 'NS' },
+					  { 'Dig1', 'Dig2', 'Dig3', 'Dig4', 'Ana', 'NS', 'Mic' },
+					  { '1', '2', '3', '4', '5', '6', '7', '8' },
+					  { '1', '2', '3', '4', '5', '6', '7', '8' },
+					  { '1', '2', '3', '4', '5', '6', '7', '8' } }
 
-	-- Model value, tolerant of a nil / partial props: Q-SYS may call the
-	-- Get* functions with no props during plugin registration, before any
-	-- instance exists. Without this guard `props.Model.Value` throws
-	-- "index a nil value".
-	local function ModelValue(props)
-		return (props and props.Model and props.Model.Value) or Model.CP850.value
-	end
+-- Model value, tolerant of a nil / partial props: Q-SYS may call the
+-- Get* functions with no props during plugin registration, before any
+-- instance exists. Without this guard `props.Model.Value` throws
+-- "index a nil value".
+local function ModelValue(props)
+	return (props and props.Model and props.Model.Value) or Model.CP850.value
+end
+
+--*** Design-time: Identity ***
 
 function GetColor(props)
-    return {0,127,255 }
+	return { 0, 127, 255 }
 end
 
 function GetPrettyName(props)
-    return "Dolby "..ModelValue(props).." Control"
+	return "Dolby " .. ModelValue(props) .. " Control"
 end
+
+--*** Design-time: Properties ***
 
 function GetProperties()
 	local props = {}
 	local list = {}
-	for _,elem in ipairs(Model) do
-		table.insert(list,elem.value)
+	for _, elem in ipairs(Model) do
+		table.insert(list, elem.value)
 	end
-   	table.insert(props, { Name="Model" ,Type = "enum",Choices = list, Value = Model.CP850.value})
-   	table.insert(props, { Name="TCP Log" ,Type = "enum",Choices = { 'Command', 'All' }, Value = 'Command' })
- 	return props
+	table.insert(props, { Name = "Model", Type = PropertyType.ENUM, Choices = list, Value = Model.CP850.value })
+	table.insert(props, { Name = "TCP Log", Type = PropertyType.ENUM, Choices = { 'Command', 'All' }, Value = 'Command' })
+	return props
 end
 
 function RectifyProperties(props)
-   if props and props["TCP Log"] and props.plugin_show_debug then
-      props["TCP Log"].IsHidden = (props.plugin_show_debug.Value == 0)   -- FIX: 'not Value' never hid (0 is truthy in Lua)
-   end
-  return props
+	if props and props["TCP Log"] and props.plugin_show_debug then
+		props["TCP Log"].IsHidden = (props.plugin_show_debug.Value == 0) -- FIX: 'not Value' never hid (0 is truthy in Lua)
+	end
+	return props
 end
 
-function GetComponents(props)
-	return {
-    	{
-      		Name = "Step",
-      		Type = "stepper",
-      		Properties =
-      		{
-      		    control_type = 2,
-      			num_steps = 100,
-      		}
-    	},
- 	}
-end
+--*** Design-time: Controls ***
 
 function GetControls(props)
-   local numButtons = ModelValue(props) == Model.CP750.value and 7 or 8
- 	return {
-		{ Name = "start" },
-		{ Name = "ref",ControlType = "Button",ButtonType = "Momentary"},
- 		{ Name = "level",ControlType = "Text",UserPin = true,PinStyle = "Both"},
-  		{ Name = "gain",ControlType = "Knob",ControlUnit = "dB",Min = -100,Max =  20,UserPin=true, PinStyle = "Both"},
-		{ Name = "increase",ControlType = "Button",ButtonType = "Momentary",IconType="Icon",Icon="Plus", IconColor={0,0,0} },
-		{ Name = "decrease",ControlType = "Button",ButtonType = "Momentary",IconType="Icon",Icon="Minus",IconColor={0,0,0} },
- 		{ Name="address", ControlType="Text",Count=1, UserPin=false },
-    	{ Name = "status", ControlType="Indicator", IndicatorType="Status", UserPin=true, PinStyle='Output' },
-    	{ Name = "status.led", ControlType="Indicator", IndicatorType="Status" },
-    	{ Name = "refresh", ControlType="Button", ButtonType = "Trigger", Icon='Refresh'},
-		{ Name = "select", ControlType = "Text",UserPin = true,PinStyle='Both' },
-    	{ Name = "selector", ControlType="Button", ButtonType="Toggle", Count=numButtons,UserPin = true,PinStyle='Both' },
-    	{ Name = "mute", ControlType="Button", ButtonType="Toggle", Icon ='Volume Strike', UserPin=true, PinStyle='Both', },
+	local numButtons = ModelValue(props) == Model.CP750.value and 7 or 8
+	return {
+		{ Name = "Start" },
+		{ Name = "Ref", ControlType = ControlType.BUTTON, ButtonType = ButtonType.MOMENTARY },
+		{ Name = "Level", ControlType = ControlType.TEXT, UserPin = true, PinStyle = PinStyle.BOTH },
+		{ Name = "Gain", ControlType = ControlType.KNOB, ControlUnit = ControlUnit.DB, Min = -100, Max = 20, UserPin = true, PinStyle = PinStyle.BOTH },
+		{ Name = "Increase", ControlType = ControlType.BUTTON, ButtonType = ButtonType.MOMENTARY, IconType = "Icon", Icon = "Plus", IconColor = { 0, 0, 0 } },
+		{ Name = "Decrease", ControlType = ControlType.BUTTON, ButtonType = ButtonType.MOMENTARY, IconType = "Icon", Icon = "Minus", IconColor = { 0, 0, 0 } },
+		{ Name = "Address", ControlType = ControlType.TEXT, Count = 1, UserPin = false },
+		{ Name = "Status", ControlType = ControlType.INDICATOR, IndicatorType = IndicatorType.STATUS, UserPin = true, PinStyle = PinStyle.OUTPUT },
+		{ Name = "Status.Led", ControlType = ControlType.INDICATOR, IndicatorType = IndicatorType.STATUS },
+		{ Name = "Refresh", ControlType = ControlType.BUTTON, ButtonType = ButtonType.TRIGGER, Icon = 'Refresh' },
+		{ Name = "Select", ControlType = ControlType.TEXT, UserPin = true, PinStyle = PinStyle.BOTH },
+		{ Name = "Selector", ControlType = ControlType.BUTTON, ButtonType = ButtonType.TOGGLE, Count = numButtons, UserPin = true, PinStyle = PinStyle.BOTH },
+		{ Name = "Mute", ControlType = ControlType.BUTTON, ButtonType = ButtonType.TOGGLE, Icon = 'Volume Strike', UserPin = true, PinStyle = PinStyle.BOTH },
 	}
 end
+
+--*** Design-time: Layout ***
 
 function GetControlLayout(props)
 	local layout = {}
@@ -126,60 +132,182 @@ function GetControlLayout(props)
 	local col = 70
 	local row = 6
 	local gutter = 50
-    local mv = ModelValue(props)
-    local numButtons = mv == Model.CP750.value and 7 or 8
-	table.insert(graphics, { Type="GroupBox", CornerRadius=5, Fill={255,245,232,255}, StrokeWidth = 1, StrokeColor = {241,199,245}, Position={-5,-5}, Size={358,368}, Padding=0, Margin=0 })
-	table.insert(graphics, { Type="Label", Text=mv, Fill={255,245,232,255}, Size={ 160,28 }, Position={ 46+gutter,row}, IsBold = true, FontSize=24 })
-    row = row + 40
-	table.insert(graphics, { Type = "Text", HTextAlign="Right", Text = "IP:", Position={ gutter, row }, Size={ 44,16 } })
-	layout['address'] = { PrettyName='Address', Position={gutter+50,row}, Size={ 140,16 } }
-	layout['refresh'] = { PrettyName='Refresh Connection', FontStyle='Black', Position={gutter+190,row}, Size={ 36,16 }, Margin=0, }
-    row = row+32
-	table.insert(graphics, { Type="GroupBox", HTextAlign="Left", Text="Status", StrokeWidth=1, CornerRadius=8, Position={ 10, row-5 }, Size={ 330,64} })
-	layout['status.led'] = { PrettyName='CP Status', Style="Led",  Margin=3, Position={gutter-14,row+22}, Size={ 16,16 } }
-	layout['status'] = { PrettyName='CP Status', Position={gutter+10,row+14}, Size={ 262,32 } }
-    row = row+48+24
-	local left= 0
+	local mv = ModelValue(props)
+	local numButtons = mv == Model.CP750.value and 7 or 8
+	table.insert(graphics, { Type = GraphicType.GROUP_BOX, CornerRadius = 5, Fill = { 255, 245, 232, 255 }, StrokeWidth = 1, StrokeColor = { 241, 199, 245 }, Position = { -5, -5 }, Size = { 358, 368 }, Padding = 0, Margin = 0 })
+	table.insert(graphics, { Type = GraphicType.LABEL, Text = mv, Fill = { 255, 245, 232, 255 }, Size = { 160, 28 }, Position = { 46 + gutter, row }, IsBold = true, FontSize = 24 })
+	row = row + 40
+	table.insert(graphics, { Type = GraphicType.LABEL, HTextAlign = HTextAlign.RIGHT, Text = "IP:", Position = { gutter, row }, Size = { 44, 16 } })
+	layout['Address'] = { PrettyName = 'Address', Position = { gutter + 50, row }, Size = { 140, 16 } }
+	layout['Refresh'] = { PrettyName = 'Refresh Connection', FontStyle = 'Black', Position = { gutter + 190, row }, Size = { 36, 16 }, Margin = 0 }
+	row = row + 32
+	table.insert(graphics, { Type = GraphicType.GROUP_BOX, HTextAlign = HTextAlign.LEFT, Text = "Status", StrokeWidth = 1, CornerRadius = 8, Position = { 10, row - 5 }, Size = { 330, 64 } })
+	layout['Status.Led'] = { PrettyName = 'CP Status', Style = LayoutStyle.LED, Margin = 3, Position = { gutter - 14, row + 22 }, Size = { 16, 16 } }
+	layout['Status'] = { PrettyName = 'CP Status', Position = { gutter + 10, row + 14 }, Size = { 262, 32 } }
+	row = row + 48 + 24
+	local left = 0
 	local top = row
-	layout['ref'] = { PrettyName = "Ref Level", Style = "Button", ButtonStyle = "Momentary", Color = {242,137,174}, Size={36,16}, Position = {left+26,top+48}, }
-	layout['level'] = { PrettyName='Dolby Level', Style = "Knob", Color = {0,226,113}, Position = { left+90, top+28}, Size={36,36}, }
-	layout['increase'] = { PrettyName = "Increase", Style = "Button", ButtonStyle = "Momentary", Color = {255,255,255}, Position={left+154,top+28}, Size={36,16}, }
-	layout['decrease'] = { PrettyName = "decrease", Style = "Button", ButtonStyle = "Momentary", Color = {255,255,255}, Size={36,16}, Position={left+154,top+48 }, }
-	layout["gain"] =	{ PrettyName = "Gain", Style = "Knob", Position={left+214,top + 28 }, Size = { 36,36 }, }
-	layout['mute'] = { PrettyName='Mute', CornerRadius=20, Color={255,0,0}, UnlinkOffColor=true, OffColor={100,100,100}, Padding=10, Radius=5, Position={left+214+64,top + 22 }, Size={46,46} }
-	table.insert(graphics, { Type="GroupBox", Text="Level", HTextAlign="Left", StrokeWidth=1, CornerRadius=8, Position={left+10,top+8}, Size={330,100}, })
-	table.insert(graphics, { Type="Label", Text="Reference", Position={left+12,top+72}, Size={64,16}, })
-	table.insert(graphics,	{ Type="Label", Text="Dolby\nLevel", Position={left+76, top+72}, Size={64,32}, })
-	table.insert(graphics,	{ Type="Label", Text="Inc/Dec", Position={left+140, top + 72}, Size={64,16}, })
-	table.insert(graphics,	{ Type="Label", Text="RMS Level (dBFS)", Position={left+202,top+72}, Size={64,32}, })
-	table.insert(graphics,	{ Type="Label", Text="Mute", Position={left+202+64,top+72}, Size={64,32}, })
+	layout['Ref'] = { PrettyName = "Ref Level", Style = LayoutStyle.BUTTON, ButtonStyle = ButtonStyle.MOMENTARY, Color = { 242, 137, 174 }, Size = { 36, 16 }, Position = { left + 26, top + 48 } }
+	layout['Level'] = { PrettyName = 'Dolby Level', Style = LayoutStyle.KNOB, Color = { 0, 226, 113 }, Position = { left + 90, top + 28 }, Size = { 36, 36 } }
+	layout['Increase'] = { PrettyName = "Increase", Style = LayoutStyle.BUTTON, ButtonStyle = ButtonStyle.MOMENTARY, Color = { 255, 255, 255 }, Position = { left + 154, top + 28 }, Size = { 36, 16 } }
+	layout['Decrease'] = { PrettyName = "Decrease", Style = LayoutStyle.BUTTON, ButtonStyle = ButtonStyle.MOMENTARY, Color = { 255, 255, 255 }, Size = { 36, 16 }, Position = { left + 154, top + 48 } }
+	layout["Gain"] = { PrettyName = "Gain", Style = LayoutStyle.KNOB, Position = { left + 214, top + 28 }, Size = { 36, 36 } }
+	layout['Mute'] = { PrettyName = 'Mute', CornerRadius = 20, Color = { 255, 0, 0 }, UnlinkOffColor = true, OffColor = { 100, 100, 100 }, Padding = 10, Radius = 5, Position = { left + 214 + 64, top + 22 }, Size = { 46, 46 } }
+	table.insert(graphics, { Type = GraphicType.GROUP_BOX, Text = "Level", HTextAlign = HTextAlign.LEFT, StrokeWidth = 1, CornerRadius = 8, Position = { left + 10, top + 8 }, Size = { 330, 100 } })
+	table.insert(graphics, { Type = GraphicType.LABEL, Text = "Reference", Position = { left + 12, top + 72 }, Size = { 64, 16 } })
+	table.insert(graphics, { Type = GraphicType.LABEL, Text = "Dolby\nLevel", Position = { left + 76, top + 72 }, Size = { 64, 32 } })
+	table.insert(graphics, { Type = GraphicType.LABEL, Text = "Inc/Dec", Position = { left + 140, top + 72 }, Size = { 64, 16 } })
+	table.insert(graphics, { Type = GraphicType.LABEL, Text = "RMS Level (dBFS)", Position = { left + 202, top + 72 }, Size = { 64, 32 } })
+	table.insert(graphics, { Type = GraphicType.LABEL, Text = "Mute", Position = { left + 202 + 64, top + 72 }, Size = { 64, 32 } })
 	row = row + 130
-	table.insert(graphics, { Type="Text", Text="Format:", HTextAlign = "Right", Position={ gutter-46, row+1 }, Size={ 90,16 } })
-	layout['select']= { PrettyName='Select', Style='ComboBox', TextFontSize=12, Position={gutter+50,row}, Size={170,18} }
-    row = row+32 col = 36
-    local btnLayout,macro,proc
-    local assign = {
-    	[Model.CP650.value] = function() macro = 'Button' proc=Model.CP650.index btnLayout = ButtonLabel[1] end,
-        [Model.CP750.value] = function() macro = 'Button' proc=Model.CP750.index btnLayout = ButtonLabel[2] end,
-        [Model.CP850.value] = function() macro = 'Macro'  proc=Model.CP850.index btnLayout = ButtonLabel[3] end,
-        [Model.CP950.value] = function() macro = 'Macro'  proc=Model.CP950.index btnLayout = ButtonLabel[4] end,
-        [Model.CP950A.value]= function() macro = 'Macro'  proc=Model.CP950A.index btnLayout = ButtonLabel[5] end,
-    }	assign[mv]()
-	local v = mv ==  Model.CP750.value and gutter or gutter-20
-   	for i = 1,numButtons do
-		layout['selector '..i]={ PrettyName= macro ..'~'..ButtonLabel[proc][i], Legend = btnLayout[i], Position={v,row},
-				Color={0,255,0}, FontStyle='Bold', fontSize=14, CornerRadius=20, ButtonStyle="On", Size={36,36} }
-		v = v+col
- 	end
-    return layout, graphics
+	table.insert(graphics, { Type = GraphicType.LABEL, Text = "Format:", HTextAlign = HTextAlign.RIGHT, Position = { gutter - 46, row + 1 }, Size = { 90, 16 } })
+	layout['Select'] = { PrettyName = 'Select', Style = LayoutStyle.COMBO_BOX, TextFontSize = 12, Position = { gutter + 50, row }, Size = { 170, 18 } }
+	row = row + 32 col = 36
+	local btnLayout, macro, proc
+	local assign = {
+		[Model.CP650.value] = function() macro = 'Button' proc = Model.CP650.index btnLayout = ButtonLabel[1] end,
+		[Model.CP750.value] = function() macro = 'Button' proc = Model.CP750.index btnLayout = ButtonLabel[2] end,
+		[Model.CP850.value] = function() macro = 'Macro'  proc = Model.CP850.index btnLayout = ButtonLabel[3] end,
+		[Model.CP950.value] = function() macro = 'Macro'  proc = Model.CP950.index btnLayout = ButtonLabel[4] end,
+		[Model.CP950A.value] = function() macro = 'Macro'  proc = Model.CP950A.index btnLayout = ButtonLabel[5] end,
+	}
+	assign[mv]()
+	local v = mv == Model.CP750.value and gutter or gutter - 20
+	for i = 1, numButtons do
+		layout['Selector ' .. i] = { PrettyName = macro .. '~' .. ButtonLabel[proc][i], Legend = btnLayout[i], Position = { v, row },
+				Color = { 0, 255, 0 }, FontStyle = 'Bold', fontSize = 14, CornerRadius = 20, ButtonStyle = ButtonStyle.ON, Size = { 36, 36 } }
+		v = v + col
+	end
+	return layout, graphics
 end
 
+--*** Design-time: Components, Pins, Wiring ***
+
+function GetComponents(props)
+	return {
+		{
+			Name = "Step",
+			Type = "stepper",
+			Properties =
+			{
+				control_type = 2,
+				num_steps = 100,
+			}
+		},
+	}
+end
+
+-- CHANGELOG
+-- v4.0.0.0 (2026-07-27)
+--   refactor: Rebuilt to the QSC-derived plugin structure/naming convention --
+--     mandatory section order, PascalCase Controls/fns/globals, camelCase
+--     locals, centralized enums via qsys_enums.lua, CHANGELOG block moved
+--     inside the plugin file
+--   breaking: Controls renamed to PascalCase (Start/Ref/Level/Gain/Increase/
+--     Decrease/Address/Status/Status.Led/Refresh/Select/Selector/Mute, were
+--     start/ref/level/.../mute) -- a design already wired to the old pin
+--     names needs those pins reconnected after updating the plugin
+--   fix: TcpSocket.New() uses dot-notation construction (was TcpSocket:New()
+--     with colon; confirmed correct against the Q-SYS Lua reference); the
+--     socket and the CPSeries instance are now global (were local), matching
+--     the documented Timer/socket GC-safety convention -- neither was
+--     actually being collected (both are reachable through closures already
+--     stored in global Controls.*.EventHandler fields), but this removes
+--     any doubt and matches the convention used everywhere else in the repo
+--   bugfix: GetControlLayout had layout['decrease'].PrettyName = "decrease"
+--     (lowercase, inconsistent with the sibling "Increase" label)
+-- v3.0.0.3 (2026-07-27) - see git history for pre-2026-07-27 changes
+
+
+do  -- qsys_enums
+-- ##############################################################
+--			QSYS Enums
+-- ##############################################################
+--
+-- Centralized enum tables for Get*/layout code, per the QSC-derived plugin
+-- convention (source: Q-SYS Plugin spec, components_emulator/docs/
+-- qsys-plugins.md § ENUMS). Declared OUTSIDE `if Controls then` in every
+-- plugin that requires this module, so the same tables are available in
+-- both the design-time pass (GetControls/GetControlLayout) and the runtime
+-- pass -- unlike the rest of Developer/Modules, which only load after the
+-- `if not Controls and Reflect then return end` guard.
+--
+-- `Status` is intentionally NOT included here: it is scriptable state
+-- (0-5) meant to be re-declared inside `if Controls then` in each plugin
+-- that uses it, not a design-time layout enum.
+
+do
+
+	local function makeEnum(t)
+		return setmetatable(t, {
+			__index = function(_, k) error("Enum key not found: " .. k, 2) end,
+			__newindex = function() error("Enum read-only", 2) end,
+		})
+	end
+
+	ControlType = makeEnum{ BUTTON = "Button", KNOB = "Knob", INDICATOR = "Indicator", TEXT = "Text" }
+
+	ButtonType = makeEnum{
+		TOGGLE = "Toggle", MOMENTARY = "Momentary", TRIGGER = "Trigger",
+		STATE_TRIGGER = "StateTrigger", ON = "On", OFF = "Off", CUSTOM = "Custom",
+	}
+
+	-- Knob ranges (lower/upper): dB -100/20 - Hz 20/20000 - Float +-1e9
+	-- Integer +-999999999 - Pan -1/1 - Percent 0/100 - Position 0/1 - Seconds 0/87400
+	ControlUnit = makeEnum{
+		DB = "dB", HZ = "Hz", FLOAT = "Float", INTEGER = "Integer",
+		PAN = "Pan", PERCENT = "Percent", POSITION = "Position", SECONDS = "Seconds",
+	}
+
+	IndicatorType = makeEnum{ LED = "Led", METER = "Meter", TEXT = "Text", STATUS = "Status" }
+
+	PinStyle = makeEnum{ INPUT = "Input", OUTPUT = "Output", BOTH = "Both", NONE = "None" }
+
+	LayoutStyle = makeEnum{
+		FADER = "Fader", KNOB = "Knob", BUTTON = "Button", TEXT = "Text", METER = "Meter",
+		LED = "Led", STATUS = "StatusLight", LIST_BOX = "ListBox", COMBO_BOX = "ComboBox",
+		MEDIA = "Media", NONE = "None",
+	}
+
+	-- Same values as ButtonType; ButtonStyle is the GetControlLayout render style,
+	-- ButtonType is the GetControls logical behavior.
+	ButtonStyle = makeEnum{
+		TOGGLE = "Toggle", MOMENTARY = "Momentary", TRIGGER = "Trigger",
+		STATE_TRIGGER = "StateTrigger", ON = "On", OFF = "Off", CUSTOM = "Custom",
+	}
+
+	ButtonVisualStyle = makeEnum{ FLAT = "Flat", GLOSS = "Gloss" }
+
+	MeterStyle = makeEnum{ LEVEL = "Level", REDUCTION = "Reduction", GAIN = "Gain", STANDARD = "Standard" }
+
+	TextBoxStyle = makeEnum{ NORMAL = "Normal", METER = "Meter", NO_BACKGROUND = "NoBackground" }
+
+	HTextAlign = makeEnum{ CENTER = "Center", LEFT = "Left", RIGHT = "Right" }
+
+	VTextAlign = makeEnum{ CENTER = "Center", TOP = "Top", BOTTOM = "Bottom" }
+
+	-- "Text" graphics do not exist in Q-SYS -- use GraphicType.LABEL for static text.
+	GraphicType = makeEnum{ LABEL = "Label", GROUP_BOX = "GroupBox", HEADER = "Header", IMAGE = "Image", SVG = "Svg" }
+
+	PropertyType = makeEnum{ STRING = "string", INTEGER = "integer", DOUBLE = "double", BOOLEAN = "boolean", ENUM = "enum" }
+
+	-- GetPins Direction= is lowercase, unlike PinStyle (uppercase) above.
+	PinDirection = makeEnum{ INPUT = "input", OUTPUT = "output" }
+
+	Font = makeEnum{
+		ROBOTO = "Roboto", MONTSERRAT = "Montserrat", OPEN_SANS = "Open Sans", LATO = "Lato",
+		POPPINS = "Poppins", ROBOTO_MONO = "Roboto Mono", ROBOTO_SLAB = "Roboto Slab",
+		NOTO_SERIF = "Noto Serif", ADAMINA = "Adamina", DROID_SANS = "Droid Sans", SLABO = "Slabo 27px",
+	}
+
+end
+end
 if not Controls and Reflect then return end
 
 -- ============================================================
 -- Inlined modules (single-file build, no require / no package.path).
 -- Generated from Developer/plugins/ + Developer/Modules/ -- edit there,
--- not here, then rebuild this file.
+-- not here, then rebuild this file (Developer/tools/build_distributable.sh).
 -- ============================================================
 
 do  -- cpseries_models
@@ -896,29 +1024,44 @@ do  -- cpseries_class
 end
 
 do  -- dolbyfader
-	--##  Code for Dolby Fader  
+   -- ##############################################################
+   --			Dolby Fader
+   -- ##############################################################
+
+	do
 
 
-		DKNob = QKnob:new('level',0,10,1)
+		--*** Objects ***
+		-- QKnob wraps the 'Level' Text control; must stay global (never
+		-- local) -- Timer/socket-holding objects are killed by the GC once
+		-- nothing else references them, and DKNob is that anchor for the
+		-- Timer QKnob:init() creates internally.
+		DKNob = QKnob:new('Level', 0, 10, 1)
 
-		local function convertToDb(val) 
-			if val <= 4 then return val*20-90 
-			else return (val-7)*10/3 end 
+		--*** Custom functions ***
+
+		local function convertToDb(val)
+			if val <= 4 then return val * 20 - 90
+			else return (val - 7) * 10 / 3 end
 		end
 
-		local function convertToDolby(dB) 
-			if dB <= -10 then return (dB+90)/20 
-			else return (dB*3/10)+7 end 
+		local function convertToDolby(dB)
+			if dB <= -10 then return (dB + 90) / 20
+			else return (dB * 3 / 10) + 7 end
 		end
 
+		--*** Event handlers ***
+
+		-- Step: embedded stepper component (GetComponents); Q-SYS exposes
+		-- it as the global 'Step', which is what _G["Step"] would return.
 		Step.value.EventHandler = function(ctrl)
-		   DKNob.Position = Step.value.Value / 100	
-			DKNob.EventHandler(Step)			
-		end	
+			DKNob.Position = Step.value.Value / 100
+			DKNob.EventHandler(Step)
+		end
 
-		DKNob.EventHandler  = function(ctrl)
-			if ctrl ~= Controls.gain then 
-				Controls.gain.Value = convertToDb( DKNob.Value ) 
+		DKNob.EventHandler = function(ctrl)
+			if ctrl ~= Controls.Gain then
+				Controls.Gain.Value = convertToDb(DKNob.Value)
 			end
 			Step.value.Value = DKNob.Position * 100
 			if DolbyFaderEventHandler then
@@ -926,220 +1069,231 @@ do  -- dolbyfader
 			end
 		end
 
-		Controls.gain.EventHandler  = function(ctrl)
-			DKNob.Value = convertToDolby( Controls.gain.Value)
-			DKNob.EventHandler(Controls.gain)
-		end 
+		Controls.Gain.EventHandler = function(ctrl)
+			DKNob.Value = convertToDolby(Controls.Gain.Value)
+			DKNob.EventHandler(Controls.Gain)
+		end
 
-		Controls.ref.EventHandler = function(ctrl)
-			if Controls.ref.Value == 1 then
-		  		DKNob.Value = 7.0
-		  		DKNob.EventHandler(Controls.ref)
+		Controls.Ref.EventHandler = function(ctrl)
+			if Controls.Ref.Value == 1 then
+				DKNob.Value = 7.0
+				DKNob.EventHandler(Controls.Ref)
 			end
 		end
 
-		Controls.increase.EventHandler = function()
-			Step.increase.Value = Controls.increase.Value
-		end	
+		Controls.Increase.EventHandler = function()
+			Step.increase.Value = Controls.Increase.Value
+		end
 
-		Controls.decrease.EventHandler = function()
-			Step.decrease.Value = Controls.decrease.Value
-		end	
+		Controls.Decrease.EventHandler = function()
+			Step.decrease.Value = Controls.Decrease.Value
+		end
 
-		-- Execute at StartUp
-		Controls.gain.EventHandler()
+		--*** Init ***
+
+		Controls.Gain.EventHandler()
 		DolbyFaderEventHandler = nil
 
+	end
 end
 
--- CPSeries application
-
+do  -- cpseries
 
    -- ##############################################################
-   --			CPSeries Class
-  -- ##############################################################
-	
+   --			CPSeries Application
+   -- ##############################################################
+
 	do
 
 
-        local DolbyCP = CPSeries.New(Properties.Model.Value)
- 
- 		DolbyFaderEventHandler = function(ctrl)
-        	if ctrl  ~= DolbyCP then    
-            	DolbyCP:Action("fader",DKNob.Value)
- 			end
-		end 
+		--*** Aliases ***
 
-        local sock = TcpSocket:New()
-        sock.WriteTimeout = 2
+		--*** Variables ***
 
-        -- Local functions
+		--*** Objects ***
+		-- CPSeries instance and TcpSocket: must stay global (never local),
+		-- same GC rule as Timer -- both are captured as upvalues by closures
+		-- already reachable from global Controls.*.EventHandler fields, so
+		-- nothing here was actually leaking, but this keeps the convention
+		-- uniform and removes any doubt.
+		DolbyCP = CPSeries.New(Properties.Model.Value)
 
-        local function SetStatus(state,msg)
-            if Controls.status.Value ~= state then
-            	Print(true,'Set Status '..state)
-            	Controls.status.Value = state
-            end
-            Controls["status.led"].Value = state
-            --if Controls.status.Value == 5 then Controls["status.led"].Color = 'blue'
-            if Controls.status.Value == 0 then Controls["status.led"].Color = 'lightgreen'
-            --if Controls.status.Value == 2 then Controls["status.led"].Color = 'red'
-            end
-            if msg ~= nil then Controls.status.String =  string.sub(msg,1,30)
-            else Controls.status.String = '' end
-        end
+		DolbyFaderEventHandler = function(ctrl)
+			if ctrl ~= DolbyCP then
+				DolbyCP:Action("fader", DKNob.Value)
+			end
+		end
 
-        local function validateAddress(ip)
-            local chunks = {string.match(ip,"^(%d+)%.(%d+)%.(%d+)%.(%d+)$")}
-            if #chunks < 4 then
-                return false
-            end
-            for _,v in pairs(chunks) do
-                if tonumber(v) > 255 then
-                    return false
-                end
-            end
-            return true
-        end
+		-- TcpSocket.New() -- dot notation for construction, confirmed
+		-- against the Q-SYS Lua reference (colon notation is for instance
+		-- methods on the created socket: sock:Connect(), sock:Write()).
+		sock = TcpSocket.New()
+		sock.WriteTimeout = 2
+
+		--*** Custom functions ***
+
+		local function SetStatus(state, msg)
+			if Controls.Status.Value ~= state then
+				Print(true, 'Set Status ' .. state)
+				Controls.Status.Value = state
+			end
+			Controls["Status.Led"].Value = state
+			if Controls.Status.Value == 0 then Controls["Status.Led"].Color = 'lightgreen'
+			end
+			if msg ~= nil then Controls.Status.String = string.sub(msg, 1, 30)
+			else Controls.Status.String = '' end
+		end
+
+		local function validateAddress(ip)
+			local chunks = { string.match(ip, "^(%d+)%.(%d+)%.(%d+)%.(%d+)$") }
+			if #chunks < 4 then
+				return false
+			end
+			for _, v in pairs(chunks) do
+				if tonumber(v) > 255 then
+					return false
+				end
+			end
+			return true
+		end
 
 		local function connect()
-			Controls.refresh.IsDisabled = false
-			if validateAddress(Controls.address.String) then
-				SetStatus(5,'')
+			Controls.Refresh.IsDisabled = false
+			if validateAddress(Controls.Address.String) then
+				SetStatus(5, '')
 				-- port comes from the CPModels config (adds CP950 / CP950A)
-				local CPPort = CPModels.DefaultPort((Properties.Model.Value):gsub("%s",""))
-				sock:Connect(Controls.address.String,CPPort)
+				local CPPort = CPModels.DefaultPort((Properties.Model.Value):gsub("%s", ""))
+				sock:Connect(Controls.Address.String, CPPort)
 			else
 				if System.IsEmulating then
-					SetStatus(0,"Emulation")
+					SetStatus(0, "Emulation")
 				else
-					SetStatus(2,"Invalid Address")
+					SetStatus(2, "Invalid Address")
 				end
 			end
 		end
 
-    local function disconnect(recon)
-		DolbyCP:Stop()
-        sock:Disconnect()
-        if recon then SetStatus(5,'Connect')
-        else SetStatus(2,'Offline') end
-    end
-    
-    local function refreshCNX()
-        disconnect(true)
-        Controls.refresh.IsDisabled = true
-        Timer.CallAfter(connect,1)
-    end
-
-	local function sockError(msg)
-		if sock.IsConnected then
-			sock:Disconnect()
-			Print(true,'SOCK',msg)
-			Print(true,'SOCK',"Closed")
-			SetStatus(2,msg)
+		local function disconnect(recon)
 			DolbyCP:Stop()
-			Timer.CallAfter(refreshCNX,2)
+			sock:Disconnect()
+			if recon then SetStatus(5, 'Connect')
+			else SetStatus(2, 'Offline') end
 		end
-	end
 
-		--- sock Events --
+		local function refreshCNX()
+			disconnect(true)
+			Controls.Refresh.IsDisabled = true
+			Timer.CallAfter(connect, 1)
+		end
+
+		local function sockError(msg)
+			if sock.IsConnected then
+				sock:Disconnect()
+				Print(true, 'SOCK', msg)
+				Print(true, 'SOCK', "Closed")
+				SetStatus(2, msg)
+				DolbyCP:Stop()
+				Timer.CallAfter(refreshCNX, 2)
+			end
+		end
+
+		--*** Event handlers ***
 
 		sock.Connected = function()
-			Print(true,'SOCK',"Connected")
+			Print(true, 'SOCK', "Connected")
 			DolbyCP:Start(sock)
 		end
 
-		sock.Closed = function()  
-			Print(true,'SOCK','Closed') 
-			SetStatus(4,"Offline") 
+		sock.Closed = function()
+			Print(true, 'SOCK', 'Closed')
+			SetStatus(4, "Offline")
 		end
-		
-		sock.Timeout = function() 
-			Print(true,'SOCK','Timeout') 
-			SetStatus(2,"Timeout") 
+
+		sock.Timeout = function()
+			Print(true, 'SOCK', 'Timeout')
+			SetStatus(2, "Timeout")
 		end
-		
-		sock.Error = function(_,err)
-			Print(true,'SOCK',"Remote Server Error "..err)
-			SetStatus(2,err)
+
+		sock.Error = function(_, err)
+			Print(true, 'SOCK', "Remote Server Error " .. err)
+			SetStatus(2, err)
 		end
 
 		sock.Reconnect = function()
-			Print(true,'SOCK',"Reconnecting")
-			SetStatus(5,"Attempt Reconnect")
+			Print(true, 'SOCK', "Reconnecting")
+			SetStatus(5, "Attempt Reconnect")
 		end
 
-		-- Events ---
+		Controls.Address.EventHandler = refreshCNX
+		Controls.Refresh.EventHandler = refreshCNX
 
-		Controls.address.EventHandler = refreshCNX
-		Controls.refresh.EventHandler = refreshCNX
-
-		DolbyCP.EventHandler = function(service,result)
+		DolbyCP.EventHandler = function(service, result)
 			local action = {
-				["close"] = function() local msg ='unknown Dolby ' ..result sockError(msg) end,
-				["ready"] = function()  Print(true,'found "Dolby '..result..'"') SetStatus(0) end,
-				["formlist"] = function() Controls.select.Choices = result  end,
-				["formname"] = function() Controls.select.String = result end,
-				["mute"] = function()   Controls.mute.Value = result end,
-				["fader"] = function()  DKNob.Value = result
-										DKNob.EventHandler(DolbyCP)
-										end,
-				["format"] = function() local i = tonumber(result)
-										-- bound-check: a format index outside the selector range is
-										-- ignored rather than indexing a nil button (out-of-bounds crash)
-										if not i or i < 1 or i > #Controls.selector then return end
-										Controls.selector[i].Value = 1
-										Controls.selector[i].EventHandler(DolbyCP) end,
-				["reset"] = function()  local i = tonumber(result)
-										if not i or i < 1 or i > #Controls.selector then return end
-										Controls.selector[i].Value = 0 end,
+				["close"] = function() local msg = 'unknown Dolby ' .. result sockError(msg) end,
+				["ready"] = function() Print(true, 'found "Dolby ' .. result .. '"') SetStatus(0) end,
+				["formlist"] = function() Controls.Select.Choices = result end,
+				["formname"] = function() Controls.Select.String = result end,
+				["mute"] = function() Controls.Mute.Value = result end,
+				["fader"] = function()
+					DKNob.Value = result
+					DKNob.EventHandler(DolbyCP)
+				end,
+				["format"] = function()
+					local i = tonumber(result)
+					-- bound-check: a format index outside the selector range is
+					-- ignored rather than indexing a nil button (out-of-bounds crash)
+					if not i or i < 1 or i > #Controls.Selector then return end
+					Controls.Selector[i].Value = 1
+					Controls.Selector[i].EventHandler(DolbyCP)
+				end,
+				["reset"] = function()
+					local i = tonumber(result)
+					if not i or i < 1 or i > #Controls.Selector then return end
+					Controls.Selector[i].Value = 0
+				end,
 			}
-			-- *** FOR DEBUG ****
-			--print("Event Triggered:",service,result)
-			assert( service, "Plugin Event Error: service=nil" )
-			assert( result, "Plugin Event Error: result=nil" )
-			assert( action[service], "Plugin Event Error: service" )
+			assert(service, "Plugin Event Error: service=nil")
+			assert(result, "Plugin Event Error: result=nil")
+			assert(action[service], "Plugin Event Error: service")
 			action[service]()
 		end
 
-		Controls.mute.EventHandler = function(ctrl)
-			DolbyCP:Action("mute",Controls.mute.Value)
+		Controls.Mute.EventHandler = function(ctrl)
+			DolbyCP:Action("mute", Controls.Mute.Value)
 		end
 
-		Controls.select.EventHandler = function(ctrl)
-			DolbyCP:Action("formname",Controls.select.String)
+		Controls.Select.EventHandler = function(ctrl)
+			DolbyCP:Action("formname", Controls.Select.String)
 		end
 
-		for numBtn,ctl in ipairs(Controls.selector) do
+		for numBtn, ctl in ipairs(Controls.Selector) do
 			ctl.EventHandler = function(ctrl)
 				if ctl.Value == 1 then
-					for _,ctrl in ipairs(Controls.selector) do
+					for _, ctrl in ipairs(Controls.Selector) do
 						if ctrl ~= ctl then ctrl.Value = 0 end
 					end
-					if ctrl ~= DolbyCP then DolbyCP:Action("format",numBtn)  end
+					if ctrl ~= DolbyCP then DolbyCP:Action("format", numBtn) end
 				else
-					for _,ctl in ipairs(Controls.selector) do
+					for _, ctl in ipairs(Controls.Selector) do
 						if ctl.Value == 1 then return end
 					end
 					DolbyCP:Action("reset")
 				end
-		end end
+			end
+		end
 
+		--*** Init ***
 
-
-	 -- init plugin--
-
-		-- hidden components
-
-		if Controls.start.Value == false then
-			Controls.start.Value = true
+		if Controls.Start.Value == false then
+			Controls.Start.Value = true
 			DKNob.Value = 7.0
 			DKNob.EventHandler(DolbyCP)
-			Controls.mute.Value = 0
-			Controls.selector[1].Value = 1
-			Controls.selector[1].EventHandler(DolbyCP)
+			Controls.Mute.Value = 0
+			Controls.Selector[1].Value = 1
+			Controls.Selector[1].EventHandler(DolbyCP)
 		end
 
 		refreshCNX()
 
 	end
+end

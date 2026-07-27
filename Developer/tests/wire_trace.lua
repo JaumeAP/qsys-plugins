@@ -45,7 +45,7 @@ for _, model in ipairs(h.MODELS) do
 		properties = qsys.cpseries_properties(model),
 		emulating = false,          -- force the real connect path
 	})
-	env.controls.address.String = "10.0.0.5"
+	env.controls.Address.String = "10.0.0.5"
 
 	assert(pcall(assert(loadfile(DIST))))
 	local sock = env.socket()
@@ -65,8 +65,8 @@ for _, model in ipairs(h.MODELS) do
 	env.receive(rx.fader)
 	env.receive(rx.mute)
 	emit(("after RX: dolby=%s gain=%s mute=%s"):format(
-		tostring(DKNob and DKNob.Value), tostring(env.controls.gain.Value),
-		tostring(env.controls.mute.Value)))
+		tostring(DKNob and DKNob.Value), tostring(env.controls.Gain.Value),
+		tostring(env.controls.Mute.Value)))
 
 	-- The format list. Feeding it is the normal case; skipping it is the
 	-- regression case, where the format name cannot be resolved.
@@ -83,8 +83,8 @@ for _, model in ipairs(h.MODELS) do
 	DKNob.Value = 4.0
 	DKNob.EventHandler(DKNob)
 	local ok, err = pcall(function()
-		env.controls.selector[2].Value = 1
-		env.controls.selector[2].EventHandler(env.controls.selector[2])
+		env.controls.Selector[2].Value = 1
+		env.controls.Selector[2].EventHandler(env.controls.Selector[2])
 	end)
 	emit("format button: " .. (ok and "accepted" or ("CRASHED: " .. tostring(err):gsub("^.*:%d+: ", ""))))
 	env.tick(12)

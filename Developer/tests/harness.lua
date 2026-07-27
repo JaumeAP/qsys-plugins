@@ -12,13 +12,13 @@ M.plugins = M.repo .. "/Developer/plugins"
 
 -- Root distributables, by plugin.
 M.DIST = {
-	cpseries = M.repo .. "/Dolby CPSeries Control V3.0.qplug",
+	cpseries = M.repo .. "/Dolby CPSeries Control V4.0.qplug",
 	fader    = M.repo .. "/DolbyFader.qplug",
 }
 
 -- Developer-side plugin definition files.
 M.DEV = {
-	cpseries = M.plugins .. "/Dolby CPSeries Control V3.0.qplug",
+	cpseries = M.plugins .. "/Dolby CPSeries Control V4.0.qplug",
 	fader    = M.plugins .. "/DolbyFader V2.0.qplug",
 }
 

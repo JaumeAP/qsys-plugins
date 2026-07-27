@@ -36,11 +36,11 @@ for _, model in ipairs(h.MODELS) do
 	if h.check(ok, model .. ": runtime pass executes end to end (" .. tostring(err) .. ")") then
 		h.check(type(CPSeries) == "table", model .. ": CPSeries class defined")
 		h.check(DKNob ~= nil, model .. ": DKNob built, so qknob was inlined before dolbyfader")
-		h.check(env.controls.start.Value == true, model .. ": one-time init ran")
-		h.check(env.controls.selector[1].Value == 1, model .. ": init selected format 1")
-		h.check(env.controls.status.Value == 0, model .. ": unset address in emulation reports status 0")
-		h.check(math.abs(env.controls.gain.Value) < 1e-9,
-			model .. ": the 7.0 reference level is 0 dB (got " .. tostring(env.controls.gain.Value) .. ")")
+		h.check(env.controls.Start.Value == true, model .. ": one-time init ran")
+		h.check(env.controls.Selector[1].Value == 1, model .. ": init selected format 1")
+		h.check(env.controls.Status.Value == 0, model .. ": unset address in emulation reports status 0")
+		h.check(math.abs(env.controls.Gain.Value) < 1e-9,
+			model .. ": the 7.0 reference level is 0 dB (got " .. tostring(env.controls.Gain.Value) .. ")")
 	end
 end
 

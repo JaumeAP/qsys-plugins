@@ -1,190 +1,198 @@
 
-
    -- ##############################################################
-   --			CPSeries Class
-  -- ##############################################################
-	
+   --			CPSeries Application
+   -- ##############################################################
+
 	do
 
 		require("cpseries_class")
-        require("dolbyfader")
+		require("dolbyfader")
 
-        local DolbyCP = CPSeries.New(Properties.Model.Value)
- 
- 		DolbyFaderEventHandler = function(ctrl)
-        	if ctrl  ~= DolbyCP then    
-            	DolbyCP:Action("fader",DKNob.Value)
- 			end
-		end 
+		--*** Aliases ***
 
-        local sock = TcpSocket:New()
-        sock.WriteTimeout = 2
+		--*** Variables ***
 
-        -- Local functions
+		--*** Objects ***
+		-- CPSeries instance and TcpSocket: must stay global (never local),
+		-- same GC rule as Timer -- both are captured as upvalues by closures
+		-- already reachable from global Controls.*.EventHandler fields, so
+		-- nothing here was actually leaking, but this keeps the convention
+		-- uniform and removes any doubt.
+		DolbyCP = CPSeries.New(Properties.Model.Value)
 
-        local function SetStatus(state,msg)
-            if Controls.status.Value ~= state then
-            	Print(true,'Set Status '..state)
-            	Controls.status.Value = state
-            end
-            Controls["status.led"].Value = state
-            --if Controls.status.Value == 5 then Controls["status.led"].Color = 'blue'
-            if Controls.status.Value == 0 then Controls["status.led"].Color = 'lightgreen'
-            --if Controls.status.Value == 2 then Controls["status.led"].Color = 'red'
-            end
-            if msg ~= nil then Controls.status.String =  string.sub(msg,1,30)
-            else Controls.status.String = '' end
-        end
+		DolbyFaderEventHandler = function(ctrl)
+			if ctrl ~= DolbyCP then
+				DolbyCP:Action("fader", DKNob.Value)
+			end
+		end
 
-        local function validateAddress(ip)
-            local chunks = {string.match(ip,"^(%d+)%.(%d+)%.(%d+)%.(%d+)$")}
-            if #chunks < 4 then
-                return false
-            end
-            for _,v in pairs(chunks) do
-                if tonumber(v) > 255 then
-                    return false
-                end
-            end
-            return true
-        end
+		-- TcpSocket.New() -- dot notation for construction, confirmed
+		-- against the Q-SYS Lua reference (colon notation is for instance
+		-- methods on the created socket: sock:Connect(), sock:Write()).
+		sock = TcpSocket.New()
+		sock.WriteTimeout = 2
+
+		--*** Custom functions ***
+
+		local function SetStatus(state, msg)
+			if Controls.Status.Value ~= state then
+				Print(true, 'Set Status ' .. state)
+				Controls.Status.Value = state
+			end
+			Controls["Status.Led"].Value = state
+			if Controls.Status.Value == 0 then Controls["Status.Led"].Color = 'lightgreen'
+			end
+			if msg ~= nil then Controls.Status.String = string.sub(msg, 1, 30)
+			else Controls.Status.String = '' end
+		end
+
+		local function validateAddress(ip)
+			local chunks = { string.match(ip, "^(%d+)%.(%d+)%.(%d+)%.(%d+)$") }
+			if #chunks < 4 then
+				return false
+			end
+			for _, v in pairs(chunks) do
+				if tonumber(v) > 255 then
+					return false
+				end
+			end
+			return true
+		end
 
 		local function connect()
-			Controls.refresh.IsDisabled = false
-			if validateAddress(Controls.address.String) then
-				SetStatus(5,'')
+			Controls.Refresh.IsDisabled = false
+			if validateAddress(Controls.Address.String) then
+				SetStatus(5, '')
 				-- port comes from the CPModels config (adds CP950 / CP950A)
-				local CPPort = CPModels.DefaultPort((Properties.Model.Value):gsub("%s",""))
-				sock:Connect(Controls.address.String,CPPort)
+				local CPPort = CPModels.DefaultPort((Properties.Model.Value):gsub("%s", ""))
+				sock:Connect(Controls.Address.String, CPPort)
 			else
 				if System.IsEmulating then
-					SetStatus(0,"Emulation")
+					SetStatus(0, "Emulation")
 				else
-					SetStatus(2,"Invalid Address")
+					SetStatus(2, "Invalid Address")
 				end
 			end
 		end
 
-    local function disconnect(recon)
-		DolbyCP:Stop()
-        sock:Disconnect()
-        if recon then SetStatus(5,'Connect')
-        else SetStatus(2,'Offline') end
-    end
-    
-    local function refreshCNX()
-        disconnect(true)
-        Controls.refresh.IsDisabled = true
-        Timer.CallAfter(connect,1)
-    end
-
-	local function sockError(msg)
-		if sock.IsConnected then
-			sock:Disconnect()
-			Print(true,'SOCK',msg)
-			Print(true,'SOCK',"Closed")
-			SetStatus(2,msg)
+		local function disconnect(recon)
 			DolbyCP:Stop()
-			Timer.CallAfter(refreshCNX,2)
+			sock:Disconnect()
+			if recon then SetStatus(5, 'Connect')
+			else SetStatus(2, 'Offline') end
 		end
-	end
 
-		--- sock Events --
+		local function refreshCNX()
+			disconnect(true)
+			Controls.Refresh.IsDisabled = true
+			Timer.CallAfter(connect, 1)
+		end
+
+		local function sockError(msg)
+			if sock.IsConnected then
+				sock:Disconnect()
+				Print(true, 'SOCK', msg)
+				Print(true, 'SOCK', "Closed")
+				SetStatus(2, msg)
+				DolbyCP:Stop()
+				Timer.CallAfter(refreshCNX, 2)
+			end
+		end
+
+		--*** Event handlers ***
 
 		sock.Connected = function()
-			Print(true,'SOCK',"Connected")
+			Print(true, 'SOCK', "Connected")
 			DolbyCP:Start(sock)
 		end
 
-		sock.Closed = function()  
-			Print(true,'SOCK','Closed') 
-			SetStatus(4,"Offline") 
+		sock.Closed = function()
+			Print(true, 'SOCK', 'Closed')
+			SetStatus(4, "Offline")
 		end
-		
-		sock.Timeout = function() 
-			Print(true,'SOCK','Timeout') 
-			SetStatus(2,"Timeout") 
+
+		sock.Timeout = function()
+			Print(true, 'SOCK', 'Timeout')
+			SetStatus(2, "Timeout")
 		end
-		
-		sock.Error = function(_,err)
-			Print(true,'SOCK',"Remote Server Error "..err)
-			SetStatus(2,err)
+
+		sock.Error = function(_, err)
+			Print(true, 'SOCK', "Remote Server Error " .. err)
+			SetStatus(2, err)
 		end
 
 		sock.Reconnect = function()
-			Print(true,'SOCK',"Reconnecting")
-			SetStatus(5,"Attempt Reconnect")
+			Print(true, 'SOCK', "Reconnecting")
+			SetStatus(5, "Attempt Reconnect")
 		end
 
-		-- Events ---
+		Controls.Address.EventHandler = refreshCNX
+		Controls.Refresh.EventHandler = refreshCNX
 
-		Controls.address.EventHandler = refreshCNX
-		Controls.refresh.EventHandler = refreshCNX
-
-		DolbyCP.EventHandler = function(service,result)
+		DolbyCP.EventHandler = function(service, result)
 			local action = {
-				["close"] = function() local msg ='unknown Dolby ' ..result sockError(msg) end,
-				["ready"] = function()  Print(true,'found "Dolby '..result..'"') SetStatus(0) end,
-				["formlist"] = function() Controls.select.Choices = result  end,
-				["formname"] = function() Controls.select.String = result end,
-				["mute"] = function()   Controls.mute.Value = result end,
-				["fader"] = function()  DKNob.Value = result
-										DKNob.EventHandler(DolbyCP)
-										end,
-				["format"] = function() local i = tonumber(result)
-										-- bound-check: a format index outside the selector range is
-										-- ignored rather than indexing a nil button (out-of-bounds crash)
-										if not i or i < 1 or i > #Controls.selector then return end
-										Controls.selector[i].Value = 1
-										Controls.selector[i].EventHandler(DolbyCP) end,
-				["reset"] = function()  local i = tonumber(result)
-										if not i or i < 1 or i > #Controls.selector then return end
-										Controls.selector[i].Value = 0 end,
+				["close"] = function() local msg = 'unknown Dolby ' .. result sockError(msg) end,
+				["ready"] = function() Print(true, 'found "Dolby ' .. result .. '"') SetStatus(0) end,
+				["formlist"] = function() Controls.Select.Choices = result end,
+				["formname"] = function() Controls.Select.String = result end,
+				["mute"] = function() Controls.Mute.Value = result end,
+				["fader"] = function()
+					DKNob.Value = result
+					DKNob.EventHandler(DolbyCP)
+				end,
+				["format"] = function()
+					local i = tonumber(result)
+					-- bound-check: a format index outside the selector range is
+					-- ignored rather than indexing a nil button (out-of-bounds crash)
+					if not i or i < 1 or i > #Controls.Selector then return end
+					Controls.Selector[i].Value = 1
+					Controls.Selector[i].EventHandler(DolbyCP)
+				end,
+				["reset"] = function()
+					local i = tonumber(result)
+					if not i or i < 1 or i > #Controls.Selector then return end
+					Controls.Selector[i].Value = 0
+				end,
 			}
-			-- *** FOR DEBUG ****
-			--print("Event Triggered:",service,result)
-			assert( service, "Plugin Event Error: service=nil" )
-			assert( result, "Plugin Event Error: result=nil" )
-			assert( action[service], "Plugin Event Error: service" )
+			assert(service, "Plugin Event Error: service=nil")
+			assert(result, "Plugin Event Error: result=nil")
+			assert(action[service], "Plugin Event Error: service")
 			action[service]()
 		end
 
-		Controls.mute.EventHandler = function(ctrl)
-			DolbyCP:Action("mute",Controls.mute.Value)
+		Controls.Mute.EventHandler = function(ctrl)
+			DolbyCP:Action("mute", Controls.Mute.Value)
 		end
 
-		Controls.select.EventHandler = function(ctrl)
-			DolbyCP:Action("formname",Controls.select.String)
+		Controls.Select.EventHandler = function(ctrl)
+			DolbyCP:Action("formname", Controls.Select.String)
 		end
 
-		for numBtn,ctl in ipairs(Controls.selector) do
+		for numBtn, ctl in ipairs(Controls.Selector) do
 			ctl.EventHandler = function(ctrl)
 				if ctl.Value == 1 then
-					for _,ctrl in ipairs(Controls.selector) do
+					for _, ctrl in ipairs(Controls.Selector) do
 						if ctrl ~= ctl then ctrl.Value = 0 end
 					end
-					if ctrl ~= DolbyCP then DolbyCP:Action("format",numBtn)  end
+					if ctrl ~= DolbyCP then DolbyCP:Action("format", numBtn) end
 				else
-					for _,ctl in ipairs(Controls.selector) do
+					for _, ctl in ipairs(Controls.Selector) do
 						if ctl.Value == 1 then return end
 					end
 					DolbyCP:Action("reset")
 				end
-		end end
+			end
+		end
 
+		--*** Init ***
 
-
-	 -- init plugin--
-
-		-- hidden components
-
-		if Controls.start.Value == false then
-			Controls.start.Value = true
+		if Controls.Start.Value == false then
+			Controls.Start.Value = true
 			DKNob.Value = 7.0
 			DKNob.EventHandler(DolbyCP)
-			Controls.mute.Value = 0
-			Controls.selector[1].Value = 1
-			Controls.selector[1].EventHandler(DolbyCP)
+			Controls.Mute.Value = 0
+			Controls.Selector[1].Value = 1
+			Controls.Selector[1].EventHandler(DolbyCP)
 		end
 
 		refreshCNX()
