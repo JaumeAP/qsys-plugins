@@ -1,37 +1,48 @@
 
   do
-    require("qknob")	
+    require("qknob")
 
-    function QKnob:SetString(val) 
-      return val .. 's' 
-    end	
+    -- Deviates from the usual Aliases->Variables->Objects->Constants->
+    -- Custom-fns section order: this override must run BEFORE any QKnob is
+    -- constructed below, since QKnob:new() -> :init() sets self.String
+    -- immediately, which calls self:SetString(). Overrides the global
+    -- QKnob:SetString for every QKnob instance loaded in the same design,
+    -- including DolbyFader's DKNob -- pre-existing behavior, not
+    -- introduced by this rewrite (see CLAUDE.md).
+    function QKnob:SetString(val)
+      return val .. 's'
+    end
 
-    local period = QKnob:new('period',1,8,1)
+    --*** Aliases ***
+    -- Local aliases onto this plugin's own Controls, for brevity below.
+    local start = Controls.Start
+    local enable = Controls.Enable
+    local trigger = Controls.Trigger
+    local mute = Controls.Mute
+    local frequency = Controls.Frequency
+    local level = Controls.Level
 
-    --     CONSTANTS
+    --*** Variables ***
 
-    local emul = System.IsEmulating
-
-    local OCTAVE = 11
-    --local numloops = emul and OCTAVE*6 or OCTAVE*24
-    local numloops = emul and 130 or 130 * 4
-
-    local start = Controls.start
-    local enable = Controls.enable
-    local trigger =Controls.trigger
-    local mute =Controls.mute
-    local frequency = Controls.frequency
-    local level = Controls.level
-
-    --     Local Variables
-    local timer = Timer.New()
     local running = false
     local step = 0
 
-    --     Internal funtions & events
+    --*** Objects ***
+    -- QKnob wraps the 'Period' Text control and the Timer below; both must
+    -- stay global (never local), same GC-safety convention as everywhere
+    -- else in this repo.
+    period = QKnob:new('Period', 1, 8, 1)
+    timer = Timer.New()
+
+    --*** Constants ***
+
+    local OCTAVE = 11
+    local numloops = System.IsEmulating and 130 or 130 * 4
+
+    --*** Custom functions ***
 
     local function Start()
-      timer:Start(period.Value/numloops) 		
+      timer:Start(period.Value / numloops)
       Sine.mute.Value = 0
       running = true
     end
@@ -44,8 +55,11 @@
     end
 
     local function initplugin()
-      if start.Value == 0 then	
-        start.Value = 1
+      -- FIX: was 'start.Value == 0' / 'start.Value = 1' -- a Button
+      -- control's Value is boolean (Q-SYS defaults it to false), so that
+      -- comparison was never true and this one-time init never ran.
+      if start.Value == false then
+        start.Value = true
         level.Value = -40
         period.Value = 4
         frequency.Value = 20
@@ -54,45 +68,45 @@
       enable.EventHandler()
     end
 
-    timer.EventHandler= function(ctimer)
-      local freq = 10 * 2^( step * OCTAVE/numloops )		
+    --*** Event handlers ***
+
+    timer.EventHandler = function(ctimer)
+      local freq = 10 * 2 ^ (step * OCTAVE / numloops)
       if freq > 22000 then freq = 22000 end
       frequency.Value = freq
       Sine.frequency.Value = freq
-      step = step +  1 
-      if freq == 22000 then 
+      step = step + 1
+      if freq == 22000 then
         step = 0
-        if enable.Value == 0 then 
-          Stop() 
+        if enable.Value == 0 then
+          Stop()
         end
-      end 
+      end
     end
 
-    --     EVENTS
-
     enable.EventHandler = function(ctrl)
-      if enable.Value == 0 then 
-        Stop()	
-      else 
-        trigger.EventHandler(enable) 
-      end	
+      if enable.Value == 0 then
+        Stop()
+      else
+        trigger.EventHandler(enable)
+      end
     end
 
     trigger.EventHandler = function(ctrl)
-      if ctrl ~= enable then 
-        Stop()	
-        step = 0 
-        frequency.Value = 10 
-        Sine.frequency.Value = 10			
+      if ctrl ~= enable then
+        Stop()
+        step = 0
+        frequency.Value = 10
+        Sine.frequency.Value = 10
       end
-      Timer.CallAfter(Start,0.1)
+      Timer.CallAfter(Start, 0.1)
       Sine.mute.Value = mute.Value
     end
 
     period.EventHandler = function(ctrl)
-      if running then 
+      if running then
         Stop()
-        Timer.CallAfter(Start,0.1)
+        Timer.CallAfter(Start, 0.1)
         Sine.mute.Value = mute.Value
       end
     end
@@ -101,8 +115,7 @@
       Sine.mute.Value = mute.Value == 1 or not running
     end
 
-
-    --     PLUGIN INITIALIZATION
+    --*** Init ***
 
     initplugin()
 
