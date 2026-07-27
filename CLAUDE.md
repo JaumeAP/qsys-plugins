@@ -132,6 +132,14 @@ Plugins run inside **Q-SYS Designer** on QSC audio DSP cores. There is no build
 system, package manager, or CI here — plugins are authored in Lua, tested in
 Q-SYS Designer's emulator, and distributed as `.qplug` / `.qplugx` files.
 
+There *is* a small test suite under `Developer/tests/` (added 2026-07-27):
+plain Lua 5.4, no framework, run with `Developer/tests/run.sh`. It stubs the
+Q-SYS host globals so plugin logic can be driven from a terminal. It does not
+replace testing in Designer — it only covers the plugins' own logic, not real
+DSP behaviour, timing, or the Designer UI — but it catches regressions before
+they reach the bench, and `wire_trace.lua` in there diffs two builds by the
+bytes they put on the wire, which is the tool to use after any refactor.
+
 Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 (Barcelona).
 
@@ -156,17 +164,28 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 └── Developer/                        Working sources (edit here)
     ├── plugins/                      Plugin definition files (layout + skeleton)
     │   ├── DolbyFader V1.1.qplug
-    │   ├── Dolby CPSeries Control V2.2.qplug
+    │   ├── Dolby CPSeries Control V3.0.qplug
     │   ├── Dolby Sweep V1.1.qplug
     │   ├── MultiFlip-Flop V1.1.qplug
     │   └── reference.lua             Template/cheat-sheet of every component & control type
-    └── Modules/                      Runtime logic pulled in by plugins via require()
-        ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base)
-        ├── strict.lua                Global-variable guard (errors on undeclared globals)
-        ├── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale)
-        ├── dolbysweep.lua            Sweep tone generator runtime
-        ├── cpseries.lua             CPSeries TCP control runtime (network state machine)
-        └── cpseries_class.lua        CPSeries class (per-model protocol definitions)
+    ├── Modules/                      Runtime logic pulled in by plugins via require()
+    │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base)
+    │   ├── strict.lua                Global-variable guard (errors on undeclared globals)
+    │   ├── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale)
+    │   ├── dolbysweep.lua            Sweep tone generator runtime
+    │   ├── cpseries.lua              CPSeries TCP control runtime (network state machine)
+    │   ├── cpseries_class.lua        CPSeries class (per-model protocol state machine)
+    │   ├── cpseries_models.lua       Per-model wire config (TCP port, KEY=VALUE vs "param value")
+    │   └── cpseries_protocol.lua     Per-model message formatting and GET framing
+    └── tests/                        Lua 5.4 test suite, no framework (see its README)
+        ├── run.sh                    Syntax pass over every source, then every test
+        ├── qsys_stub.lua             Stand-in for the Q-SYS host globals
+        ├── harness.lua               Path resolution + check counter
+        ├── test_modules.lua          CPSeries class, straight from Modules/
+        ├── test_plugin_defs.lua      Get* callbacks of the plugins/ definition files
+        ├── test_dist_cpseries.lua    Root CP Series distributable, both host passes
+        ├── test_dist_fader.lua       Root Dolby Fader distributable, both host passes
+        └── wire_trace.lua            Diffs two builds by the bytes they put on the wire
 ```
 
 **`Developer/` holds the source of truth.** The root-level `.qplug`/`.qplugx`
@@ -278,11 +297,20 @@ Typical loop:
    folder (or develop with the `package.path` prelude).
 2. Edit the `.qplug` in `Developer/plugins/` and its module in
    `Developer/Modules/`.
-3. Load the plugin in Q-SYS Designer; test in the emulator
+3. Run `Developer/tests/run.sh`. Fast, catches syntax errors and logic
+   regressions without leaving the terminal, but it is a filter, not a
+   substitute for step 4.
+4. Load the plugin in Q-SYS Designer; test in the emulator
    (`System.IsEmulating` is true) or against a `Dolby CP Emulator/*.quc` on the
    bench.
-4. Bump `Version`/`BuildVersion` in `PluginInfo`, export the compiled
-   `.qplug`/`.qplugx`, and update the root-level distributable copy.
+5. Bump `Version`/`BuildVersion` in `PluginInfo`, export the compiled
+   `.qplug`/`.qplugx`, and update the root-level distributable copy. Rebuild
+   the root copy from the `Developer/` sources rather than editing it by
+   hand — it is a single-file build with the modules inlined and their
+   `require` lines stripped, so hand edits drift from the source of truth.
+   After rebuilding, re-run `Developer/tests/run.sh`: the `test_dist_*` files
+   execute the built artifact, which is the only thing that catches a module
+   inlined before something it depends on (that still compiles).
 
 ### Conventions when editing
 
