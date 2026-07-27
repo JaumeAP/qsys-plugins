@@ -740,6 +740,23 @@ Typical loop:
 
 ### Continuity notes
 
-Open questions and unactioned findings carried between sessions live in
-`HANDOFF.md` (repo root), not here — that file is repo-local only, never
-part of the portable `.claude/` export.
+(Moved back here 2026-07-27 from a short-lived `HANDOFF.md` split: a
+separate file isn't auto-loaded at session start the way CLAUDE.md is, so
+it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
+
+- **Button control `.Value` type, unresolved (2026-07-27):** unclear if a
+  Button's `.Value` is boolean or numeric during a live EventHandler read,
+  vs. only defaulting to `false` untouched. 8+ numeric-comparison sites
+  across `dolbyfader.lua`/`cpseries.lua`/`dolbysweep.lua`/`MultiFlip-Flop
+  V2.0.qplug` were audited and left unchanged (QSC's own Roku/ShureAxient
+  plugins didn't settle it either way; fixing without proof risked a
+  regression). Resolves with one check, `type(Controls.SomeButton.Value)`
+  from a live EventHandler on real Designer or a CP Emulator bench — neither
+  available so far.
+- **Two unactioned review findings (2026-07-27):** (1)
+  `MultiFlip-Flop V2.0.qplug`'s `Toggle_N` handler writes a boolean to
+  `State_N.Value` then reads it back numeric (`== 1`) in the same
+  synchronous call, no host round-trip — a more fragile instance of the
+  item above. (2) `cpseries_commlib.lua:406`'s `readData(self,true)` call
+  passes an argument `readData` (only takes `self`) always ignores —
+  harmless, just misleading. Neither fixed.
