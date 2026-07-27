@@ -33,7 +33,7 @@ do
 		local centeredHeaders = 0
 		for _, g in ipairs(graphics) do
 			if headers[g.Text] then
-				if g.VTextAlign == VTextAlign.CENTER then centeredHeaders = centeredHeaders + 1 end
+				if g.VTextAlign == "Center" then centeredHeaders = centeredHeaders + 1 end
 			end
 		end
 		h.check(centeredHeaders == 7, "all 7 column-header labels set VTextAlign=Center (got " .. centeredHeaders .. ")")

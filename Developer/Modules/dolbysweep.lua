@@ -13,8 +13,7 @@
       return val .. 's'
     end
 
-    --*** Aliases ***
-    -- Local aliases onto this plugin's own Controls, for brevity below.
+    -- Aliases: local names onto this plugin's own Controls, for brevity below.
     local start = Controls.Start
     local enable = Controls.Enable
     local trigger = Controls.Trigger
@@ -22,24 +21,24 @@
     local frequency = Controls.Frequency
     local level = Controls.Level
 
-    --*** Variables ***
+    -- Variables
 
     local running = false
     local step = 0
 
-    --*** Objects ***
+    -- Objects
     -- QKnob wraps the 'Period' Text control and the Timer below; both must
     -- stay global (never local), same GC-safety convention as everywhere
     -- else in this repo.
     period = QKnob:new('Period', 1, 8, 1)
     timer = Timer.New()
 
-    --*** Constants ***
+    -- Constants
 
     local OCTAVE = 11
     local numloops = System.IsEmulating and 130 or 130 * 4
 
-    --*** Custom functions ***
+    -- Custom functions
 
     local function Start()
       timer:Start(period.Value / numloops)
@@ -68,7 +67,7 @@
       enable.EventHandler()
     end
 
-    --*** Event handlers ***
+    -- Event handlers
 
     timer.EventHandler = function(ctimer)
       local freq = 10 * 2 ^ (step * OCTAVE / numloops)
@@ -115,7 +114,7 @@
       Sine.mute.Value = mute.Value == 1 or not running
     end
 
-    --*** Init ***
+    -- Init
 
     initplugin()
 

@@ -6,14 +6,14 @@
 
 		require("qknob")
 
-		--*** Objects ***
+		-- Objects
 		-- QKnob wraps the 'Level' Text control; must stay global (never
 		-- local) -- Timer/socket-holding objects are killed by the GC once
 		-- nothing else references them, and DKNob is that anchor for the
 		-- Timer QKnob:init() creates internally.
 		DKNob = QKnob:new('Level', 0, 10, 1)
 
-		--*** Custom functions ***
+		-- Custom functions
 
 		local function convertToDb(val)
 			if val <= 4 then return val * 20 - 90
@@ -25,7 +25,7 @@
 			else return (dB * 3 / 10) + 7 end
 		end
 
-		--*** Event handlers ***
+		-- Event handlers
 
 		-- Step: embedded stepper component (GetComponents); Q-SYS exposes
 		-- it as the global 'Step', which is what _G["Step"] would return.
@@ -64,7 +64,7 @@
 			Step.decrease.Value = Controls.Decrease.Value
 		end
 
-		--*** Init ***
+		-- Init
 
 		Controls.Gain.EventHandler()
 		DolbyFaderEventHandler = nil

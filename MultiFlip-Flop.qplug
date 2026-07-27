@@ -1,13 +1,23 @@
---*** File header comment ***
 -- Multi Flip-Flop for Q-SYS
 -- by James Puig / james.puig@dolby.com
 -- Jul '20
--- v2.0: rebuilt to the QSC-derived plugin structure/naming convention (see
--- CHANGELOG block below). Runtime logic stays inline in this file (the one
--- exception in this repo -- see CLAUDE.md), guarded by `if Controls then`,
--- which already matched the spec's own guard style before this rewrite.
-
---*** PluginInfo ***
+-- v2.0: rebuilt to the plugin structure/naming convention confirmed against
+-- QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin} templates and the
+-- community vendor/q-sys-community/q-sys-plugin-guide (2026-07-27): mandatory
+-- section order, PascalCase Controls/fns/globals, camelCase locals. Runtime
+-- logic stays inline in this file (the one exception in this repo -- see
+-- CLAUDE.md), guarded by `if Controls then`, which already matched the real
+-- templates' own guard style before this rewrite.
+-- Breaking: Controls renamed to PascalCase (Start/Exclusive/Set_N/Reset_N/
+-- Toggle_N/State_N/Led_N/Out_N/Not_N, were lowercase) and the "Input Count"
+-- property renamed to "InputCount" (property names may not contain spaces
+-- per the plugin spec; a control name may, a property name may not) -- a
+-- design already wired to the old pin/property names needs those
+-- reconnected. One bug fixed: every layout Label used 'VAlign = Center',
+-- which is not a real layout key (the real one is VTextAlign) and 'Center'
+-- was never a declared value anywhere in the file (an undeclared global, so
+-- the whole assignment was `VTextAlign = nil`) -- vertical centering on
+-- these labels was silently never applied; now VTextAlign = "Center".
 
 PluginInfo = {
 	Name = "Dolby~Multi Flip-Flop",
@@ -18,102 +28,6 @@ PluginInfo = {
 	Description = "Advanced Multi Flip-Flop Component Plugin",
 }
 
--- Enums are needed at design time (GetControls/GetControlLayout), so this
--- module is required unconditionally, before the runtime guard below --
--- unlike the rest of Developer/Modules, which only loads after it.
-
--- ============================================================
--- Inlined modules (single-file build, no require / no package.path).
--- Generated from Developer/plugins/ + Developer/Modules/ -- edit there,
--- not here, then rebuild this file.
--- ============================================================
-
-do  -- qsys_enums
--- ##############################################################
---			QSYS Enums
--- ##############################################################
---
--- Centralized enum tables for Get*/layout code, per the QSC-derived plugin
--- convention (source: Q-SYS Plugin spec, components_emulator/docs/
--- qsys-plugins.md § ENUMS). Declared OUTSIDE `if Controls then` in every
--- plugin that requires this module, so the same tables are available in
--- both the design-time pass (GetControls/GetControlLayout) and the runtime
--- pass -- unlike the rest of Developer/Modules, which only load after the
--- `if not Controls and Reflect then return end` guard.
---
--- `Status` is intentionally NOT included here: it is scriptable state
--- (0-5) meant to be re-declared inside `if Controls then` in each plugin
--- that uses it, not a design-time layout enum.
-
-do
-
-	local function makeEnum(t)
-		return setmetatable(t, {
-			__index = function(_, k) error("Enum key not found: " .. k, 2) end,
-			__newindex = function() error("Enum read-only", 2) end,
-		})
-	end
-
-	ControlType = makeEnum{ BUTTON = "Button", KNOB = "Knob", INDICATOR = "Indicator", TEXT = "Text" }
-
-	ButtonType = makeEnum{
-		TOGGLE = "Toggle", MOMENTARY = "Momentary", TRIGGER = "Trigger",
-		STATE_TRIGGER = "StateTrigger", ON = "On", OFF = "Off", CUSTOM = "Custom",
-	}
-
-	-- Knob ranges (lower/upper): dB -100/20 - Hz 20/20000 - Float +-1e9
-	-- Integer +-999999999 - Pan -1/1 - Percent 0/100 - Position 0/1 - Seconds 0/87400
-	ControlUnit = makeEnum{
-		DB = "dB", HZ = "Hz", FLOAT = "Float", INTEGER = "Integer",
-		PAN = "Pan", PERCENT = "Percent", POSITION = "Position", SECONDS = "Seconds",
-	}
-
-	IndicatorType = makeEnum{ LED = "Led", METER = "Meter", TEXT = "Text", STATUS = "Status" }
-
-	PinStyle = makeEnum{ INPUT = "Input", OUTPUT = "Output", BOTH = "Both", NONE = "None" }
-
-	LayoutStyle = makeEnum{
-		FADER = "Fader", KNOB = "Knob", BUTTON = "Button", TEXT = "Text", METER = "Meter",
-		LED = "Led", STATUS = "StatusLight", LIST_BOX = "ListBox", COMBO_BOX = "ComboBox",
-		MEDIA = "Media", NONE = "None",
-	}
-
-	-- Same values as ButtonType; ButtonStyle is the GetControlLayout render style,
-	-- ButtonType is the GetControls logical behavior.
-	ButtonStyle = makeEnum{
-		TOGGLE = "Toggle", MOMENTARY = "Momentary", TRIGGER = "Trigger",
-		STATE_TRIGGER = "StateTrigger", ON = "On", OFF = "Off", CUSTOM = "Custom",
-	}
-
-	ButtonVisualStyle = makeEnum{ FLAT = "Flat", GLOSS = "Gloss" }
-
-	MeterStyle = makeEnum{ LEVEL = "Level", REDUCTION = "Reduction", GAIN = "Gain", STANDARD = "Standard" }
-
-	TextBoxStyle = makeEnum{ NORMAL = "Normal", METER = "Meter", NO_BACKGROUND = "NoBackground" }
-
-	HTextAlign = makeEnum{ CENTER = "Center", LEFT = "Left", RIGHT = "Right" }
-
-	VTextAlign = makeEnum{ CENTER = "Center", TOP = "Top", BOTTOM = "Bottom" }
-
-	-- "Text" graphics do not exist in Q-SYS -- use GraphicType.LABEL for static text.
-	GraphicType = makeEnum{ LABEL = "Label", GROUP_BOX = "GroupBox", HEADER = "Header", IMAGE = "Image", SVG = "Svg" }
-
-	PropertyType = makeEnum{ STRING = "string", INTEGER = "integer", DOUBLE = "double", BOOLEAN = "boolean", ENUM = "enum" }
-
-	-- GetPins Direction= is lowercase, unlike PinStyle (uppercase) above.
-	PinDirection = makeEnum{ INPUT = "input", OUTPUT = "output" }
-
-	Font = makeEnum{
-		ROBOTO = "Roboto", MONTSERRAT = "Montserrat", OPEN_SANS = "Open Sans", LATO = "Lato",
-		POPPINS = "Poppins", ROBOTO_MONO = "Roboto Mono", ROBOTO_SLAB = "Roboto Slab",
-		NOTO_SERIF = "Noto Serif", ADAMINA = "Adamina", DROID_SANS = "Droid Sans", SLABO = "Slabo 27px",
-	}
-
-end
-end
-
---*** Design-time: Identity ***
-
 function GetColor(props)
 	return { 204, 204, 204 }
 end
@@ -122,13 +36,11 @@ function GetPrettyName(props)
 	return "Multi Flip-Flop "
 end
 
---*** Design-time: Properties ***
-
 function GetProperties()
 	local props = {}
 	table.insert(props, {
 		Name = "InputCount", -- property names may not contain spaces (was "Input Count")
-		Type = PropertyType.INTEGER,
+		Type = "integer",
 		Value = 1,
 		Min = 1,
 		Max = 256,
@@ -141,85 +53,81 @@ function RectifyProperties(props)
 	return props
 end
 
---*** Design-time: Controls ***
-
 function GetControls(props)
 	local ctrls = {}
 
 	table.insert(ctrls, {
 		Name = "Start",
-		ControlType = ControlType.BUTTON,
-		ButtonType = ButtonType.TOGGLE,
+		ControlType = "Button",
+		ButtonType = "Toggle",
 	})
 
 	table.insert(ctrls, {
 		Name = "Exclusive",
-		ControlType = ControlType.BUTTON,
-		ButtonType = ButtonType.TOGGLE,
+		ControlType = "Button",
+		ButtonType = "Toggle",
 	})
 
 	for t = 1, props["InputCount"].Value do
 		table.insert(ctrls, {
 			Name = "Set_" .. t,
-			ControlType = ControlType.BUTTON,
-			ButtonType = ButtonType.TRIGGER,
+			ControlType = "Button",
+			ButtonType = "Trigger",
 			UserPin = true,
-			PinStyle = PinStyle.BOTH,
+			PinStyle = "Both",
 		})
 
 		table.insert(ctrls, {
 			Name = "Reset_" .. t,
-			ControlType = ControlType.BUTTON,
-			ButtonType = ButtonType.TRIGGER,
+			ControlType = "Button",
+			ButtonType = "Trigger",
 			UserPin = true,
-			PinStyle = PinStyle.BOTH,
+			PinStyle = "Both",
 		})
 
 		table.insert(ctrls, {
 			Name = "Toggle_" .. t,
-			ControlType = ControlType.BUTTON,
-			ButtonType = ButtonType.TRIGGER,
+			ControlType = "Button",
+			ButtonType = "Trigger",
 			UserPin = true,
-			PinStyle = PinStyle.BOTH,
+			PinStyle = "Both",
 		})
 
 		table.insert(ctrls, {
 			Name = "State_" .. t,
-			ControlType = ControlType.BUTTON,
-			ButtonType = ButtonType.TOGGLE,
+			ControlType = "Button",
+			ButtonType = "Toggle",
 			UserPin = true,
-			PinStyle = PinStyle.BOTH,
+			PinStyle = "Both",
 		})
 
 		table.insert(ctrls, {
 			Name = "Led_" .. t,
-			ControlType = ControlType.INDICATOR,
-			IndicatorType = IndicatorType.LED,
+			ControlType = "Indicator",
+			IndicatorType = "Led",
 			Count = 2,
 			UserPin = true,
-			PinStyle = PinStyle.BOTH,
+			PinStyle = "Both",
 		})
 
 		table.insert(ctrls, {
 			Name = "Out_" .. t,
-			ControlType = ControlType.INDICATOR,
-			IndicatorType = IndicatorType.LED,
+			ControlType = "Indicator",
+			IndicatorType = "Led",
 			UserPin = true,
-			PinStyle = PinStyle.OUTPUT,
+			PinStyle = "Output",
 		})
 
 		table.insert(ctrls, {
 			Name = "Not_" .. t,
-			ControlType = ControlType.INDICATOR,
-			IndicatorType = IndicatorType.LED,
+			ControlType = "Indicator",
+			IndicatorType = "Led",
 			UserPin = true,
-			PinStyle = PinStyle.OUTPUT,
+			PinStyle = "Output",
 		})
 	end
 	return ctrls
 end
-
---*** Design-time: Layout ***
 
 function GetControlLayout(props)
 	local layout = {}
@@ -227,71 +135,71 @@ function GetControlLayout(props)
 	local top = 20
 
 	table.insert(graphics, {
-		Type = GraphicType.LABEL,
+		Type = "Label",
 		Text = "Exclusive",
 		StrokeWidth = 0,
-		VTextAlign = VTextAlign.CENTER, -- FIX: was 'VAlign = Center' (wrong key, undefined global)
+		VTextAlign = "Center", -- FIX: was 'VAlign = Center' (wrong key, undefined global)
 		Position = { 144, 0 },
 		Size = { 64, 16 },
 	})
 
 	table.insert(graphics, {
-		Type = GraphicType.LABEL,
+		Type = "Label",
 		Text = "Set",
 		StrokeWidth = 0,
-		VTextAlign = VTextAlign.CENTER,
+		VTextAlign = "Center",
 		Position = { 36 * 1, top },
 		Size = { 36, 32 },
 	})
 
 	table.insert(graphics, {
-		Type = GraphicType.LABEL,
+		Type = "Label",
 		Text = "Reset",
 		StrokeWidth = 0,
-		VTextAlign = VTextAlign.CENTER,
+		VTextAlign = "Center",
 		Position = { 36 * 2, top },
 		Size = { 36, 32 },
 	})
 
 	table.insert(graphics, {
-		Type = GraphicType.LABEL,
+		Type = "Label",
 		Text = "Toggle",
 		StrokeWidth = 0,
-		VTextAlign = VTextAlign.CENTER,
+		VTextAlign = "Center",
 		Position = { 36 * 3, top },
 		Size = { 36, 32 },
 	})
 
 	table.insert(graphics, {
-		Type = GraphicType.LABEL,
+		Type = "Label",
 		Text = "State",
 		StrokeWidth = 0,
-		VTextAlign = VTextAlign.CENTER,
+		VTextAlign = "Center",
 		Position = { 36 * 4, top },
 		Size = { 36, 32 },
 	})
 
 	table.insert(graphics, {
-		Type = GraphicType.LABEL,
+		Type = "Label",
 		Text = "Out",
-		VTextAlign = VTextAlign.CENTER,
+		VTextAlign = "Center",
 		StrokeWidth = 0,
 		Position = { 36 * 5 + 4, top },
 		Size = { 36, 32 },
 	})
 
 	table.insert(graphics, {
-		Type = GraphicType.LABEL,
+		Type = "Label",
 		Text = "Not Out",
 		StrokeWidth = 0,
-		VTextAlign = VTextAlign.CENTER,
+		VTextAlign = "Center",
 		Position = { 36 * 6 + 8, top },
 		Size = { 36, 32 },
 	})
 
 	for t = 1, props["InputCount"].Value do
 		table.insert(graphics, {
-			Type = GraphicType.LABEL,
+			Type = "Label",
 			Text = tostring(t),
 			StrokeWidth = 0,
 			Position = { 0, top + (t + 1) * 16 },
@@ -309,31 +217,8 @@ function GetControlLayout(props)
 	return layout, graphics
 end
 
--- CHANGELOG
--- v2.0.0.0 (2026-07-27)
---   refactor: Rebuilt to the QSC-derived plugin structure/naming convention --
---     mandatory section order, PascalCase Controls/fns/globals, camelCase
---     locals, centralized enums via qsys_enums.lua, CHANGELOG block moved
---     inside the plugin file
---   breaking: Controls renamed to PascalCase (Start/Exclusive/Set_N/Reset_N/
---     Toggle_N/State_N/Led_N/Out_N/Not_N, were lowercase) and the "Input
---     Count" property renamed to "InputCount" (property names may not
---     contain spaces per the plugin spec; a control name may, a property
---     name may not) -- a design already wired to the old pin/property
---     names needs those reconnected after updating
---   bugfix: every layout Label used 'VAlign = Center', which is not a real
---     layout key (the real one is VTextAlign) and 'Center' was never a
---     declared value anywhere in the file (an undeclared global, so the
---     whole assignment was `VTextAlign = nil`) -- vertical centering on
---     these labels was silently never applied; now VTextAlign=VTextAlign.CENTER
--- v1.0.1.31 (2020-07) - see git history for pre-2026-07-27 changes
-
---*** Runtime ***
--- Inline (the one plugin in this repo without a separate Modules/ file).
-
+-- Inline runtime (the one plugin in this repo without a separate Modules/ file).
 if Controls then
-
-	--*** Custom functions ***
 
 	local function reset(t)
 		if Controls.Exclusive.Value == 0 then return end
@@ -346,8 +231,6 @@ if Controls then
 			end
 		end
 	end
-
-	--*** Event handlers ***
 
 	Controls.Exclusive.EventHandler = function(ctrl)
 		local first = false
@@ -397,8 +280,6 @@ if Controls then
 		end
 
 	end
-
-	--*** Init ***
 
 	for t = 1, Properties["InputCount"].Value do
 		if Controls["State_" .. t].Value == 1 then

@@ -9,11 +9,6 @@ package.path = (arg[0]:match("^(.*)[/\\]") or ".") .. "/?.lua;" .. package.path
 local h = require("harness")
 local qsys = require("qsys_stub")
 
--- The plugin definition files require("qsys_enums") unconditionally (it's
--- needed at design time), so the module path has to include Developer/Modules
--- even though this file never requires a module directly itself.
-h.add_module_path()
-
 local function load_definition(path)
 	qsys.install({ definition = true })
 	-- The definition pass returns nothing: the guard bails with a bare

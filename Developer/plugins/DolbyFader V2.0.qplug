@@ -1,14 +1,20 @@
---*** File header comment ***
 -- Dolby Fader for Q-SYS
 -- by james.puig@dolby.com
 -- Sept '20
--- v2.0: rebuilt to the QSC-derived plugin structure/naming convention
--- (Developer/tests + qsc-q-sys/components_emulator/docs/qsys-plugins.md).
+-- v2.0: rebuilt to the plugin structure/naming convention confirmed against
+-- QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin} templates and the
+-- community vendor/q-sys-community/q-sys-plugin-guide (2026-07-27): mandatory
+-- section order, PascalCase Controls/fns/globals, camelCase locals. Breaking:
+-- Controls renamed Ref/Level/Gain/Increase/Decrease (were ref/level/gain/
+-- increase/decrease) -- a design already wired to the old pin names needs
+-- those pins reconnected. Two bugs fixed along the way: GetControlLayout had
+-- a 'ButtonStype' typo on Ref/Increase/Decrease (should be 'ButtonStyle'),
+-- so those three buttons rendered with the default style instead of the
+-- intended Momentary style; GetProperties() returned the undefined global
+-- 'props' (always nil), now returns {} explicitly.
 -- Signal chain: a Text control ('Level') mirrors the Dolby 0.0-10.0 scale,
 -- kept in sync with the 'Gain' Knob (dB) and an embedded stepper component
 -- via qknob.lua/dolbyfader.lua. No network I/O in this plugin.
-
---*** PluginInfo ***
 
 PluginInfo = {
 	Name = "Dolby~Dolby Fader",
@@ -19,13 +25,6 @@ PluginInfo = {
 	Description = "Dolby Fader Component Plugin",
 }
 
--- Enums are needed at design time (GetControls/GetControlLayout), so this
--- module is required unconditionally, before the runtime guard below --
--- unlike the rest of Developer/Modules, which only loads after it.
-require "qsys_enums"
-
---*** Design-time: Identity ***
-
 function GetColor(props)
 	return { 204, 204, 204 }
 end
@@ -33,8 +32,6 @@ end
 function GetPrettyName(props)
 	return "Dolby Fader "
 end
-
---*** Design-time: Properties ***
 
 function GetProperties()
 	return {}
@@ -45,37 +42,35 @@ function RectifyProperties(props)
 	return props
 end
 
---*** Design-time: Controls ***
-
 function GetControls(props)
 	local ctrls = {}
 
 	table.insert(ctrls, {
 		Name = "Ref",
-		ControlType = ControlType.BUTTON,
-		ButtonType = ButtonType.MOMENTARY,
+		ControlType = "Button",
+		ButtonType = "Momentary",
 	})
 
 	table.insert(ctrls, {
 		Name = "Level",
-		ControlType = ControlType.TEXT,
+		ControlType = "Text",
 		UserPin = true,
-		PinStyle = PinStyle.BOTH,
+		PinStyle = "Both",
 	})
 
 	table.insert(ctrls, {
 		Name = "Gain",
-		ControlType = ControlType.KNOB,
-		ControlUnit = ControlUnit.DB,
+		ControlType = "Knob",
+		ControlUnit = "dB",
 		Min = -100,
 		Max = 20,
-		PinStyle = PinStyle.BOTH,
+		PinStyle = "Both",
 	})
 
 	table.insert(ctrls, {
 		Name = "Increase",
-		ControlType = ControlType.BUTTON,
-		ButtonType = ButtonType.MOMENTARY,
+		ControlType = "Button",
+		ButtonType = "Momentary",
 		IconType = "Icon",
 		Icon = "Plus",
 		IconColor = { 0, 0, 0 },
@@ -83,8 +78,8 @@ function GetControls(props)
 
 	table.insert(ctrls, {
 		Name = "Decrease",
-		ControlType = ControlType.BUTTON,
-		ButtonType = ButtonType.MOMENTARY,
+		ControlType = "Button",
+		ButtonType = "Momentary",
 		IconType = "Icon",
 		Icon = "Minus",
 		IconColor = { 0, 0, 0 },
@@ -92,8 +87,6 @@ function GetControls(props)
 
 	return ctrls
 end
-
---*** Design-time: Layout ***
 
 function GetControlLayout(props)
 	local layout = {}
@@ -103,72 +96,72 @@ function GetControlLayout(props)
 
 	layout['Ref'] = {
 		PrettyName = "Ref Level",
-		Style = LayoutStyle.BUTTON,
-		ButtonStyle = ButtonStyle.MOMENTARY,
+		Style = "Button",
+		ButtonStyle = "Momentary",
 		Color = { 242, 137, 174 },
 		Size = { 36, 16 },
 		Position = { left + 26, top + 48 },
 	}
 	layout['Level'] = {
 		PrettyName = 'Dolby Level',
-		Style = LayoutStyle.KNOB,
+		Style = "Knob",
 		Color = { 0, 226, 113 },
 		Position = { left + 90, top + 28 },
 		Size = { 36, 36 },
 	}
 	layout['Increase'] = {
 		PrettyName = "Increase",
-		Style = LayoutStyle.BUTTON,
-		ButtonStyle = ButtonStyle.MOMENTARY,
+		Style = "Button",
+		ButtonStyle = "Momentary",
 		Color = { 255, 255, 255 },
 		Position = { left + 154, top + 28 },
 		Size = { 36, 16 },
 	}
 	layout['Decrease'] = {
 		PrettyName = "Decrease",
-		Style = LayoutStyle.BUTTON,
-		ButtonStyle = ButtonStyle.MOMENTARY,
+		Style = "Button",
+		ButtonStyle = "Momentary",
 		Color = { 255, 255, 255 },
 		Size = { 36, 16 },
 		Position = { left + 154, top + 48 },
 	}
 	layout["Gain"] = {
 		PrettyName = "Gain",
-		Style = LayoutStyle.KNOB,
+		Style = "Knob",
 		Position = { left + 214, top + 28 },
 		Size = { 36, 36 },
 	}
 
 	graphics = {
 		{
-			Type = GraphicType.GROUP_BOX,
+			Type = "GroupBox",
 			Text = "Knob",
-			HTextAlign = HTextAlign.LEFT,
+			HTextAlign = "Left",
 			StrokeWidth = 1,
 			CornerRadius = 8,
 			Position = { left + 8, top + 8 },
 			Size = { 265, 100 },
 		},
 		{
-			Type = GraphicType.LABEL,
+			Type = "Label",
 			Text = "Reference",
 			Position = { left + 12, top + 72 },
 			Size = { 64, 16 },
 		},
 		{
-			Type = GraphicType.LABEL,
+			Type = "Label",
 			Text = "Dolby\nLevel",
 			Position = { left + 76, top + 72 },
 			Size = { 64, 32 },
 		},
 		{
-			Type = GraphicType.LABEL,
+			Type = "Label",
 			Text = "Inc/Dec",
 			Position = { left + 140, top + 72 },
 			Size = { 64, 16 },
 		},
 		{
-			Type = GraphicType.LABEL,
+			Type = "Label",
 			Text = "RMS Level (dBFS)",
 			Position = { left + 202, top + 72 },
 			Size = { 64, 32 },
@@ -177,8 +170,6 @@ function GetControlLayout(props)
 
 	return layout, graphics
 end
-
---*** Design-time: Components, Pins, Wiring ***
 
 function GetComponents(props)
 	local comps = {}
@@ -192,22 +183,6 @@ function GetComponents(props)
 	})
 	return comps
 end
-
--- CHANGELOG
--- v2.0.0.0 (2026-07-27)
---   refactor: Rebuilt to the QSC-derived plugin structure/naming convention --
---     mandatory section order, PascalCase Controls/fns/globals, camelCase
---     locals, centralized enums via qsys_enums.lua, CHANGELOG block moved
---     inside the plugin file (was git-log-only before)
---   breaking: Controls renamed Ref/Level/Gain/Increase/Decrease (were
---     ref/level/gain/increase/decrease) -- a design already wired to the old
---     pin names needs those pins reconnected after updating the plugin
---   bugfix: GetControlLayout had a 'ButtonStype' typo on Ref/Increase/Decrease
---     (should be 'ButtonStyle'), so those three buttons rendered with the
---     default style instead of the intended Momentary style
---   bugfix: GetProperties() returned the undefined global 'props' (always
---     nil); now returns {} explicitly
--- v1.1.0.1 (2020-09) - see git history for pre-2026-07-27 changes
 
 if not Controls and Reflect then return end
 

@@ -194,10 +194,6 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   ├── MultiFlip-Flop V2.0.qplug
     │   └── reference.lua             Template/cheat-sheet of every component & control type
     ├── Modules/                      Runtime logic pulled in by plugins via require()
-    │   ├── qsys_enums.lua            Centralized ControlType/ButtonType/ControlUnit/etc.
-    │   │                             enums; required BEFORE the runtime guard (needed at
-    │   │                             design time by GetControls/GetControlLayout), unlike
-    │   │                             every other module here
     │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base)
     │   ├── strict.lua                Global-variable guard (errors on undeclared globals)
     │   ├── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale)
@@ -208,7 +204,10 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   └── cpseries_protocol.lua     Per-model message formatting and GET framing
     ├── tools/
     │   └── build_distributable.sh    Builds a root distributable from a Developer/ head +
-    │                                 named modules, pre-guard and post-guard (see below)
+    │                                 named modules (see below). Supports a pre-guard /
+    │                                 post-guard module split for a plugin that needs a
+    │                                 module at design time, not just runtime -- none of
+    │                                 the four plugins here currently need that group
     └── tests/                        Lua 5.4 test suite, no framework (see its README)
         ├── run.sh                    Syntax pass over every source, then every test
         ├── qsys_stub.lua             Stand-in for the Q-SYS host globals
@@ -267,13 +266,6 @@ inline in the `.qplug`, guarded by `if Controls then ... end` instead (both
 guard styles are valid; `MultiFlip-Flop` predates the other three plugins'
 guard-then-`require` split and there was no reason to change a working,
 self-contained file's shape just to match them).
-
-One wrinkle since `qsys_enums.lua` (below): a design-time function
-(`GetControls`/`GetControlLayout`) that reads an enum from it needs that
-module loaded *before* the guard, not after — the guard returns early on the
-definition pass, so anything `require`d only after it never runs then. Every
-plugin now has `require "qsys_enums"` right after `PluginInfo`, unconditional,
-ahead of the guard.
 
 `reference.lua` is the canonical example: it enumerates every property type,
 component type, control type and layout key, and shows the `package.path`
@@ -352,64 +344,83 @@ The Dolby fader math (in `dolbyfader.lua`) maps the Dolby 0.0-10.0 scale ↔ dB:
 
 ### Plugin structure/naming convention (mandatory, since 2026-07-27)
 
-Every plugin in this repo was rebuilt on 2026-07-27 to a convention sourced
-from a QSC-derived plugin spec (`components_emulator/docs/qsys-plugins.md` in
-the separate `qsc-q-sys` repo — a reverse-engineering toolkit, not an
-official QSC SDK; treat it as the best available reference, not ground truth
-— the one point that mattered enough to verify independently, `TcpSocket`
-construction syntax, was checked against three outside sources before being
-applied, see above). Follow it for every new plugin and every edit that
-touches an existing one's structure:
+Every plugin in this repo was rebuilt on 2026-07-27, twice, same day. The
+first pass applied a convention sourced from a separate `qsc-q-sys` repo's
+own reverse-engineered plugin spec (`components_emulator/docs/
+qsys-plugins.md`) — a personal reverse-engineering toolkit, not an official
+QSC SDK. Five reference repos were then vendored under `vendor/` (see
+"Repository layout" above) specifically to check that spec against the real
+thing without re-deriving it from web search summaries: QSC's own
+`qsys-plugins/{BasePlugin,ExamplePlugin,PluginCompile,PluginEncryptionTool}`
+and the third-party `q-sys-community/q-sys-plugin-guide`. Reading their
+actual files split the original convention into two piles — confirmed by at
+least one real template, and present only in `qsc-q-sys`'s own house style
+with no confirmation anywhere else. The second 2026-07-27 pass stripped the
+unconfirmed pile back out. What follows is the confirmed pile only; treat it
+as mandatory for every new plugin and every edit that touches an existing
+one's structure:
 
-**Cross-checked against the real thing** (2026-07-27, same day): two
-reference templates are vendored under `vendor/` (see "Repository layout"
-above) specifically to make this checkable without re-deriving it from web
-search summaries — `qsys-plugins/BasePlugin` (QSC's own) and
-`q-sys-community/q-sys-plugin-guide` (third-party, Solo Works London /
-Carrier Labs, not QSC, but a second independent data point). Reading their
-actual files confirmed part of the list below as genuinely conventional and
-identified the rest as `qsc-q-sys`'s own added style, layered on top rather
-than reverse-engineered from either real template — each bullet below says
-which:
+- **Naming**: Controls (the `Name` field in `GetControls`/`GetControlLayout`
+  keys/`Controls.*` accesses), functions, and globals/aliases are
+  `PascalCase` (`BasePlugin`'s `runtime.lua`: `Status = Controls.Status`,
+  `ReportStatus`, `Connect`, `Connected`; `ExamplePlugin`: `EQBypass`,
+  `EQFrequency`, `ChannelName`; the community template: `IndicatorLed`,
+  `IndicatorMeter`) — not absolute, though: `ExamplePlugin.qplug` itself has
+  one lowercase control, `Name = "code"`, alongside dozens of PascalCase
+  ones, so treat this as the strong default, not a rule Q-SYS enforces.
+  Locals are `camelCase`. Constants are `UPPER_SNAKE`. A socket/timer object
+  is a `camelCase` noun (`sock`, `timer`) but still **global**, never
+  `local` (`BasePlugin`: `PollTimer = Timer.New()`) — per the GC-safety note
+  above, this is the one deliberate exception to "globals=PascalCase".
+- **String literals, not enum tables**, for `ControlType`/`ButtonType`/
+  `IndicatorType`/etc. — write `ControlType = "Indicator"` directly. All
+  three real templates do this; a `qsys_enums.lua` module centralizing them
+  as `ControlType.BUTTON`-style tables was tried and reverted the same day
+  (2026-07-27) once three independent templates turned up writing the
+  literal directly, none using a table.
+- **Property names may not contain spaces** — properties, not controls; a
+  control's `Name` may have spaces (e.g. `Name = "TCP Log"` is fine), a
+  property's may not (`GetProperties`'s own `{ Name = ..., Type = ... }`
+  entries). `MultiFlip-Flop`'s "Input Count" property became `InputCount`
+  for exactly this reason — this one wasn't part of the later reversion, it
+  has nothing to do with the `qsc-q-sys` spec either way, it's how Q-SYS
+  itself behaves.
+- **Section comments, plain, not decorated** — group runtime code loosely
+  into aliases, variables/flags, objects (sockets/timers), constants, helper
+  functions, event handlers, initialization, each marked with a plain
+  `-- Section name` line (confirmed against `BasePlugin`'s `runtime.lua`).
+  The decorated `--*** Section Name ***` banner style and a `-- CHANGELOG`
+  comment block embedded in the plugin file were both `qsc-q-sys` additions
+  with no confirmation in any real template — also reverted 2026-07-27, back
+  to plain comments and per-version prose in the file header (matching what
+  `ExamplePlugin.qplug` and `BasePlugin` both do; version history otherwise
+  lives in git log / commit messages, not restated in-file).
+- **`_G["Name"]` for embedded components** — `Step`, `Sine`, and other
+  `GetComponents`-declared handles are already global (Lua globals live in
+  `_G`, so bare `Step` and `_G["Step"]` are the same value); a bare
+  reference to the already-global name is enough, no need to introduce a
+  second name for the same value.
+- **`QKnob`'s own method names stay as they were** (`:new`, `:init`, `:set`,
+  lowercase) — see "Key module patterns" above for why.
+- **Breaking changes get a major version bump** (per the repo-wide
+  `changelog-rules` skill), noted in the file header's version-history
+  prose. Renaming a `Controls` entry or a property is breaking: any Q-SYS
+  design already wired to the old name needs those pins/properties
+  reconnected after updating.
+- **`PluginInfo.Id` is still preserved** across all of this — the naming
+  convention changes identifiers inside the file, never the plugin's
+  identity.
 
-- **Confirmed against all three real QSC/community templates**
-  (`BasePlugin`, `ExamplePlugin`, the community `q-sys-plugin-guide`):
-  PascalCase Controls/functions/globals/aliases (`BasePlugin`'s
-  `runtime.lua` uses `Status = Controls.Status`, `ReportStatus`, `Connect`,
-  `Connected`; `ExamplePlugin` uses `EQBypass`, `EQFrequency`, `ChannelName`;
-  the community template uses `IndicatorLed`, `IndicatorMeter`) — though not
-  absolute: `ExamplePlugin.qplug` itself has one lowercase control,
-  `Name = "code"`, alongside dozens of PascalCase ones, so treat this as the
-  strong default, not a rule Q-SYS enforces; plain string literals for
-  `ControlType`/`IndicatorType`/etc. in `GetControls` (`ControlType =
-  "Indicator"` in all three — see the enums bullet below, this is the one
-  place all three templates directly contradict what `qsc-q-sys` added).
-- **Confirmed against `BasePlugin` only** (the other two examples are too
-  short, or too design-time-focused, to show these): Timer/socket objects
-  declared global, never local (`PollTimer = Timer.New()`); grouping runtime
-  code into sections (aliases, variables/flags, sockets, timers/constants,
-  helper functions, event handlers, initialization) — marked with plain
-  `-- Section name` comments, not the decorated `--*** Name ***` banners
-  below.
-- **A pattern found in `ExamplePlugin.qplug` that this repo does NOT
-  follow, deliberately**: `GetProperties()`/`GetControls()` there assign
-  `props = {}` / `ctrls = {}` with no `local` — global, not a dead
-  assignment (the function goes on to `table.insert` into that same table
-  and return it). That's different from the two bugs fixed in this repo's
-  own `GetProperties()` calls (DolbyFader, Dolby Sweep): those built and
-  returned a *separate* literal table while leaving an unused `props = {}`
-  behind — dead code, not a live global. Q-SYS itself doesn't care either
-  way; this repo still prefers `local` for a table with no reason to escape
-  the function, per general Lua hygiene, not because a QSC template says so.
-- **Not present in any of the three real templates, so `qsc-q-sys` house
-  style, not a QSC mandate** — kept anyway since nothing here is wrong, just
-  unproven as "official": enum tables in place of string literals (all
-  three write the literal directly, e.g. `ControlType = "Indicator"`); the
-  decorated `--*** Name ***` section banners; a `-- CHANGELOG` block
-  embedded in the plugin file. If asked to strip this repo's convention down
-  to only what's confirmed, these three are the ones to drop first — the
-  enum-table one now has three independent templates contradicting it, not
-  just an absence of confirmation.
+A styling choice with no template evidence either way, kept anyway on
+general Lua hygiene grounds, not a QSC mandate: `ExamplePlugin.qplug`'s
+`GetProperties()`/`GetControls()` assign `props = {}` / `ctrls = {}` with no
+`local` — global, but not dead code, since the function goes on to
+`table.insert` into that same table and return it. This repo still prefers
+`local` for a table with no reason to escape the function; that's different
+from the two real bugs fixed in this repo's own `GetProperties()` calls
+(DolbyFader, Dolby Sweep) — those built and returned a *separate* literal
+table while leaving an actually-unused `props = {}` behind, genuine dead
+code, not a live global either way.
 
 **"Q-SYS Help"** (`q-syshelp.qsc.com`, mirrored at `help.qsys.com`) is QSC's
 official documentation site — general web docs, not a repository, so
@@ -421,50 +432,9 @@ both `q-syshelp.qsc.com` and `help.qsys.com` returns 403 from this
 environment's outbound proxy at the gateway level (confirmed via the
 proxy's own status endpoint, not just a failed request) — everything known
 about these pages here came from search-engine summaries of them, not their
-actual text, unlike the two vendored templates above, which were read
-directly. Treat anything attributed to "Q-SYS Help" with that in mind; the
-two submodules are the more reliable source where they overlap.
-
-- **Mandatory section order** in every `.qplug`: file header comment →
-  `PluginInfo` → (design-time-safe `require`s, e.g. `qsys_enums`) →
-  Design-time Identity (`GetColor`/`GetPrettyName`) → Properties
-  (`GetProperties`/`RectifyProperties`) → Controls (`GetControls`) → Layout
-  (`GetControlLayout`) → Components/Pins/Wiring (`GetComponents`/`GetPins`/
-  `GetWiring`, omit the section if none) → a `-- CHANGELOG` comment block →
-  the runtime guard → the runtime `require`. Mark each section with a
-  `--*** Name ***` comment.
-- **Naming**: Controls (the `Name` field in `GetControls`/`GetControlLayout`
-  keys/`Controls.*` accesses), functions, and globals/aliases are
-  `PascalCase`. Locals are `camelCase`. Constants are `UPPER_SNAKE`. A
-  socket/timer object is a `camelCase` noun (`sock`, `timer`) but still
-  **global**, per the GC-safety note above — "socket/timer=camelCase-noun" is
-  the one deliberate exception to "globals=PascalCase".
-- **Property names may not contain spaces** — properties, not controls; a
-  control's `Name` may have spaces (e.g. `Name = "TCP Log"` is fine), a
-  property's may not (`GetProperties`'s own `{ Name = ..., Type = ... }`
-  entries). `MultiFlip-Flop`'s "Input Count" property became `InputCount` for
-  exactly this reason.
-- **Enums, not string literals**, for anything `qsys_enums.lua` defines
-  (`ControlType.BUTTON` not `"Button"`, `ButtonType.MOMENTARY` not
-  `"Momentary"`, etc.) — require it unconditionally, before the guard, since
-  `GetControls`/`GetControlLayout` need it at design time.
-- **`_G["Name"]` for embedded components** — `Step`, `Sine`, and other
-  `GetComponents`-declared handles are already global (Lua globals live in
-  `_G`, so bare `Step` and `_G["Step"]` are the same value); the convention's
-  own reference examples write `CompName = _G["CompName"]` as a documentation
-  convention, not a functional requirement. This repo does not add that
-  redundant self-assignment — a bare reference to the already-global name is
-  enough, and inventing a second name for the same value would be dead
-  weight for no behavioral gain.
-- **`QKnob`'s own method names stay as they were** (`:new`, `:init`, `:set`,
-  lowercase) — see "Key module patterns" above for why.
-- **Breaking changes get a major version bump** (per the repo-wide
-  `changelog-rules` skill) and a note in the `-- CHANGELOG` block. Renaming a
-  `Controls` entry or a property is breaking: any Q-SYS design already wired
-  to the old name needs those pins/properties reconnected after updating.
-- **`PluginInfo.Id` is still preserved** across all of this — the naming
-  convention changes identifiers inside the file, never the plugin's
-  identity.
+actual text, unlike the vendored templates above, which were read directly.
+Treat anything attributed to "Q-SYS Help" with that in mind; the vendored
+submodules are the more reliable source where they overlap.
 
 This mostly *supersedes* the older "match existing tab-heavy formatting"
 habit for these four plugins (they're rebuilt to a consistent, more open
@@ -508,13 +478,18 @@ Typical loop:
    bench.
 5. Bump `Version`/`BuildVersion` in `PluginInfo`, then rebuild the root
    distributable with `Developer/tools/build_distributable.sh <head.qplug>
-   <output.qplug> [pre-guard modules...] -- <post-guard modules...>` — never
-   hand-edit the root file, it's a single-file build with
-   `Developer/Modules/*.lua` inlined and `require` stripped, so a hand edit
-   just gets discarded on the next rebuild. `qsys_enums` (needed at design
-   time) goes in the pre-guard group; everything else goes post-guard. See
-   any of the four root `.qplug` files' build for the exact module list, or
-   re-run the command from that plugin's own rewrite commit message.
+   <output.qplug> -- <module1> <module2> ...` — never hand-edit the root
+   file, it's a single-file build with `Developer/Modules/*.lua` inlined and
+   `require` stripped, so a hand edit just gets discarded on the next
+   rebuild. The leading `--` (empty pre-guard group) is currently right for
+   all four plugins here — none of them need a module loaded before the
+   runtime guard, only a plugin whose `GetControls`/`GetControlLayout` reads
+   something from an external module at design time would need that group.
+   See any of the four root `.qplug` files' build for the exact module list,
+   or re-run the command from that plugin's own rewrite commit message.
+   `MultiFlip-Flop` is the exception: it has no Modules/ dependency at all,
+   so its root file is a plain copy of the Developer source, no build script
+   needed.
    After rebuilding, re-run `Developer/tests/run.sh`: the `test_dist_*` files
    execute the built artifact, which is the only thing that catches a module
    inlined before something it depends on (that still compiles). If a

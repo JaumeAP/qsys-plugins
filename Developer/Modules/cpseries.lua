@@ -8,11 +8,7 @@
 		require("cpseries_class")
 		require("dolbyfader")
 
-		--*** Aliases ***
-
-		--*** Variables ***
-
-		--*** Objects ***
+		-- Objects
 		-- CPSeries instance and TcpSocket: must stay global (never local),
 		-- same GC rule as Timer -- both are captured as upvalues by closures
 		-- already reachable from global Controls.*.EventHandler fields, so
@@ -32,7 +28,7 @@
 		sock = TcpSocket.New()
 		sock.WriteTimeout = 2
 
-		--*** Custom functions ***
+		-- Custom functions
 
 		local function SetStatus(state, msg)
 			if Controls.Status.Value ~= state then
@@ -99,7 +95,7 @@
 			end
 		end
 
-		--*** Event handlers ***
+		-- Event handlers
 
 		sock.Connected = function()
 			Print(true, 'SOCK', "Connected")
@@ -184,7 +180,7 @@
 			end
 		end
 
-		--*** Init ***
+		-- Init
 
 		if Controls.Start.Value == false then
 			Controls.Start.Value = true
