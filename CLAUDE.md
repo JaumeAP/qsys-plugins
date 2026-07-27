@@ -397,6 +397,21 @@ reasoning applies to any of them if a future plugin uses one.
   override `QKnob:SetString` for unit suffixes (e.g. dolbysweep appends `'s'`).
 - **`strict.lua`**: installs a metatable on `_G` that raises on read/write of
   undeclared globals; declare intentional globals with `Global("name", ...)`.
+  Provenance (confirmed 2026-07-27): a variant of the canonical
+  `http://www.lua.org/extras/5.1/strict.lua`, the same base LuaJIT,
+  cheat-engine, Penlight, and lua-stdlib all fork — not from any QSC/Q-SYS
+  repo. Two deliberate deviations from that original: (1) the original's
+  `__newindex` allows an undeclared global to self-declare when the
+  assignment happens directly in a chunk's main body (`debug.getinfo`
+  `what == "main"`); this copy drops that exemption, so every custom global
+  needs an explicit `Global(...)` call regardless of where it's first
+  assigned — stricter, not looser, and every plugin wired to it below
+  already declares its globals explicitly, so nothing here depends on the
+  dropped exemption. (2) the explicit `Global(name, ...)` declare function
+  itself isn't in the lua.org original at all (it relies solely on the
+  main-chunk exemption); a similar lowercase `global()` helper shows up in
+  some community write-ups (e.g. the lua-users wiki), but this repo's
+  version capitalizes it to match its own globals-are-PascalCase convention.
   Wired into `DolbyFader V2.0.qplug`, `Dolby Sweep V2.0.qplug`, and
   `Dolby CPSeries Control V4.0.qplug` (2026-07-27) as a dev-only safety net:
   `require "strict"` plus a `Global(...)` call sits right after the runtime
