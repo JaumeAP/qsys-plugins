@@ -1,6 +1,6 @@
 ---
 name: github-rules
-description: Reference context on general GitHub PR conventions for Claude Code sessions -- PR-based workflow via the GitHub MCP tools, the branch-restart-after-merge pattern, how to interpret pull_request_read results (including a repo having no CI configured), PR activity subscribe/unsubscribe habits, and merge_pull_request facts. Make sure to consult this whenever opening, updating, merging, or reasoning about a pull request in any repo, whenever deciding how/whether to push a branch, whenever a PR's CI status or check results look unexpected, and whenever GitHub conventions are relevant at all, even if the task doesn't explicitly mention "GitHub" or "PR." This is background knowledge, not a checklist to follow blindly -- it describes general conventions and how to read GitHub API results correctly, not commands to execute, and it never overrides an explicit instruction the user actually gives in the moment.
+description: Reference context on general GitHub PR conventions for Claude Code sessions -- PR-based workflow via the GitHub MCP tools, how to interpret pull_request_read results (including a repo having no CI configured, and reading mergeable_state to spot a real conflict or a stale/superseded PR worth closing), PR activity subscribe/unsubscribe habits, and merge mechanics. Make sure to consult this whenever opening, updating, merging, closing, or reasoning about a pull request in any repo, whenever deciding how/whether to push a branch, whenever a PR's CI status, check results, or mergeable state look unexpected, and whenever GitHub conventions are relevant at all, even if the task doesn't explicitly mention "GitHub" or "PR." This is background knowledge, not a checklist to follow blindly -- it describes general conventions and how to read GitHub API results correctly, not commands to execute, and it never overrides an explicit instruction the user actually gives in the moment.
 ---
 
 # GitHub conventions
@@ -33,19 +33,21 @@ work to do, restarting the branch from the current default branch (rather
 than stacking new commits on the merged history) is the usual pattern:
 `git fetch origin <default-branch> && git checkout -B <branch> origin/<default-branch>`.
 A merged PR is a finished unit of work, not something to reopen or extend.
+(Some calling environments already bake this exact pattern into their own
+system-level instructions -- if so, this is restating something you already
+have rather than adding a new rule; worth checking before assuming this
+skill is the only place it comes from.)
 
 ## Reading `pull_request_read get_status` correctly
 
 Calling `mcp__github__pull_request_read` with `method: "get_status"` and
 getting back `{"state": "pending", "total_count": 0}` simply means no commit
-statuses are registered for that commit -- most commonly because the repo has
-no CI configured at all. That's a normal, healthy result in a repo without
-CI, not automatically a sign something is broken or misconfigured. Don't
-assume a missing CI pipeline needs "fixing" just because this call came back
-empty -- check whether the repo actually has (or is expected to have) CI
-before treating an empty status as a problem. If Actions-based checks are
-expected instead of classic commit statuses, `get_check_runs` is the more
-relevant method to look at.
+statuses are registered for that commit -- most commonly because the repo
+has no CI configured at all, a normal result there and not on its own a sign
+of misconfiguration; check whether the repo actually has (or is expected to
+have) CI before treating an empty status as a problem. If Actions-based
+checks are expected instead of classic commit statuses, `get_check_runs` is
+the more relevant method to look at.
 
 ## Watching PR activity
 
@@ -69,19 +71,43 @@ actually agreed to that. If a repo's own conventions establish a clear rule
 about this, follow that repo's own documentation for it -- don't add one here
 that would override every repo's local decision.
 
-A couple of mechanical facts that come up when merging does happen:
-- A draft PR needs `draft: false` (via `mcp__github__update_pull_request` or
-  equivalent) before merging will succeed.
-- `merge_pull_request`-style tools commonly support `merge`, `squash`, or
-  `rebase` as the merge method -- which one fits depends on the repo's own
-  history conventions, worth checking rather than assuming.
+One non-obvious mechanical fact: a draft PR needs `draft: false` (via
+`mcp__github__update_pull_request` or equivalent) before merging will
+succeed -- the merge method itself (`merge`/`squash`/`rebase`) is usually
+self-evident from the tool's own schema, not worth restating here.
+
+## Reading `mergeable_state`
+
+A PR's `mergeable_state` (from `pull_request_read get`, or the REST API
+directly) says more than CI status alone does. GitHub computes it
+asynchronously, so an `unknown` value on a fresh fetch usually just means
+it hasn't settled yet -- re-fetch rather than treat it as a real problem.
+`clean` means it merges without conflict; `dirty` means a real conflict
+against the current base branch, and the merge button (or
+`merge_pull_request`) will fail until it's resolved; `unstable` usually
+points at required checks that haven't passed yet, a CI concern more than a
+merge one.
+
+A `dirty` result is worth a second look before diving straight into
+conflict resolution: check whether the PR is still semantically relevant,
+not just textually conflicting. A PR opened well before a since-changed
+architecture, naming convention, or file layout can be `dirty` for a
+deeper reason than a simple textual clash -- its diff may no longer reflect
+anything the current codebase still does. Resolving that kind of conflict
+by hand risks re-litigating an already-settled decision rather than doing a
+mechanical merge. Closing it as superseded, with a short comment explaining
+why, is often more honest than either forcing a stale change through or
+leaving it open indefinitely -- but, same discipline as the section above,
+that's a per-PR judgment call informed by the actual diff and the repo's
+current state, not a blanket rule to auto-close every `dirty` PR found.
 
 ## Useful `pull_request_read` methods
 
 `mcp__github__pull_request_read` (or equivalent tools) commonly take a
 `method` parameter; ones that come up often:
 
-1. `get` -- basic PR details
+1. `get` -- basic PR details, including `mergeable_state` (see "Reading
+   `mergeable_state`" above)
 2. `get_diff` -- the diff
 3. `get_status` -- combined commit status (see above for how to read an empty result)
 4. `get_files` / `get_commits` -- what changed, and the commit list
