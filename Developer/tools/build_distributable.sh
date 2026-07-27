@@ -106,7 +106,7 @@ else
 	cp "$tmp" "$out"
 fi
 
-LUAC="${LUAC:-luac5.4}"
+LUAC="${LUAC:-luac5.3}"
 if command -v "$LUAC" >/dev/null; then
 	"$LUAC" -p "$out"
 fi

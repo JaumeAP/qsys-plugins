@@ -133,7 +133,10 @@ system, package manager, or CI here — plugins are authored in Lua, tested in
 Q-SYS Designer's emulator, and distributed as `.qplug` / `.qplugx` files.
 
 There *is* a small test suite under `Developer/tests/` (added 2026-07-27):
-plain Lua 5.4, no framework, run with `Developer/tests/run.sh`. It stubs the
+plain Lua 5.3 — matching Q-SYS Designer's own embedded Lua version, not 5.4
+(confirmed 2026-07-27 against Q-SYS Help, which points to the Lua 5.3
+Reference Manual for native Lua support) — no framework, run with
+`Developer/tests/run.sh`. It stubs the
 Q-SYS host globals so plugin logic can be driven from a terminal. It does not
 replace testing in Designer — it only covers the plugins' own logic, not real
 DSP behaviour, timing, or the Designer UI — but it catches regressions before
@@ -217,7 +220,7 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │                                 post-guard module split for a plugin that needs a
     │                                 module at design time, not just runtime -- none of
     │                                 the four plugins here currently need that group
-    └── tests/                        Lua 5.4 test suite, no framework (see its README)
+    └── tests/                        Lua 5.3 test suite, no framework (see its README)
         ├── run.sh                    Syntax pass over every source, then every test
         ├── qsys_stub.lua             Stand-in for the Q-SYS host globals
         ├── harness.lua               Path resolution + check counter
@@ -397,7 +400,51 @@ reasoning applies to any of them if a future plugin uses one.
   override `QKnob:SetString` for unit suffixes (e.g. dolbysweep appends `'s'`).
 - **`strict.lua`**: installs a metatable on `_G` that raises on read/write of
   undeclared globals; declare intentional globals with `Global("name", ...)`.
-  Not currently `require`d by any plugin — opt in if you need it while debugging.
+  Provenance (confirmed 2026-07-27): a variant of the canonical
+  `http://www.lua.org/extras/5.1/strict.lua`, the same base LuaJIT,
+  cheat-engine, Penlight, and lua-stdlib all fork — not from any QSC/Q-SYS
+  repo. Two deliberate deviations from that original: (1) the original's
+  `__newindex` allows an undeclared global to self-declare when the
+  assignment happens directly in a chunk's main body (`debug.getinfo`
+  `what == "main"`); this copy drops that exemption, so every custom global
+  needs an explicit `Global(...)` call regardless of where it's first
+  assigned — stricter, not looser, and every plugin wired to it below
+  already declares its globals explicitly, so nothing here depends on the
+  dropped exemption. (2) the explicit `Global(name, ...)` declare function
+  itself isn't in the lua.org original at all (it relies solely on the
+  main-chunk exemption); a similar lowercase `global()` helper shows up in
+  some community write-ups (e.g. the lua-users wiki), but this repo's
+  version capitalizes it to match its own globals-are-PascalCase convention.
+  Wired into `DolbyFader V2.0.qplug`, `Dolby Sweep V2.0.qplug`, and
+  `Dolby CPSeries Control V4.0.qplug` (2026-07-27) as a dev-only safety net:
+  `require "strict"` plus a `Global(...)` call sits right after the runtime
+  guard, before the plugin's own `require`. This placement is deliberate —
+  everything after the guard line in a Developer head file is dropped by
+  `build_distributable.sh` in favor of the explicitly inlined module list
+  (see "Developer workflow" below), so strict-mode is active whenever the
+  plugin loads straight from `Developer/plugins/` (Designer, bench-testing)
+  but never ships in the root distributable. Each plugin declares only the
+  custom globals its own require chain creates on first write (host globals
+  like `Controls`/`Properties`/`Timer`/`TcpSocket`/`System` already exist
+  before the plugin's code runs, so they never need declaring):
+  `DolbyFader`/`Dolby Sweep` both pull in `QKnob` (from `qknob.lua`);
+  `DolbyFader` adds `DKNob`, `DolbyFaderEventHandler`; `Dolby Sweep` adds
+  `period`, `timer`; `CPSeries` adds `DKNob`, `DolbyFaderEventHandler`
+  (via its own `require "dolbyfader"`), `CPSeries`, `CPModels`,
+  `CPProtocol`, `DolbyCP`, `sock`, and `Print` (declared defensively, even
+  though `Print` is normally already host-provided, so `cpseries_class.lua`'s
+  override — see below — never depends on load order). Verified by loading
+  each Developer head file's runtime pass under a stubbed host (2026-07-27);
+  the repo's own `Developer/tests/` doesn't exercise this path (its
+  dist tests run the already-built root files, which never see these
+  lines), so this was checked by hand, not by `run.sh`.
+  `MultiFlip-Flop` is NOT wired up: it has no custom globals to protect
+  (its runtime block only ever writes into the existing `Controls`/
+  `Properties` tables) and, more importantly, its root `.qplug` is a plain
+  copy of the Developer source with no build-script stripping step (see
+  "Developer workflow" below) — so unlike the other three, there is no
+  automatic mechanism to keep a `require "strict"` here from shipping to
+  production. Add it only alongside a real removal step if that changes.
 - **`cpseries_models.lua` / `cpseries_protocol.lua`**: per-model wire config
   (TCP port, `KEY=VALUE` vs `"param value"` dialect) and message formatting/
   GET framing. Neither touches `Controls` — they're pure protocol logic,
@@ -406,7 +453,16 @@ reasoning applies to any of them if a future plugin uses one.
   `CP950A`) protocol state machine. `Model` is a plain array with real
   `index`/`key`/`value` fields (the old `setmeta`/`searchelem` reflection hack
   was removed 2026-07-27 along with the CP950/CP950A bump); doesn't reference
-  `Controls` at all.
+  `Controls` at all. It also reassigns the global `Print` (no `local`) to a
+  debug-gated wrapper — `Print = function(show, ...)` — that checks
+  `Properties.plugin_show_debug.Value` and the `"TCP Log"` property
+  (`Command` vs `All`) before calling the real Lua `print(...)`. This
+  shadows the host-provided `Print` global documented under "Q-SYS runtime
+  globals" above, for every module loaded after this one; `cpseries.lua`
+  relies on the override, always calling `Print(true, ...)` with the
+  boolean as a debug-level flag, not a message argument. Confirmed
+  intentional and consistently used (2026-07-27 audit), just not previously
+  documented here.
 - **`cpseries.lua`**: the application layer — owns the `TcpSocket`, the
   `CPSeries` instance, and all the `Controls.*` wiring; reuses `dolbyfader`'s
   `DKNob` and `DolbyFaderEventHandler` hook to push fader changes over the
@@ -454,13 +510,24 @@ one's structure:
   as `ControlType.BUTTON`-style tables was tried and reverted the same day
   (2026-07-27) once three independent templates turned up writing the
   literal directly, none using a table.
-- **Property names may not contain spaces** — properties, not controls; a
-  control's `Name` may have spaces (e.g. `Name = "TCP Log"` is fine), a
-  property's may not (`GetProperties`'s own `{ Name = ..., Type = ... }`
-  entries). `MultiFlip-Flop`'s "Input Count" property became `InputCount`
-  for exactly this reason — this one wasn't part of the later reversion, it
-  has nothing to do with the `qsc-q-sys` spec either way, it's how Q-SYS
-  itself behaves.
+- **Property names CAN contain spaces — retracted 2026-07-27.** The earlier
+  claim here ("property names may not contain spaces... it's how Q-SYS
+  itself behaves") is wrong, disproved by QSC's own vendored template:
+  `vendor/qsys-plugins/ExamplePlugin/properties.lua` lines 20 and 28 declare
+  `Name = "Button Styles"` and `Name = "Serial Pin"` inside the manufacturer's
+  own real `GetProperties()`, spaces and all. There is no platform
+  constraint — a spaced property name just needs bracket-notation access
+  (`Properties["Button Styles"]`) instead of dot notation
+  (`Properties.ButtonStyles`), same as any Lua table with a non-identifier
+  key. `MultiFlip-Flop`'s "Input Count" → `InputCount` rename (still 2026-07-27)
+  was cosmetic, not a fix: `Developer/plugins/MultiFlip-Flop V2.0.qplug`
+  reads it as `Properties["InputCount"]` both before and after, bracket
+  notation either way, so the rename bought nothing. `cpseries`'s "TCP Log"
+  property (`Developer/plugins/Dolby CPSeries Control V4.0.qplug`, read via
+  `Properties["TCP Log"]` in `Developer/Modules/cpseries_class.lua`) was
+  never renamed and was never broken — proof the constraint never existed.
+  Leave "TCP Log" as-is; do not "fix" it, and do not rename other spaced
+  property names on this basis alone.
 - **Section comments, plain, not decorated** — group runtime code loosely
   into aliases, variables/flags, objects (sockets/timers), constants, helper
   functions, event handlers, initialization, each marked with a plain

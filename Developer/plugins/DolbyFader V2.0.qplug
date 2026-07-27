@@ -15,6 +15,9 @@
 -- Signal chain: a Text control ('Level') mirrors the Dolby 0.0-10.0 scale,
 -- kept in sync with the 'Gain' Knob (dB) and an embedded stepper component
 -- via qknob.lua/dolbyfader.lua. No network I/O in this plugin.
+-- Dev-only, no version bump: wired in strict.lua (Developer/Modules/
+-- strict.lua) right after the runtime guard, dropped automatically from the
+-- production build (see CLAUDE.md).
 
 PluginInfo = {
 	Name = "Dolby~Dolby Fader",
@@ -185,5 +188,13 @@ function GetComponents(props)
 end
 
 if not Controls and Reflect then return end
+
+-- Dev-only safety net: catches a typo'd global (e.g. reading 'Controlls')
+-- immediately instead of silently creating/reading nil. Dropped from the
+-- production build automatically -- everything after the guard line is
+-- discarded by build_distributable.sh in favor of the explicitly inlined
+-- module list, so this never ships.
+require "strict"
+Global("QKnob", "DKNob", "DolbyFaderEventHandler")
 
 require "dolbyfader"

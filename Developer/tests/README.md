@@ -1,7 +1,10 @@
 # Tests
 
-Plain Lua 5.4. No test framework, no package manager, nothing to install
-beyond a Lua interpreter, which matches how the rest of this repo works.
+Plain Lua 5.3 -- matches Q-SYS Designer's own embedded Lua version
+(confirmed against Q-SYS Help, which points to the Lua 5.3 Reference
+Manual), not 5.4. No test framework, no package manager, nothing to
+install beyond a Lua interpreter, which matches how the rest of this repo
+works.
 
 ```sh
 Developer/tests/run.sh                 # syntax pass, then every test
@@ -9,7 +12,8 @@ Developer/tests/run.sh --syntax-only   # just luac -p over every source
 ```
 
 Runs from any working directory. Override the interpreter with
-`LUA=lua5.3 LUAC=luac5.3 ./run.sh` if the binaries are named differently.
+`LUA=lua5.4 LUAC=luac5.4 ./run.sh` if you need to sanity-check against 5.4
+instead, or the binaries are named differently.
 
 ## Why these tests exist at all
 
@@ -52,8 +56,8 @@ organised. That makes it the tool to reach for after a refactor:
 
 ```sh
 cd Developer/tests
-lua5.4 wire_trace.lua "../../Dolby CPSeries Control V3.0.qplug" > new.txt
-lua5.4 wire_trace.lua /path/to/known-good.qplug                 > old.txt
+lua5.3 wire_trace.lua "../../Dolby CPSeries Control V3.0.qplug" > new.txt
+lua5.3 wire_trace.lua /path/to/known-good.qplug                 > old.txt
 diff old.txt new.txt
 ```
 

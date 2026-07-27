@@ -1,5 +1,7 @@
 #!/bin/bash
-# Run the whole suite. Plain Lua 5.4, no test framework to install.
+# Run the whole suite. Plain Lua 5.3, no test framework to install --
+# matches Q-SYS Designer's own embedded Lua version (confirmed against
+# Q-SYS Help, which points to the Lua 5.3 Reference Manual), not 5.4.
 #
 #   ./run.sh                 syntax-check every source, then run every test
 #   ./run.sh --syntax-only   just the syntax pass
@@ -10,8 +12,8 @@ set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd "$here/../.." && pwd)"
 
-LUA="${LUA:-lua5.4}"
-LUAC="${LUAC:-luac5.4}"
+LUA="${LUA:-lua5.3}"
+LUAC="${LUAC:-luac5.3}"
 
 command -v "$LUA"  >/dev/null || { echo "no $LUA on PATH (set LUA=...)"  >&2; exit 127; }
 command -v "$LUAC" >/dev/null || { echo "no $LUAC on PATH (set LUAC=...)" >&2; exit 127; }
