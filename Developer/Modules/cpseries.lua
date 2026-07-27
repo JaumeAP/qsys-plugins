@@ -53,13 +53,8 @@
 			Controls.refresh.IsDisabled = false
 			if validateAddress(Controls.address.String) then
 				SetStatus(5,'')
-				local CPPort
-				local assign = {
-				  [Model.CP650.value] = function() CPPort = 61412 end,
-				  [Model.CP750.value] = function() CPPort = 61408 end,
-				  [Model.CP850.value] = function() CPPort = 61408 end
-				} assign[Properties.Model.Value]()
-				
+				-- port comes from the CPModels config (adds CP950 / CP950A)
+				local CPPort = CPModels.DefaultPort((Properties.Model.Value):gsub("%s",""))
 				sock:Connect(Controls.address.String,CPPort)
 			else
 				if System.IsEmulating then
@@ -136,11 +131,15 @@
 				["fader"] = function()  DKNob.Value = result
 										DKNob.EventHandler(DolbyCP)
 										end,
-				["format"] = function() assert(result~=0,"Plugin Event Error: format=0")
-										Controls.selector[tonumber(result)].Value = 1
-										Controls.selector[tonumber(result)].EventHandler(DolbyCP) end,
-				["reset"] = function()  assert(result~=0,"Plugin Event Error: reset=0")
-										Controls.selector[result].Value = 0 end,
+				["format"] = function() local i = tonumber(result)
+										-- bound-check: a format index outside the selector range is
+										-- ignored rather than indexing a nil button (out-of-bounds crash)
+										if not i or i < 1 or i > #Controls.selector then return end
+										Controls.selector[i].Value = 1
+										Controls.selector[i].EventHandler(DolbyCP) end,
+				["reset"] = function()  local i = tonumber(result)
+										if not i or i < 1 or i > #Controls.selector then return end
+										Controls.selector[i].Value = 0 end,
 			}
 			-- *** FOR DEBUG ****
 			--print("Event Triggered:",service,result)
