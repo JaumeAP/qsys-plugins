@@ -29,7 +29,7 @@ for i, m in ipairs({
 	Model[m.key] = m
 end
 
-require("cpseries_class")
+require("cpseries_commlib")
 
 -- A socket the test feeds by hand, independent of the stub's own.
 local function fake_sock()

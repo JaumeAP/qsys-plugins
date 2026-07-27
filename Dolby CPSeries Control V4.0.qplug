@@ -34,7 +34,7 @@
 --        label).
 --        Signal chain: DKNob (a QKnob wrapping the 'Level' Text control)
 --        mirrors the Dolby 0.0-10.0 fader scale against the 'Gain' Knob
---        (dB); CPSeries (cpseries_class, cpseries_models, cpseries_protocol)
+--        (dB); CPSeries (cpseries_commlib, cpseries_models, cpseries_protocol)
 --        drives a TcpSocket connection to the processor and reports
 --        fader/mute/format/formname/formlist back through
 --        DolbyCP.EventHandler in cpseries.lua.
@@ -495,7 +495,7 @@ do  -- qknob
   end
 end
 
-do  -- cpseries_class
+do  -- cpseries_commlib
 
    -- ##############################################################
    --			CPSeries Class

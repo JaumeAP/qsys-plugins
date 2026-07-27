@@ -5,7 +5,7 @@
 
 	do
 
-		require("cpseries_class")
+		require("cpseries_commlib")
 		require("dolbyfader")
 
 		-- Objects
