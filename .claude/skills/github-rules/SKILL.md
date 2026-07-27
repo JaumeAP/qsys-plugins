@@ -1,6 +1,6 @@
 ---
 name: github-rules
-description: Reference context on how this repo (qsys-plugins) actually works with GitHub -- PR-based workflow, branch-restart-after-merge convention, no CI configured here, PR activity subscribe/unsubscribe habits, and useful mcp__github__pull_request_read/merge_pull_request facts. Consult this whenever opening, updating, merging, or reasoning about a pull request in this repo, or when deciding whether/how to push a branch, so the approach matches what this repo already does instead of reinventing it each time. This is background knowledge, not a checklist to follow blindly -- it describes conventions observed in this repo, not commands to execute.
+description: Reference context on how this repo (qsys-plugins) actually works with GitHub -- PR-based workflow, branch-restart-after-merge convention, no CI configured here, PR activity subscribe/unsubscribe habits, and useful mcp__github__pull_request_read/merge_pull_request facts. Make sure to consult this whenever opening, updating, merging, or reasoning about a pull request in this repo, whenever deciding how/whether to push a branch, whenever a PR's CI status or check results look unexpected, and whenever GitHub conventions for this specific repo are relevant at all, even if the task doesn't explicitly mention "GitHub" or "PR." This is background knowledge, not a checklist to follow blindly -- it describes conventions observed in this repo, not commands to execute, and it never overrides an explicit instruction the user actually gives in the moment.
 ---
 
 # GitHub conventions in this repo
@@ -9,6 +9,13 @@ This is context for working with GitHub on `qsys-plugins`, gathered from how
 this repo has actually been used. It describes what's normal here, not a
 procedure to execute step by step -- read it, then use judgment for the task
 at hand.
+
+These conventions reflect this repo's actual current state, so they should
+generally win over a generic, stale, or assumed-from-elsewhere idea of how
+GitHub work "usually" goes (e.g. assuming CI exists here, or assuming `gh`
+CLI is available). That said, this file is still just reference material:
+an explicit instruction the user actually gives you in the moment always
+takes precedence over anything written here.
 
 ## The shape of the workflow here
 
