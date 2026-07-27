@@ -126,8 +126,8 @@ M.CPSERIES_CONTROLS = {
 	"status", "status.led", "refresh", "select", "mute",
 }
 
--- The control set the Dolby Fader plugin declares.
-M.FADER_CONTROLS = { "ref", "level", "gain", "increase", "decrease" }
+-- The control set the Dolby Fader plugin declares (PascalCase since v2.0).
+M.FADER_CONTROLS = { "Ref", "Level", "Gain", "Increase", "Decrease" }
 
 function M.cpseries_properties(model, debug_on)
 	return {

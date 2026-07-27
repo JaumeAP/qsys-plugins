@@ -19,7 +19,7 @@ M.DIST = {
 -- Developer-side plugin definition files.
 M.DEV = {
 	cpseries = M.plugins .. "/Dolby CPSeries Control V3.0.qplug",
-	fader    = M.plugins .. "/DolbyFader V1.1.qplug",
+	fader    = M.plugins .. "/DolbyFader V2.0.qplug",
 }
 
 M.MODELS = { "CP 650", "CP 750", "CP 850", "CP 950", "CP 950A" }

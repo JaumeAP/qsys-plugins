@@ -9,6 +9,11 @@ package.path = (arg[0]:match("^(.*)[/\\]") or ".") .. "/?.lua;" .. package.path
 local h = require("harness")
 local qsys = require("qsys_stub")
 
+-- The plugin definition files require("qsys_enums") unconditionally (it's
+-- needed at design time), so the module path has to include Developer/Modules
+-- even though this file never requires a module directly itself.
+h.add_module_path()
+
 local function load_definition(path)
 	qsys.install({ definition = true })
 	-- The definition pass returns nothing: the guard bails with a bare
@@ -64,9 +69,9 @@ load_definition(h.DEV.fader)
 h.check(GetPrettyName() == "Dolby Fader ", "GetPrettyName")
 local by_name = {}
 for _, c in ipairs(GetControls()) do by_name[c.Name] = c end
-h.check(by_name.level and by_name.level.ControlType == "Text",
-	"level is a Text control, which QKnob requires")
-h.check(by_name.gain and by_name.gain.Min == -100 and by_name.gain.Max == 20,
-	"gain knob spans -100..20 dB")
+h.check(by_name.Level and by_name.Level.ControlType == "Text",
+	"Level is a Text control, which QKnob requires")
+h.check(by_name.Gain and by_name.Gain.Min == -100 and by_name.Gain.Max == 20,
+	"Gain knob spans -100..20 dB")
 
 h.report()
