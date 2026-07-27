@@ -174,8 +174,14 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 │   │   │                             qsyscontrolfeedback@qsc.com in each README)
 │   │   ├── BasePlugin/               Plugin template (added 2026-07-27); its own
 │   │   │   └── PluginCompile/         nested submodule, the VS Code compile-to-.qplug
-│   │   │                             tool -- no longer vendored a second time at the
-│   │   │                             top level, see "Git" below
+│   │   │                             tool -- compiles multiple Lua files into one
+│   │   │                             .qplug, base64-encodes PNG/JPEG/JPG/SVG assets,
+│   │   │                             generates a GUID if missing, auto-increments the
+│   │   │                             version on each build, and copies the result into
+│   │   │                             the Designer plugin folder (confirmed reading
+│   │   │                             Q-SYS Help's Plugin Compiler page, 2026-07-27) --
+│   │   │                             no longer vendored a second time at the top
+│   │   │                             level, see "Git" below
 │   │   ├── ExamplePlugin/             Filled-in example (Mixer + Video Switcher UI);
 │   │   │   └── PluginCompile/         same nested submodule as BasePlugin's, same commit
 │   │   │                             ExamplePlugin.qplug is a full worked build
@@ -249,11 +255,21 @@ Definition-side callbacks (all take/return the `props` table):
 | `GetPrettyName(props)` | Display name (may interpolate props) |
 | `GetProperties()` | User-configurable properties (integer/enum/…); drive channel counts, model selection |
 | `RectifyProperties(props)` | Adjust/hide properties after a change (e.g. `props.plugin_show_debug.IsHidden = true`) |
+| `GetPages(props)` | (when present) multiple UI pages, returns a table of page-name objects; confirmed official (Reserved Functions doc, read directly 2026-07-27) but not used by any of the four plugins here — none need a multi-page UI |
 | `GetControls(props)` | Pins/controls: `Button`/`Knob`/`Text`, `PinStyle`, `UserPin`, min/max… |
 | `GetComponents(props)` | Embedded DSP blocks the plugin instantiates (`gain`, `sine`, `stepper`, `mixer`, `meter2`, `flip_flop`, `router`, `custom_controls`…) |
 | `GetControlLayout(props)` | Returns `layout, graphics` — positions/sizes/styles for the schematic & UCI |
 | `GetPins(props)` | (when present) external component pins, e.g. `{ Name, Direction }` |
 | `GetWiring(props)` | (when present) internal wiring from an embedded component's pin to a plugin pin |
+
+The Reserved Functions doc also lists a set of *runtime* function names as a
+common convention (not reserved words, just what QSC's own device plugins
+tend to call things): `SetupDebugPrint()`, `Send()`, `ClearVariables()`,
+`Connect()`, `Disconnected()`, `GetDeviceInfo()`, `PollDevice()`,
+`ParseResponse()`, `Initialization()`. `cpseries.lua` and the other modules
+here don't follow this exact set of names and there's no need to rename them
+to match it — it's a convention some QSC-authored plugins use, not something
+Q-SYS enforces.
 
 Runtime side: at the bottom of the file a guard then a `require`:
 
@@ -288,8 +304,11 @@ These are provided by the Q-SYS host, not defined in this repo:
   three independent sources after the code and a reverse-engineered spec
   disagreed; `TcpSocket:New()` with a colon happened to still work in
   practice, since `New` doesn't dispatch on `self`, but it is not the
-  documented construction syntax), `.WriteTimeout`, connect/read/write events;
-  instance methods use colon (`sock:Connect(...)`, `sock:Write(...)`).
+  documented construction syntax; re-confirmed same day by reading the
+  official TCPSocket Code Example page directly, not just a search summary
+  — see "Q-SYS Help" below), `.ReadTimeout`, `.WriteTimeout`,
+  `.ReconnectTimeout`, connect/read/write events; instance methods use colon
+  (`sock:Connect(...)`, `sock:Write(...)`).
 - `System.IsEmulating` — true in the Designer emulator; used to shorten loops.
 - `Print(...)`, `Reflect` (definition-time reflection, `Reflect.Types.*`).
 
@@ -430,14 +449,25 @@ official documentation site — general web docs, not a repository, so
 nothing from it is vendored as a submodule. Relevant pages found 2026-07-27:
 Building a Plugin, Plugin Compiler, Basic Plugin Framework, Reserved
 Functions, and the Code Examples section (TCPSocket, HTTPClient, SerialPort
-Usage, Storing Secrets in Plugins, Dynamic Pages). Caveat: `WebFetch` to
-both `q-syshelp.qsc.com` and `help.qsys.com` returns 403 from this
-environment's outbound proxy at the gateway level (confirmed via the
-proxy's own status endpoint, not just a failed request) — everything known
-about these pages here came from search-engine summaries of them, not their
-actual text, unlike the vendored templates above, which were read directly.
-Treat anything attributed to "Q-SYS Help" with that in mind; the vendored
-submodules are the more reliable source where they overlap.
+Usage, Storing Secrets in Plugins, Dynamic Pages). Update, same day: the
+earlier 403 was not universal — `WebFetch` against `help.qsys.com` (the
+`.qsc.com` domain was not retested) succeeded this session, reading
+Reserved Functions, the TCPSocket Code Example, and Storing Secrets in
+Plugins directly rather than via search-engine summary; see the
+`GetPages(props)` table row and the `TcpSocket` bullet above for what that
+confirmed. HTTPClient, SerialPort Usage, and Dynamic Pages were only seen via
+search-engine summary, not fetched directly — HTTPClient does GET/POST/PUT
+over HTTP(S); SerialPort has TCPSocket-like read/write handlers for a
+device's serial port; Dynamic Pages is listed as a Code Examples topic with
+no further detail found yet. Storing Secrets in Plugins' documented pattern:
+keep the secret in a hidden embedded Custom Controls component (its controls
+are only reachable from the plugin they're embedded in, and persist with the design
+state), copy user input into it on `EventHandler`, and mask the visible
+control with `ctrl.String:gsub(".", "*")` — not used by any plugin in this
+repo today (none of the four handle credentials), but the pattern to reach
+for if one ever does. Treat anything attributed to "Q-SYS Help" that has
+*not* been re-fetched this way with the original caveat in mind; the
+vendored submodules remain the more reliable source where they overlap.
 
 This mostly *supersedes* the older "match existing tab-heavy formatting"
 habit for these four plugins (they're rebuilt to a consistent, more open
