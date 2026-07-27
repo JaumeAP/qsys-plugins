@@ -4,3 +4,12 @@
 [submodule "vendor/q-sys-community/q-sys-plugin-guide"]
 	path = vendor/q-sys-community/q-sys-plugin-guide
 	url = https://github.com/q-sys-community/q-sys-plugin-guide.git
+[submodule "vendor/qsys-plugins/ExamplePlugin"]
+	path = vendor/qsys-plugins/ExamplePlugin
+	url = https://github.com/qsys-plugins/ExamplePlugin.git
+[submodule "vendor/qsys-plugins/PluginCompile"]
+	path = vendor/qsys-plugins/PluginCompile
+	url = https://github.com/qsys-plugins/PluginCompile.git
+[submodule "vendor/qsys-plugins/PluginEncryptionTool"]
+	path = vendor/qsys-plugins/PluginEncryptionTool
+	url = https://github.com/qsys-plugins/PluginEncryptionTool.git

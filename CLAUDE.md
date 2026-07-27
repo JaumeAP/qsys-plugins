@@ -169,9 +169,15 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 ├── vendor/                            Read-only reference material (git submodules) —
 │   │                                 `git submodule update --init` after cloning if
 │   │                                 empty; never edit contents, it's all upstream's
-│   ├── qsys-plugins/
-│   │   └── BasePlugin/               github.com/qsys-plugins/BasePlugin — QSC's own
-│   │                                 plugin template (added 2026-07-27)
+│   ├── qsys-plugins/                  QSC's own org (confirmed: support contact
+│   │   │                             qsyscontrolfeedback@qsc.com in each README)
+│   │   ├── BasePlugin/               Plugin template (added 2026-07-27)
+│   │   ├── ExamplePlugin/             Filled-in example (Mixer + Video Switcher UI);
+│   │   │                             ExamplePlugin.qplug is a full worked build
+│   │   ├── PluginCompile/             The VS Code compile-to-.qplug tool BasePlugin
+│   │   │                             itself uses as a submodule
+│   │   └── PluginEncryptionTool/      plugin_tool_release.exe — standalone .qplug ->
+│   │                                 .qplugx encryption, Windows binary
 │   └── q-sys-community/
 │       └── q-sys-plugin-guide/       github.com/q-sys-community/q-sys-plugin-guide —
 │                                     a third-party (Solo Works London / Carrier Labs)
@@ -366,28 +372,43 @@ identified the rest as `qsc-q-sys`'s own added style, layered on top rather
 than reverse-engineered from either real template — each bullet below says
 which:
 
-- **Confirmed against both vendored templates**: PascalCase Controls/
-  functions/globals/aliases (`BasePlugin`'s `runtime.lua` uses `Status =
-  Controls.Status`, `ReportStatus`, `Connect`, `Connected`; the community
-  template uses compound PascalCase control names like `IndicatorLed`,
-  `IndicatorMeter`); plain string literals for `ControlType`/`IndicatorType`/
-  etc. in `GetControls` (`ControlType = "Indicator"` in both — see the enums
-  bullet below, this is the one place the two templates directly contradict
-  what `qsc-q-sys` added).
-- **Confirmed against `BasePlugin` only** (the community template's example
-  is too short to show these): Timer/socket objects declared global, never
-  local (`PollTimer = Timer.New()`); grouping runtime code into sections
-  (aliases, variables/flags, sockets, timers/constants, helper functions,
-  event handlers, initialization) — marked with plain `-- Section name`
-  comments, not the decorated `--*** Name ***` banners below.
-- **Not present in either vendored template, so `qsc-q-sys` house style, not
-  a QSC mandate** — kept anyway since nothing here is wrong, just unproven
-  as "official": enum tables in place of string literals (both real
-  templates write the literal directly, e.g. `ControlType = "Indicator"`);
-  the decorated `--*** Name ***` section banners; a `-- CHANGELOG` block
+- **Confirmed against all three real QSC/community templates**
+  (`BasePlugin`, `ExamplePlugin`, the community `q-sys-plugin-guide`):
+  PascalCase Controls/functions/globals/aliases (`BasePlugin`'s
+  `runtime.lua` uses `Status = Controls.Status`, `ReportStatus`, `Connect`,
+  `Connected`; `ExamplePlugin` uses `EQBypass`, `EQFrequency`, `ChannelName`;
+  the community template uses `IndicatorLed`, `IndicatorMeter`) — though not
+  absolute: `ExamplePlugin.qplug` itself has one lowercase control,
+  `Name = "code"`, alongside dozens of PascalCase ones, so treat this as the
+  strong default, not a rule Q-SYS enforces; plain string literals for
+  `ControlType`/`IndicatorType`/etc. in `GetControls` (`ControlType =
+  "Indicator"` in all three — see the enums bullet below, this is the one
+  place all three templates directly contradict what `qsc-q-sys` added).
+- **Confirmed against `BasePlugin` only** (the other two examples are too
+  short, or too design-time-focused, to show these): Timer/socket objects
+  declared global, never local (`PollTimer = Timer.New()`); grouping runtime
+  code into sections (aliases, variables/flags, sockets, timers/constants,
+  helper functions, event handlers, initialization) — marked with plain
+  `-- Section name` comments, not the decorated `--*** Name ***` banners
+  below.
+- **A pattern found in `ExamplePlugin.qplug` that this repo does NOT
+  follow, deliberately**: `GetProperties()`/`GetControls()` there assign
+  `props = {}` / `ctrls = {}` with no `local` — global, not a dead
+  assignment (the function goes on to `table.insert` into that same table
+  and return it). That's different from the two bugs fixed in this repo's
+  own `GetProperties()` calls (DolbyFader, Dolby Sweep): those built and
+  returned a *separate* literal table while leaving an unused `props = {}`
+  behind — dead code, not a live global. Q-SYS itself doesn't care either
+  way; this repo still prefers `local` for a table with no reason to escape
+  the function, per general Lua hygiene, not because a QSC template says so.
+- **Not present in any of the three real templates, so `qsc-q-sys` house
+  style, not a QSC mandate** — kept anyway since nothing here is wrong, just
+  unproven as "official": enum tables in place of string literals (all
+  three write the literal directly, e.g. `ControlType = "Indicator"`); the
+  decorated `--*** Name ***` section banners; a `-- CHANGELOG` block
   embedded in the plugin file. If asked to strip this repo's convention down
   to only what's confirmed, these three are the ones to drop first — the
-  enum-table one now has two independent templates contradicting it, not
+  enum-table one now has three independent templates contradicting it, not
   just an absence of confirmation.
 
 **"Q-SYS Help"** (`q-syshelp.qsc.com`, mirrored at `help.qsys.com`) is QSC's
@@ -455,9 +476,14 @@ the four `.qplug`/`Developer/Modules/*.lua` files this rewrite covered.
 
 - `.qplug` — plaintext Lua source; the editable form.
 - `.qplugx` — a **packaged** plugin: a JSON envelope with an encrypted/obfuscated
-  `key` + payload produced by Q-SYS Designer's "Save as compiled plugin". Do
-  **not** try to hand-edit `.qplugx`; regenerate it from the `.qplug` source in
-  Designer.
+  `key` + payload. Two ways to produce one, both QSC's own, neither of them
+  hand-editing: Designer's own "Save as compiled plugin", or the standalone
+  `plugin_tool_release.exe encrypt input.qplug output.qplugx` CLI now
+  vendored at `vendor/qsys-plugins/PluginEncryptionTool/release/` (Windows
+  binary + DLLs — not runnable from this Linux dev environment, but real and
+  official; confirmed via its own README, `vendor/qsys-plugins/
+  PluginEncryptionTool/README.md`). Do **not** try to hand-edit `.qplugx`
+  with either path available.
 
 ### Developer workflow
 
@@ -518,11 +544,12 @@ Typical loop:
 - AI-assisted changes land on a task-specific `claude/...` branch (named per
   session/PR); there is no single long-lived AI branch to target.
 - `Developer/Modules/class` (a vendored OOP base) was the last submodule and
-  was removed; two new ones were added 2026-07-27 under `vendor/` —
-  `qsys-plugins/BasePlugin` (QSC's own plugin template) and
-  `q-sys-community/q-sys-plugin-guide` (third-party, not QSC) — both
-  read-only reference material (see "Repository layout" and "Plugin
-  structure/naming convention" above). Same rule as always: commit submodule
-  pointer changes deliberately, don't bump one incidentally. `git submodule
-  update --init` after cloning if either is empty (a `SessionStart` hook
-  already does this automatically in a Claude Code session).
+  was removed; five new ones were added 2026-07-27 under `vendor/` — four
+  from QSC's own `qsys-plugins` org (`BasePlugin`, `ExamplePlugin`,
+  `PluginCompile`, `PluginEncryptionTool`) and one third-party
+  (`q-sys-community/q-sys-plugin-guide`, not QSC) — all read-only reference
+  material (see "Repository layout" and "Plugin structure/naming
+  convention" above). Same rule as always: commit submodule pointer changes
+  deliberately, don't bump one incidentally. `git submodule update --init`
+  after cloning if any are empty (a `SessionStart` hook already does this
+  automatically in a Claude Code session).
