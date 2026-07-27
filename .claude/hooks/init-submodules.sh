@@ -37,9 +37,24 @@ if [ ! -f .gitmodules ]; then
   exit 0
 fi
 
+# Non-recursive deliberately (2026-07-27): a submodule this repo vendors as
+# read-only reference material can itself declare its own nested submodules
+# (its own build tooling, its own dependencies) that this repo has no use
+# for -- and worse, a nested submodule can be the EXACT SAME repo this
+# project already vendors directly elsewhere (found here: qsys-plugins/
+# BasePlugin and qsys-plugins/ExamplePlugin both carry their own nested
+# "PluginCompile" submodule, the identical repo this project also vendors
+# at the top level as vendor/qsys-plugins/PluginCompile -- --recursive would
+# have cloned it a second and third time). Plain `--init` only populates
+# what THIS repo's own .gitmodules lists; a submodule's own nested
+# submodules are left as empty, harmless gitlink placeholders. If a repo
+# genuinely needs a vendored submodule's own nested content, that's a
+# deliberate `git submodule update --init --recursive <path>` on the one
+# path that needs it, not a blanket default here.
+#
 # Bounded with `timeout` so a stuck submodule fetch (dead remote, auth
 # prompt with no TTY, etc.) can't hang the session start indefinitely.
-timeout 60s git submodule update --init --recursive >/dev/null 2>&1 || true
+timeout 60s git submodule update --init >/dev/null 2>&1 || true
 
 status="$(git submodule status 2>/dev/null || true)"
 

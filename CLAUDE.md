@@ -526,5 +526,18 @@ Typical loop:
   material (see "Repository layout" and "Plugin structure/naming
   convention" above). Same rule as always: commit submodule pointer changes
   deliberately, don't bump one incidentally. `git submodule update --init`
-  after cloning if any are empty (a `SessionStart` hook already does this
-  automatically in a Claude Code session).
+  (deliberately **not** `--recursive`, see next bullet) after cloning if any
+  are empty (a `SessionStart` hook already does this automatically in a
+  Claude Code session).
+- **Never `git submodule update --recursive` in this repo.** `BasePlugin`
+  and `ExamplePlugin` each declare their own nested `PluginCompile`
+  submodule — the exact same repo this project also vendors directly at
+  `vendor/qsys-plugins/PluginCompile` (same commit, confirmed via `git
+  submodule status --recursive`). A recursive update would clone it a
+  second and third time for no benefit — this repo only reads these as
+  reference material, never builds anything with them, so a vendored
+  repo's own nested submodules add nothing. `.claude/hooks/
+  init-submodules.sh` uses plain `--init` for exactly this reason; if you
+  ever genuinely need a specific vendored repo's own nested content, target
+  it explicitly (`git submodule update --init --recursive <that one path>`),
+  never the whole tree.
