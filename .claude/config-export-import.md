@@ -145,6 +145,14 @@ directions, mechanized best-effort by
         target's own `.claude/scripts/`, same blind-copy treatment as
         the hooks, so a future re-export/re-import from that repo has it
         too.
+        `github-rules` (2026-07-27, explicit user request, reverted the
+        same day it was briefly moved into the optional group in 2.5):
+        blind-copied into `.claude/skills/github-rules/`, same as the
+        hooks above — always overwritten with whatever the bundle
+        carries, even if the target already has its own copy, no
+        ask/offer step. The other three generic skills
+        (`changelog-rules`, `file-operations`, `find-skills`) stay in
+        the optional group, see 2.5.
    2.3. **Contradiction check, mandatory on every import**: every
         imported hook/common rule always wins over a conflicting rule
         the target repo already has — the general principle 2.2 already
@@ -185,36 +193,41 @@ directions, mechanized best-effort by
         between produces a spurious double-blank-line diff every single
         import, cosmetic but needless. Join them directly, no inserted
         separator.
-   2.5. **The four generic skills, offered as optional choices (made
+   2.5. **Three generic skills, offered as optional choices (made
         optional 2026-07-27, explicit user request; previously a
         mandatory blind-copy)**: `changelog-rules`, `file-operations`,
-        `find-skills`, `github-rules` are bundled as files exactly like
+        `find-skills` are bundled as files exactly like
         any 2.6 pack, but no longer force-installed or silently
         overwritten. Fold them into the same 2.6 offering (same
         individual-selection UI, same already-installed filter — don't
         present a skill from this group that's already in the target's
         `.claude/skills/`), rather than a separate step. If one of these
-        four is already installed in the target, offer to sync it to the
+        three is already installed in the target, offer to sync it to the
         bundle's version instead of skipping it outright (they're common
         and foundational enough that a stale copy is worth flagging even
         though updating it is no longer forced) — only apply the update
         if the user says yes.
+        `github-rules` is NOT in this optional group (moved back to
+        mandatory blind-copy the same day it was made optional, explicit
+        user request — see 2.2) — only these three are offered here.
         (History: 2026-07-24 `find-skills` promoted from the then-optional
-        group in 2.6 into this one — it was already always bundled by the
-        export-side loop in what was then `export-config.sh` (now
-        `export-config-skill.sh`), this closed the gap on the import side
-        to match; 2026-07-25 `git-rules` retired from this group entirely
-        by explicit user request, see `removed-files.txt`; 2026-07-27
-        `github-rules` promoted into this group after being generalized
-        from a qsys-plugins-specific skill into portable GitHub PR
-        conventions — it must never encode a standing auto-merge policy,
-        since a rule written here would silently apply to every repo it
-        gets installed into; same day, the whole group was switched from
-        mandatory/blind-copy to optional/offered, per the note above.)
+        group in 2.6 into the then-mandatory one — it was already always
+        bundled by the export-side loop in what was then `export-config.sh`
+        (now `export-config-skill.sh`), this closed the gap on the import
+        side to match; 2026-07-25 `git-rules` retired from that group
+        entirely by explicit user request, see `removed-files.txt`;
+        2026-07-27 `github-rules` promoted into that group after being
+        generalized from a qsys-plugins-specific skill into portable
+        GitHub PR conventions, then the same day the whole group of four
+        was switched from mandatory/blind-copy to optional/offered, then
+        later the same day `github-rules` specifically was moved back to
+        mandatory by explicit user request, leaving these three as the
+        optional group.)
    2.6. **Additional packs actually bundled as files, always offer,
-        optional to accept**: every skill beyond the four in 2.5 that
+        optional to accept**: every skill beyond the three in 2.5 (and
+        beyond `github-rules`, mandatory per 2.2) that
         the bundle actually carries as files, offered together with those
-        four in the same selection step — the full list is
+        three in the same selection step — the full list is
         open-ended and growing over time (see
         `.claude/scripts/export-config-skill.sh` for what it currently
         contains, not repeated here) — always ask the user which ones

@@ -12,10 +12,12 @@
 #
 # A .skill package may contain exactly ONE SKILL.md (the claude.ai/Skills
 # API upload path rejects more than one). This bundle carries FOUR
-# skills as files (changelog-rules, file-operations, find-skills,
-# github-rules; offered as optional choices on import since 2026-07-27,
-# not force-installed -- see config-export-import.md step 2.5), each
-# with its own SKILL.md -- those get renamed to
+# skills as files: changelog-rules, file-operations, find-skills are
+# offered as optional choices on import since 2026-07-27, not
+# force-installed (see config-export-import.md step 2.5); github-rules
+# is mandatory/blind-copy (moved back the same day, explicit user
+# request, after briefly being in the optional group too -- see step
+# 2.2). Each skill, optional or mandatory, has its own SKILL.md -- those get renamed to
 # <name>.md under references/skills/<name>/ inside the package, so the
 # whole bundle still fits in one valid .skill. Whoever applies the
 # bundle to a target repo renames each <name>.md back to SKILL.md when
@@ -88,11 +90,12 @@ repeated here.
   installed into the target's own `.claude/scripts/` too, so the target
   repo can export its own bundle later instead of only ever being an
   import destination.
-- `references/skills/<name>/<name>.md` -- four generic skills
-  (`changelog-rules`, `file-operations`, `find-skills`, `github-rules`),
-  offered as optional choices on import (2026-07-27, no longer
-  force-installed -- see `references/config-export-import.md` step 2.5).
-  Each one's entry point is named `<name>.md` here
+- `references/skills/<name>/<name>.md` -- four generic skills.
+  `changelog-rules`, `file-operations`, `find-skills` are offered as
+  optional choices on import (2026-07-27, no longer force-installed --
+  see `references/config-export-import.md` step 2.5); `github-rules` is
+  mandatory/blind-copy (step 2.2), moved back the same day after briefly
+  being optional too. Each one's entry point is named `<name>.md` here
   instead of `SKILL.md`, because a `.skill` package may only contain one
   `SKILL.md` (this one) -- nesting more would fail validation on upload.
   **When actually installing one of these into a target repo's
