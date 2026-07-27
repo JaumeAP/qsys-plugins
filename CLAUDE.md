@@ -617,10 +617,17 @@ the four `.qplug`/`Developer/Modules/*.lua` files this rewrite covered.
   hand-editing: Designer's own "Save as compiled plugin", or the standalone
   `plugin_tool_release.exe encrypt input.qplug output.qplugx` CLI now
   vendored at `vendor/qsys-plugins/PluginEncryptionTool/release/` (Windows
-  binary + DLLs — not runnable from this Linux dev environment, but real and
-  official; confirmed via its own README, `vendor/qsys-plugins/
+  binary + DLLs — not runnable from this Linux dev environment directly, but
+  real and official; confirmed via its own README, `vendor/qsys-plugins/
   PluginEncryptionTool/README.md`). Do **not** try to hand-edit `.qplugx`
   with either path available.
+- **CI alternative (added 2026-07-27, explicit user request):**
+  `.github/workflows/build-qplugx.yml` runs that same `plugin_tool_release.exe`
+  on a `windows-latest` GitHub Actions runner instead — manual trigger
+  (`workflow_dispatch`) only, picks one root `.qplug` or `all`, uploads the
+  resulting `.qplugx` as a workflow artifact. It never commits the `.qplugx`
+  back to the repo; downloading and adding it is a separate, deliberate step.
+  This is the repo's first CI workflow.
 
 ### Developer workflow
 

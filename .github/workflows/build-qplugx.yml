@@ -1,0 +1,65 @@
+name: Build .qplugx
+
+# Manual only: encrypting a plugin is a deliberate release step, not
+# something to run on every push. Uses QSC's own vendored
+# plugin_tool_release.exe (vendor/qsys-plugins/PluginEncryptionTool/release/),
+# a Windows binary, hence windows-latest. Output is uploaded as a workflow
+# artifact only -- this never commits the .qplugx back to the repo.
+on:
+  workflow_dispatch:
+    inputs:
+      qplug:
+        description: "Which root .qplug to encrypt"
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - DolbyFader.qplug
+          - Dolby Sweep V2.0.qplug
+          - MultiFlip-Flop.qplug
+          - Dolby CPSeries Control V4.0.qplug
+
+jobs:
+  encrypt:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Encrypt selected plugin(s)
+        shell: pwsh
+        run: |
+          $tool = Join-Path $env:GITHUB_WORKSPACE "vendor\qsys-plugins\PluginEncryptionTool\release\plugin_tool_release.exe"
+          if (-not (Test-Path $tool)) {
+            throw "plugin_tool_release.exe not found at $tool -- submodule not initialized?"
+          }
+
+          $all = @(
+            "DolbyFader.qplug",
+            "Dolby Sweep V2.0.qplug",
+            "MultiFlip-Flop.qplug",
+            "Dolby CPSeries Control V4.0.qplug"
+          )
+          $selected = if ("${{ inputs.qplug }}" -eq "all") { $all } else { @("${{ inputs.qplug }}") }
+
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          foreach ($name in $selected) {
+            $inPath = Join-Path $env:GITHUB_WORKSPACE $name
+            if (-not (Test-Path $inPath)) {
+              throw "input file not found: $inPath"
+            }
+            $outName = [System.IO.Path]::ChangeExtension($name, "qplugx")
+            $outPath = Join-Path "out" $outName
+            & $tool encrypt $inPath $outPath
+            if ($LASTEXITCODE -ne 0) {
+              throw "plugin_tool_release.exe failed on $name (exit $LASTEXITCODE)"
+            }
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qplugx-build
+          path: out/*.qplugx
+          if-no-files-found: error
