@@ -64,19 +64,17 @@ sub-items are numbered too (e.g. `3.1`, `3.2`), never dashes/bullets.
 
 These generic skills travel with this file and the rest of the `.claude/`
 config (see `.claude/config-export-import.md`) — still always bundled as
-files on export. `changelog-rules`, `file-operations`, `find-skills` are
-offered as optional choices on import into another repo since 2026-07-27
-(explicit user request), not force-installed the way they were before.
-`github-rules` is the exception: moved back to mandatory/blind-copy the
-same day (also explicit user request), after briefly being optional too.
-This repo itself always keeps and uses all four regardless. Pointers
+files on export. `file-operations` is offered as an optional choice on
+import into another repo since 2026-07-27 (explicit user request), not
+force-installed the way it was before. `github-rules` is the exception:
+moved back to mandatory/blind-copy the same day (also explicit user
+request), after briefly being optional too. This repo itself always keeps
+and uses both regardless. Pointers
 only, not summaries — same
 drift-safety reason as above; each skill is the authority on its own topic,
 invoke it when the task calls for it:
 
-1. `changelog-rules` (`.claude/skills/changelog-rules/SKILL.md`) — how to
-   write and maintain changelog entries (versioning, format, flush-on-push).
-2. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
+1. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
    PR conventions (workflow shape, reading `pull_request_read` results,
    merge mechanics); generalized 2026-07-27 from a qsys-plugins-specific
    skill of the same name. Must never encode a standing auto-merge policy —
@@ -91,8 +89,23 @@ dropped from `settings.json`, and its path added to
 from target repos too. Git workflow now follows plain judgement +
 the rest of this file's rules, not a dedicated skill.)
 
-(`file-operations` is also bundled but needs no pointer here — its own
-description triggers it by context when there's file I/O to do.)
+(`changelog-rules` and `find-skills` removed from the portable bundle
+2026-07-27, explicit user request, after a session-long audit found
+neither had actually been invoked that session — deleted from
+`.claude/skills/`, `.claude/skills-lock.json` deleted too (it only ever
+tracked `find-skills`' own installed hash), and all three paths added to
+`.claude/removed-files.txt` so future imports of an older bundle prune
+them from target repos too. `find-skills` stays recoverable on demand via
+`.claude/recommended-skills.txt` — `npx skills add vercel-labs/skills -s
+find-skills` works as a plain CLI command whether or not the skill file
+itself is installed. `changelog-rules` has no equivalent recovery path,
+since it's this bundle's own original content, not fetchable from an
+external repo — if it's ever wanted back, restore it from an older export
+or git history instead.)
+
+(`file-operations` needs no pointer here beyond the numbered list above
+— its own description triggers it by context when there's file I/O to
+do.)
 
 **Which additional skills travel on export is defined in
 `.claude/scripts/export-config-skill.sh`** — not repeated here, to avoid
@@ -101,14 +114,6 @@ that script's copy list stays local; its name/source is kept in
 `.claude/recommended-skills.txt` (plain list, one name per line,
 updated by hand) for a target repo to fetch itself if wanted — that
 file itself always travels on export.
-
-**Find Skills**: `find-skills`, imported from `vercel-labs/skills`
-(`skills/find-skills/SKILL.md`) — discovers and installs third-party
-skills via the `npx skills` CLI, #1 by install count on skills.sh at
-import time. Tracked in `skills-lock.json`. Note its own workflow can
-install other skills straight from that ecosystem, bypassing this
-repo's own skill-creator/config-ingest governance — worth keeping in
-mind wherever it ends up.
 
 **Skill creation/extension.** Any skill creation or extension (a new
 `SKILL.md`, or a content/frontmatter change to an existing one — this

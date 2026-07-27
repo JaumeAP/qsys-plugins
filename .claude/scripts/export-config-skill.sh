@@ -11,13 +11,19 @@
 # outside this repo -- the packaging logic itself is only a few lines).
 #
 # A .skill package may contain exactly ONE SKILL.md (the claude.ai/Skills
-# API upload path rejects more than one). This bundle carries FOUR
-# skills as files: changelog-rules, file-operations, find-skills are
-# offered as optional choices on import since 2026-07-27, not
-# force-installed (see config-export-import.md step 2.5); github-rules
-# is mandatory/blind-copy (moved back the same day, explicit user
-# request, after briefly being in the optional group too -- see step
-# 2.2). Each skill, optional or mandatory, has its own SKILL.md -- those get renamed to
+# API upload path rejects more than one). This bundle carries TWO
+# skills as files: file-operations is offered as an optional choice on
+# import since 2026-07-27, not force-installed (see
+# config-export-import.md step 2.5); github-rules is mandatory/blind-copy
+# (moved back the same day, explicit user request, after briefly being
+# optional too -- see step 2.2). changelog-rules and find-skills were
+# also part of this bundle until 2026-07-27, when both were removed
+# entirely (explicit user request, neither had actually been invoked in
+# a session-long audit) -- see removed-files.txt and CLAUDE.md's
+# "Portable skills" section for the full story; find-skills stays
+# recoverable via recommended-skills.txt, changelog-rules does not since
+# it isn't fetchable from an external repo. Each remaining skill has its
+# own SKILL.md -- those get renamed to
 # <name>.md under references/skills/<name>/ inside the package, so the
 # whole bundle still fits in one valid .skill. Whoever applies the
 # bundle to a target repo renames each <name>.md back to SKILL.md when
@@ -48,7 +54,7 @@ mkdir -p "$skill_dir/references/hooks" "$skill_dir/references/skills"
 cat > "$skill_dir/SKILL.md" <<'EOF'
 ---
 name: claude-config-bundle
-description: Portable Claude Code .claude/ configuration bundle, common CLAUDE.md rules, settings.json, every hook, the changelog-rules/file-operations/find-skills/github-rules skills, and the full export/import procedure, all packaged as one file. Use this skill whenever asked to export or import Claude Code configuration between repos, whenever the user says "exporta la configuració"/"importa la configuració" or the English equivalent, or when setting up a brand new repo's .claude/ tooling from an existing one. Also use it when a config bundle is pasted or uploaded with no explicit request, to recognize it and know how to apply it.
+description: Portable Claude Code .claude/ configuration bundle, common CLAUDE.md rules, settings.json, every hook, the file-operations/github-rules skills, and the full export/import procedure, all packaged as one file. Use this skill whenever asked to export or import Claude Code configuration between repos, whenever the user says "exporta la configuració"/"importa la configuració" or the English equivalent, or when setting up a brand new repo's .claude/ tooling from an existing one. Also use it when a config bundle is pasted or uploaded with no explicit request, to recognize it and know how to apply it.
 ---
 
 # Claude Code config bundle
@@ -70,17 +76,18 @@ repeated here.
 - `references/hooks/*.sh` -- every mechanized hook, copied straight into
   the target's `.claude/hooks/`.
 - `references/recommended-skills.txt` -- optional skill packs a target
-  repo can offer to fetch live via `find-skills`, not bundled as files.
+  repo can offer to fetch live via `npx skills add` (see
+  `references/config-export-import.md` step 2.7), not bundled as files.
+  Includes `find-skills` itself (2026-07-27) now that it's no longer one
+  of the bundled files below.
 - `references/removed-files.txt` -- files retired from the mandatory
-  bundle (hooks, scripts, ...); on import, any of these paths still
-  present under the target's `.claude/` get deleted (see
+  bundle (hooks, scripts, skills, ...); on import, any of these paths
+  still present under the target's `.claude/` get deleted (see
   `references/config-export-import.md` step 2.2), not installed.
 - `references/00-START-HERE.md` -- the same "read config-export-import.md
   first, don't copy anything in blind" note the .zip export carries,
   kept here for parity even though this package's own SKILL.md now
   serves that role too.
-- `references/skills-lock.json` -- trimmed to just `find-skills`' own
-  entry, same as the .zip export.
 - `references/scripts/merge-settings.sh` -- merges an incoming
   `settings.json` into a target's existing one without dropping the
   target's own project-specific hook registrations (see
@@ -90,12 +97,14 @@ repeated here.
   installed into the target's own `.claude/scripts/` too, so the target
   repo can export its own bundle later instead of only ever being an
   import destination.
-- `references/skills/<name>/<name>.md` -- four generic skills.
-  `changelog-rules`, `file-operations`, `find-skills` are offered as
-  optional choices on import (2026-07-27, no longer force-installed --
-  see `references/config-export-import.md` step 2.5); `github-rules` is
+- `references/skills/<name>/<name>.md` -- two generic skills.
+  `file-operations` is offered as an optional choice on import
+  (2026-07-27, no longer force-installed -- see
+  `references/config-export-import.md` step 2.5); `github-rules` is
   mandatory/blind-copy (step 2.2), moved back the same day after briefly
-  being optional too. Each one's entry point is named `<name>.md` here
+  being optional too. (`changelog-rules` and `find-skills` used to be
+  bundled here too, removed entirely 2026-07-27 -- see
+  `removed-files.txt`.) Each one's entry point is named `<name>.md` here
   instead of `SKILL.md`, because a `.skill` package may only contain one
   `SKILL.md` (this one) -- nesting more would fail validation on upload.
   **When actually installing one of these into a target repo's
@@ -143,23 +152,15 @@ before doing anything else with these files, unless the self-bundle
 exception above applies.
 EOF
 
-# Trim skills-lock.json to just find-skills' own entry, same as the old
-# export-config.sh used to -- the full file also tracks whatever else
-# this repo happens to have installed right now, none of which is in
-# this bundle.
-if [ -f skills-lock.json ]; then
-  jq '.skills |= {"find-skills": .["find-skills"]}' skills-lock.json > "$skill_dir/references/skills-lock.json"
-fi
-
 for hook in check-reply-format.sh config-ingest-reminder.sh \
-  init-submodules.sh local-merge-reminder.sh no-commit-on-main.sh \
+  init-submodules.sh no-commit-on-main.sh \
   precompact-hygiene-flag.sh \
   rule-check-reminder.sh skill-creation-reminder.sh \
-  submodule-clone-fixup.sh sync-command-reminder.sh; do
+  submodule-clone-fixup.sh; do
   [ -f ".claude/hooks/$hook" ] && cp ".claude/hooks/$hook" "$skill_dir/references/hooks/"
 done
 
-for skill in changelog-rules file-operations find-skills github-rules; do
+for skill in file-operations github-rules; do
   if [ -d ".claude/skills/$skill" ]; then
     cp -r ".claude/skills/$skill" "$skill_dir/references/skills/$skill"
     mv "$skill_dir/references/skills/$skill/SKILL.md" "$skill_dir/references/skills/$skill/$skill.md"
