@@ -1,8 +1,8 @@
 # Config export/import (cross-repo `.claude/` propagation)
 
-This repo's `.claude/` tooling (`settings.json`, `hooks/`, the three
+This repo's `.claude/` tooling (`settings.json`, `hooks/`, the four
 generic skills — `changelog-rules`, `file-operations`,
-`find-skills`, all under `.claude/skills/`, plus this file) is meant to be portable
+`find-skills`, `github-rules`, all under `.claude/skills/`, plus this file) is meant to be portable
 across all my repos, same as `CLAUDE.md`. Which additional skills also
 travel (if any) is defined in `.claude/scripts/export-config-skill.sh` — not
 repeated here. This file is deliberately plain, not a `SKILL.md`
@@ -16,7 +16,7 @@ directions, mechanized best-effort by
 1. **Export** (this repo → another repo, on request, e.g. "exporta la
    configuració"): run `.claude/scripts/export-config-skill.sh` — bundles
    `CLAUDE.md` + `.claude/settings.json` + `.claude/hooks/` + this file
-   + the three generic skills + every current additional pack (each
+   + the four generic skills + every current additional pack (each
    pack keeps its own license, carried along on
    export) — NOT `CLAUDE.md`'s own
    "Project-specific rules" section (that's THIS repo's content, not
@@ -40,7 +40,7 @@ directions, mechanized best-effort by
    `00-START-HERE.md`, `skills-lock.json` (trimmed to `find-skills`'
    own entry) — lives under `references/`. A `.skill` package may
    contain only ONE `SKILL.md` (the claude.ai/Skills API upload path
-   rejects more than one), so the three mandatory skills' own `SKILL.md`
+   rejects more than one), so the four mandatory skills' own `SKILL.md`
    files are renamed to `references/skills/<name>/<name>.md` inside the
    package — restore each one back to `SKILL.md` when actually
    installing it into a target repo's `.claude/skills/<name>/`, that
@@ -183,21 +183,26 @@ directions, mechanized best-effort by
         between produces a spurious double-blank-line diff every single
         import, cosmetic but needless. Join them directly, no inserted
         separator.
-   2.5. **The three mandatory generic skills, always the incoming
+   2.5. **The four mandatory generic skills, always the incoming
         version**: `changelog-rules`, `file-operations`,
-        `find-skills` load automatically, no prompt, on every import —
-        they're the baseline every repo needs (2026-07-24: `find-skills`
-        promoted from the optional group in 2.6 into this mandatory one
-        — it was already always bundled by the export-side loop in what
-        was then `export-config.sh` (now `export-config-skill.sh`),
-        this closes the gap on the import side to
-        match; 2026-07-25: `git-rules` retired from this mandatory group
-        entirely by explicit user request — see `removed-files.txt`).
-        Same substitution treatment as 2.2/2.4 — these three
+        `find-skills`, `github-rules` load automatically, no prompt, on
+        every import — they're the baseline every repo needs (2026-07-24:
+        `find-skills` promoted from the optional group in 2.6 into this
+        mandatory one — it was already always bundled by the export-side
+        loop in what was then `export-config.sh` (now
+        `export-config-skill.sh`), this closes the gap on the import side
+        to match; 2026-07-25: `git-rules` retired from this mandatory
+        group entirely by explicit user request — see
+        `removed-files.txt`; 2026-07-27: `github-rules` promoted into this
+        mandatory group after being generalized from a qsys-plugins-
+        specific skill into portable GitHub PR conventions — it must
+        never encode a standing auto-merge policy, since a rule written
+        here would silently apply to every repo it gets installed into).
+        Same substitution treatment as 2.2/2.4 — these four
         always get overwritten with whatever the bundle carries, even
         if the target repo already has its own (older or different)
         copy. The skip-if-installed rule in 2.6/2.7 does NOT apply to
-        these three, since skipping would leave a stale version in place
+        these four, since skipping would leave a stale version in place
         instead of syncing to the current one.
    2.6. **Additional packs actually bundled as files, always offer,
         optional to accept**: every skill beyond the four in 2.5 that

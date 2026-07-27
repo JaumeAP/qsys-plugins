@@ -44,7 +44,7 @@ mkdir -p "$skill_dir/references/hooks" "$skill_dir/references/skills"
 cat > "$skill_dir/SKILL.md" <<'EOF'
 ---
 name: claude-config-bundle
-description: Portable Claude Code .claude/ configuration bundle, common CLAUDE.md rules, settings.json, every hook, the changelog-rules/file-operations/find-skills skills, and the full export/import procedure, all packaged as one file. Use this skill whenever asked to export or import Claude Code configuration between repos, whenever the user says "exporta la configuració"/"importa la configuració" or the English equivalent, or when setting up a brand new repo's .claude/ tooling from an existing one. Also use it when a config bundle is pasted or uploaded with no explicit request, to recognize it and know how to apply it.
+description: Portable Claude Code .claude/ configuration bundle, common CLAUDE.md rules, settings.json, every hook, the changelog-rules/file-operations/find-skills/github-rules skills, and the full export/import procedure, all packaged as one file. Use this skill whenever asked to export or import Claude Code configuration between repos, whenever the user says "exporta la configuració"/"importa la configuració" or the English equivalent, or when setting up a brand new repo's .claude/ tooling from an existing one. Also use it when a config bundle is pasted or uploaded with no explicit request, to recognize it and know how to apply it.
 ---
 
 # Claude Code config bundle
@@ -86,9 +86,9 @@ repeated here.
   installed into the target's own `.claude/scripts/` too, so the target
   repo can export its own bundle later instead of only ever being an
   import destination.
-- `references/skills/<name>/<name>.md` -- the three mandatory generic
+- `references/skills/<name>/<name>.md` -- the four mandatory generic
   skills (`changelog-rules`, `file-operations`,
-  `find-skills`). Each one's entry point is named `<name>.md` here
+  `find-skills`, `github-rules`). Each one's entry point is named `<name>.md` here
   instead of `SKILL.md`, because a `.skill` package may only contain one
   `SKILL.md` (this one) -- nesting more would fail validation on upload.
   **When actually installing one of these into a target repo's
@@ -152,7 +152,7 @@ for hook in check-reply-format.sh config-ingest-reminder.sh \
   [ -f ".claude/hooks/$hook" ] && cp ".claude/hooks/$hook" "$skill_dir/references/hooks/"
 done
 
-for skill in changelog-rules file-operations find-skills; do
+for skill in changelog-rules file-operations find-skills github-rules; do
   if [ -d ".claude/skills/$skill" ]; then
     cp -r ".claude/skills/$skill" "$skill_dir/references/skills/$skill"
     mv "$skill_dir/references/skills/$skill/SKILL.md" "$skill_dir/references/skills/$skill/$skill.md"
