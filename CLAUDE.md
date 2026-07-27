@@ -390,6 +390,20 @@ which:
   enum-table one now has two independent templates contradicting it, not
   just an absence of confirmation.
 
+**"Q-SYS Help"** (`q-syshelp.qsc.com`, mirrored at `help.qsys.com`) is QSC's
+official documentation site — general web docs, not a repository, so
+nothing from it is vendored as a submodule. Relevant pages found 2026-07-27:
+Building a Plugin, Plugin Compiler, Basic Plugin Framework, Reserved
+Functions, and the Code Examples section (TCPSocket, HTTPClient, SerialPort
+Usage, Storing Secrets in Plugins, Dynamic Pages). Caveat: `WebFetch` to
+both `q-syshelp.qsc.com` and `help.qsys.com` returns 403 from this
+environment's outbound proxy at the gateway level (confirmed via the
+proxy's own status endpoint, not just a failed request) — everything known
+about these pages here came from search-engine summaries of them, not their
+actual text, unlike the two vendored templates above, which were read
+directly. Treat anything attributed to "Q-SYS Help" with that in mind; the
+two submodules are the more reliable source where they overlap.
+
 - **Mandatory section order** in every `.qplug`: file header comment →
   `PluginInfo` → (design-time-safe `require`s, e.g. `qsys_enums`) →
   Design-time Identity (`GetColor`/`GetPrettyName`) → Properties
