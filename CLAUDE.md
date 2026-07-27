@@ -174,8 +174,14 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 │   │   │                             qsyscontrolfeedback@qsc.com in each README)
 │   │   ├── BasePlugin/               Plugin template (added 2026-07-27); its own
 │   │   │   └── PluginCompile/         nested submodule, the VS Code compile-to-.qplug
-│   │   │                             tool -- no longer vendored a second time at the
-│   │   │                             top level, see "Git" below
+│   │   │                             tool -- compiles multiple Lua files into one
+│   │   │                             .qplug, base64-encodes PNG/JPEG/JPG/SVG assets,
+│   │   │                             generates a GUID if missing, auto-increments the
+│   │   │                             version on each build, and copies the result into
+│   │   │                             the Designer plugin folder (confirmed reading
+│   │   │                             Q-SYS Help's Plugin Compiler page, 2026-07-27) --
+│   │   │                             no longer vendored a second time at the top
+│   │   │                             level, see "Git" below
 │   │   ├── ExamplePlugin/             Filled-in example (Mixer + Video Switcher UI);
 │   │   │   └── PluginCompile/         same nested submodule as BasePlugin's, same commit
 │   │   │                             ExamplePlugin.qplug is a full worked build
@@ -256,6 +262,15 @@ Definition-side callbacks (all take/return the `props` table):
 | `GetPins(props)` | (when present) external component pins, e.g. `{ Name, Direction }` |
 | `GetWiring(props)` | (when present) internal wiring from an embedded component's pin to a plugin pin |
 
+The Reserved Functions doc also lists a set of *runtime* function names as a
+common convention (not reserved words, just what QSC's own device plugins
+tend to call things): `SetupDebugPrint()`, `Send()`, `ClearVariables()`,
+`Connect()`, `Disconnected()`, `GetDeviceInfo()`, `PollDevice()`,
+`ParseResponse()`, `Initialization()`. `cpseries.lua` and the other modules
+here don't follow this exact set of names and there's no need to rename them
+to match it — it's a convention some QSC-authored plugins use, not something
+Q-SYS enforces.
+
 Runtime side: at the bottom of the file a guard then a `require`:
 
 ```lua
@@ -291,8 +306,9 @@ These are provided by the Q-SYS host, not defined in this repo:
   practice, since `New` doesn't dispatch on `self`, but it is not the
   documented construction syntax; re-confirmed same day by reading the
   official TCPSocket Code Example page directly, not just a search summary
-  — see "Q-SYS Help" below), `.WriteTimeout`, connect/read/write events;
-  instance methods use colon (`sock:Connect(...)`, `sock:Write(...)`).
+  — see "Q-SYS Help" below), `.ReadTimeout`, `.WriteTimeout`,
+  `.ReconnectTimeout`, connect/read/write events; instance methods use colon
+  (`sock:Connect(...)`, `sock:Write(...)`).
 - `System.IsEmulating` — true in the Designer emulator; used to shorten loops.
 - `Print(...)`, `Reflect` (definition-time reflection, `Reflect.Types.*`).
 
@@ -439,9 +455,13 @@ earlier 403 was not universal — `WebFetch` against `help.qsys.com` (the
 Reserved Functions, the TCPSocket Code Example, and Storing Secrets in
 Plugins directly rather than via search-engine summary; see the
 `GetPages(props)` table row and the `TcpSocket` bullet above for what that
-confirmed. Storing Secrets in Plugins' documented pattern: keep the secret
-in a hidden embedded Custom Controls component (its controls are only
-reachable from the plugin they're embedded in, and persist with the design
+confirmed. HTTPClient, SerialPort Usage, and Dynamic Pages were only seen via
+search-engine summary, not fetched directly — HTTPClient does GET/POST/PUT
+over HTTP(S); SerialPort has TCPSocket-like read/write handlers for a
+device's serial port; Dynamic Pages is listed as a Code Examples topic with
+no further detail found yet. Storing Secrets in Plugins' documented pattern:
+keep the secret in a hidden embedded Custom Controls component (its controls
+are only reachable from the plugin they're embedded in, and persist with the design
 state), copy user input into it on `EventHandler`, and mask the visible
 control with `ctrl.String:gsub(".", "*")` — not used by any plugin in this
 repo today (none of the four handle credentials), but the pattern to reach
