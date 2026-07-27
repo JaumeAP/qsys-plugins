@@ -166,13 +166,22 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 ├── *.qplug / *.qplugx                Distributable plugins (repo root), built by
 │   │                                 Developer/tools/build_distributable.sh
 │   ├── DolbyFader.qplug              (v2.0)
+│   ├── DolbyFader.qplugx
 │   ├── Dolby Sweep V2.0.qplug
+│   ├── Dolby Sweep V2.0.qplugx
 │   ├── MultiFlip-Flop.qplug          (v2.0)
+│   ├── MultiFlip-Flop.qplugx
 │   ├── Dolby CPSeries Control V4.0.qplug
-│   └── Dolby CPSeries Control V2.2.qplugx   Packaged/encrypted (JSON envelope) —
-│                                     stale (last hand-compiled at v2.2); a
-│                                     .qplugx can only be regenerated inside
-│                                     Designer, never hand-edited
+│   └── Dolby CPSeries Control V4.0.qplugx   Packaged/encrypted (JSON envelope);
+│                                     all four .qplugx built 2026-07-27 via
+│                                     .github/workflows/build-qplugx.yml
+│                                     (GitHub Actions, windows-latest),
+│                                     replacing the old stale
+│                                     "Dolby CPSeries Control V2.2.qplugx"
+│                                     (last hand-compiled at v2.2, now removed).
+│                                     Never hand-edited; regenerate via the
+│                                     workflow (or Designer's "Save as
+│                                     compiled plugin") after any .qplug rebuild.
 │
 ├── Dolby CP Emulator/                Q-SYS User Components (.quc) that emulate
 │   ├── CP650 Emulator.quc            real Dolby processors for bench testing
@@ -248,9 +257,14 @@ single-file distributable builds with their `Developer/Modules/*.lua`
 dependencies inlined and `require` stripped (built by
 `Developer/tools/build_distributable.sh`, see "Developer workflow" below) —
 never hand-edit them, or they drift from `Developer/` and the next rebuild
-silently discards the hand edit. `Dolby CPSeries Control V2.2.qplugx` is the
-one exception: it is a *packaged* (`.qplugx`) build that predates this
-convention and can only be regenerated inside Designer.
+silently discards the hand edit. The four root `.qplugx` files are packaged
+builds produced from those same `.qplug` files by
+`.github/workflows/build-qplugx.yml` (or Designer's own "Save as compiled
+plugin") — also never hand-edited; regenerate the same way after any `.qplug`
+rebuild. (Until 2026-07-27 only a stale `Dolby CPSeries Control V2.2.qplugx`
+existed, hand-compiled and predating this convention; it's been replaced by
+a current `V4.0.qplugx` built via the workflow, alongside `.qplugx` builds
+for the other three plugins.)
 
 ### How a Q-SYS plugin is structured
 
@@ -625,9 +639,14 @@ the four `.qplug`/`Developer/Modules/*.lua` files this rewrite covered.
   `.github/workflows/build-qplugx.yml` runs that same `plugin_tool_release.exe`
   on a `windows-latest` GitHub Actions runner instead — manual trigger
   (`workflow_dispatch`) only, picks one root `.qplug` or `all`, uploads the
-  resulting `.qplugx` as a workflow artifact. It never commits the `.qplugx`
-  back to the repo; downloading and adding it is a separate, deliberate step.
-  This is the repo's first CI workflow.
+  resulting `.qplugx` as a workflow artifact. The workflow itself never
+  commits the `.qplugx` back to the repo; downloading and adding it is a
+  separate, deliberate step. This is the repo's first CI workflow.
+  First real run, same day: triggered with `all` against `main` right after
+  merging the workflow (needed there for GitHub to register it as
+  dispatchable at all), producing all four `.qplugx` — those were then
+  downloaded and committed to the repo root as the deliberate follow-up
+  step above, replacing the old stale `Dolby CPSeries Control V2.2.qplugx`.
 
 ### Developer workflow
 
