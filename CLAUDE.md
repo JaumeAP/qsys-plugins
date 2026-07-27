@@ -133,7 +133,6 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 ```
 .
 ├── README.md                         Short plugin catalog
-├── .gitmodules                       Developer/Modules/class → jonstoler/class.lua
 ├── .vscode/settings.json             Associates *.qplug with the Lua language
 │
 ├── *.qplug / *.qplugx                Distributable plugins (repo root)
@@ -155,8 +154,7 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   ├── MultiFlip-Flop V1.1.qplug
     │   └── reference.lua             Template/cheat-sheet of every component & control type
     └── Modules/                      Runtime logic pulled in by plugins via require()
-        ├── class/                    git submodule: jonstoler/class.lua (OOP base)
-        ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync
+        ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (require("class/class") is now unresolved, see below)
         ├── strict.lua                Global-variable guard (errors on undeclared globals)
         ├── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale)
         ├── dolbysweep.lua            Sweep tone generator runtime
@@ -224,9 +222,13 @@ These are provided by the Q-SYS host, not defined in this repo:
 
 ### Key module patterns
 
-- **`class/class`** (submodule): minimal Lua OOP. `QKnob = class()`,
-  `obj = QKnob:new(...)`, `Class:init(...)`. Run `git submodule update --init`
-  after cloning or module `require`s will fail.
+- **`class/class`** (was a submodule, removed): provided minimal Lua OOP
+  (`QKnob = class()`, `obj = QKnob:new(...)`, `Class:init(...)`). The
+  submodule was deleted and `qknob.lua`'s `require("class/class")` is now
+  unresolved — `QKnob`, and everything built on it (`dolbyfader.lua`,
+  `cpseries.lua`), will fail to load until this is either restored (re-add
+  the submodule) or the `class()` base is reimplemented/vendored some other
+  way. This is a known break, not an oversight.
 - **`qknob.lua`**: wraps a `Text` control as a first-class numeric knob. Keeps
   `Value`/`String`/`Position` in sync via `__index`/`__newindex` metatables and
   a 1 ms polling `Timer` that mirrors external position changes. Subclasses
@@ -264,15 +266,14 @@ development plugins prepend it to `package.path` (see `reference.lua`):
 ```
 
 Typical loop:
-1. `git submodule update --init` (once) so `class/class` resolves.
-2. Symlink/copy `Developer/Modules/*.lua` into the Q-SYS Designer `Modules`
+1. Symlink/copy `Developer/Modules/*.lua` into the Q-SYS Designer `Modules`
    folder (or develop with the `package.path` prelude).
-3. Edit the `.qplug` in `Developer/plugins/` and its module in
+2. Edit the `.qplug` in `Developer/plugins/` and its module in
    `Developer/Modules/`.
-4. Load the plugin in Q-SYS Designer; test in the emulator
+3. Load the plugin in Q-SYS Designer; test in the emulator
    (`System.IsEmulating` is true) or against a `Dolby CP Emulator/*.quc` on the
    bench.
-5. Bump `Version`/`BuildVersion` in `PluginInfo`, export the compiled
+4. Bump `Version`/`BuildVersion` in `PluginInfo`, export the compiled
    `.qplug`/`.qplugx`, and update the root-level distributable copy.
 
 ### Conventions when editing
@@ -295,5 +296,6 @@ Typical loop:
 
 - AI-assisted changes land on a task-specific `claude/...` branch (named per
   session/PR); there is no single long-lived AI branch to target.
-- The repo uses one submodule (`Developer/Modules/class`). Commit submodule
-  pointer changes deliberately; don't bump it incidentally.
+- The repo no longer has a git submodule (`Developer/Modules/class` was
+  removed). If one gets added back in the future, commit its pointer
+  changes deliberately; don't bump it incidentally.
