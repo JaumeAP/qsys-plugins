@@ -27,7 +27,9 @@
       "Bash(luarocks *)",
       "Bash(apt-get update *)",
       "Bash(apt-get install *)",
-      "Bash(mkdir *)"
+      "Bash(mkdir *)",
+      "mcp__github__update_pull_request",
+      "mcp__github__merge_pull_request"
     ],
     "ask": [
       "Bash(git push --force *)",
