@@ -122,6 +122,16 @@ context summarization/compaction has clearly happened), proactively suggest
 continuing in a fresh chat — don't wait to be asked. Rationale: long
 sessions get lossy (early detail blurs on compaction).
 
+**"Tanca" always means end the session.** A user message that is just
+"tanca" (bare, no other object attached) always means "tanca sessió" — end
+the current session — never "close/drop this topic/investigation" or
+anything else. Before signaling the session is closed: check `git status`
+is clean (or say plainly what's left uncommitted/unpushed), confirm the
+current branch/last commit, and if there's an open question or unfinished
+work worth a future session picking up, save a note of it in this file's
+Project-specific rules section first (as its own dated entry) so the next
+session doesn't have to re-derive it from scratch.
+
 ## Project-specific rules
 
 ### What this repo is
