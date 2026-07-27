@@ -738,76 +738,8 @@ Typical loop:
   `vendor/qsys-plugins/ExamplePlugin/PluginCompile`) — one fewer top-level
   `.gitmodules` entry, same content reachable, no duplication either way.
 
-### Open question (2026-07-27): Button control `.Value` type, not yet resolved
+### Continuity notes
 
-A repo-wide audit (2026-07-27) flagged 8+ call sites across `dolbyfader.lua`,
-`cpseries.lua`, `dolbysweep.lua`, and `MultiFlip-Flop V2.0.qplug` that compare
-a Button control's `.Value` to a number (`== 1` / `== 0`) inside live
-EventHandlers (`Ref`, `Selector`, `Enable`, `Mute`, `Exclusive`, `State_N`),
-reasoning by analogy from the already-fixed `dolbysweep.lua` `Start.Value`
-bug (a one-time init guard, confirmed 2026-07-27 as needing `== false`, since
-Q-SYS defaults a never-touched Button control to a literal Lua `false`).
-
-That analogy turned out to be unconfirmed and likely wrong for the
-EventHandler case specifically. Real evidence gathered the same day,
-directly from two currently-maintained official QSC plugins (not vendored
-here, fetched from `github.com/qsys-plugins` via `WebFetch`):
-- `Roku/Roku.qplug`'s `Connect` control (`ControlType="Button",
-  ButtonType="Toggle"`) is read inside a live EventHandler as
-  `Connect.Value == 1` / `== 0` — numeric, not boolean.
-- `ShureAxient/ShureAxient.qplug` sidesteps the question entirely, always
-  reading `.Boolean` instead of `.Value` for button state.
-
-Neither confirms `.Value` is ever a Lua boolean during an EventHandler-driven
-read. The working hypothesis (NOT independently verified against real
-Q-SYS Designer/hardware — this session had no way to run Designer, a
-licensed Windows GUI app, and said so rather than guessing) is that a
-Button control's `.Value` may start as a literal `false` only in its pristine,
-never-yet-interacted-with state (which is what `Start`'s one-time init guard
-checks, before any design ever ran), but becomes a genuine number (0/1) once
-the control has been set/interacted with at all — which is the case for
-every one of the 8+ flagged EventHandler reads, all triggered by an actual
-button press.
-
-**Net effect: none of the 8+ flagged sites were changed.** They were left
-as-is (numeric comparison) rather than "fixed" to match `Start`'s pattern,
-because doing so looked more likely to introduce a regression than fix one,
-given the Roku evidence. This is still not certain either way — the one
-thing that would settle it is reading `type(Controls.SomeButton.Value)`
-from inside a live EventHandler on real Q-SYS Designer or the CP Emulator
-bench, which no session so far has been able to do. If a future session
-gets bench/Designer access, that one-line check resolves this permanently;
-until then, don't apply the audit's suggested fix to those 8+ sites, and
-don't treat the `Start` fix as a confirmed template for every other Button
-control without re-checking whether it's a pristine-state read or a live
-EventHandler read first.
-
-### Open item (2026-07-27): two review findings from a code-review session, neither actioned
-
-A codebase review this session (no code changes requested, diagnosis only)
-turned up two findings; the user moved on to other work before answering
-whether to act on them, so noting here for continuity rather than dropping
-them silently:
-
-1. `Developer/plugins/MultiFlip-Flop V2.0.qplug`, `Toggle_N`'s handler
-   (`Controls["Toggle_" .. t].EventHandler`): writes a Lua boolean to
-   `State_N.Value` (`Value == 0`) then, in the same synchronous call with no
-   host round-trip, reads that same `.Value` back with a numeric `== 1`
-   comparison inside `State_N.EventHandler()`. This is the same open
-   `.Value` boolean-vs-number question directly above, but a more fragile
-   instance of it: the other flagged sites are host-driven interaction reads,
-   this one is a script write immediately followed by a script read with no
-   host in between. If Q-SYS doesn't normalize the boolean to a number at
-   the Lua-level write itself, this toggle would always take the wrong
-   branch (Reset instead of Set). Not changed, same reasoning as the 8+
-   sites above: fixing it without confirmed evidence risks a regression.
-2. `Developer/Modules/cpseries_commlib.lua:406`, inside `received`: calls
-   `readData(self,true)`, but `readData` only accepts one parameter
-   (`readData = function(self)`, line 291) — the second argument is always
-   silently ignored. Harmless (nothing breaks), but misleading to a future
-   reader, looks like it should toggle some recursive-read mode that doesn't
-   actually exist. Not changed either, since the user hadn't confirmed
-   wanting a fix, just the diagnosis.
-
-Both still open for a future session to decide on, same "diagnose first,
-don't guess-fix" posture as the item above.
+Open questions and unactioned findings carried between sessions live in
+`HANDOFF.md` (repo root), not here — that file is repo-local only, never
+part of the portable `.claude/` export.
