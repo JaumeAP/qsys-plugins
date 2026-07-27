@@ -406,7 +406,16 @@ reasoning applies to any of them if a future plugin uses one.
   `CP950A`) protocol state machine. `Model` is a plain array with real
   `index`/`key`/`value` fields (the old `setmeta`/`searchelem` reflection hack
   was removed 2026-07-27 along with the CP950/CP950A bump); doesn't reference
-  `Controls` at all.
+  `Controls` at all. It also reassigns the global `Print` (no `local`) to a
+  debug-gated wrapper — `Print = function(show, ...)` — that checks
+  `Properties.plugin_show_debug.Value` and the `"TCP Log"` property
+  (`Command` vs `All`) before calling the real Lua `print(...)`. This
+  shadows the host-provided `Print` global documented under "Q-SYS runtime
+  globals" above, for every module loaded after this one; `cpseries.lua`
+  relies on the override, always calling `Print(true, ...)` with the
+  boolean as a debug-level flag, not a message argument. Confirmed
+  intentional and consistently used (2026-07-27 audit), just not previously
+  documented here.
 - **`cpseries.lua`**: the application layer — owns the `TcpSocket`, the
   `CPSeries` instance, and all the `Controls.*` wiring; reuses `dolbyfader`'s
   `DKNob` and `DolbyFaderEventHandler` hook to push fader changes over the
@@ -454,13 +463,24 @@ one's structure:
   as `ControlType.BUTTON`-style tables was tried and reverted the same day
   (2026-07-27) once three independent templates turned up writing the
   literal directly, none using a table.
-- **Property names may not contain spaces** — properties, not controls; a
-  control's `Name` may have spaces (e.g. `Name = "TCP Log"` is fine), a
-  property's may not (`GetProperties`'s own `{ Name = ..., Type = ... }`
-  entries). `MultiFlip-Flop`'s "Input Count" property became `InputCount`
-  for exactly this reason — this one wasn't part of the later reversion, it
-  has nothing to do with the `qsc-q-sys` spec either way, it's how Q-SYS
-  itself behaves.
+- **Property names CAN contain spaces — retracted 2026-07-27.** The earlier
+  claim here ("property names may not contain spaces... it's how Q-SYS
+  itself behaves") is wrong, disproved by QSC's own vendored template:
+  `vendor/qsys-plugins/ExamplePlugin/properties.lua` lines 20 and 28 declare
+  `Name = "Button Styles"` and `Name = "Serial Pin"` inside the manufacturer's
+  own real `GetProperties()`, spaces and all. There is no platform
+  constraint — a spaced property name just needs bracket-notation access
+  (`Properties["Button Styles"]`) instead of dot notation
+  (`Properties.ButtonStyles`), same as any Lua table with a non-identifier
+  key. `MultiFlip-Flop`'s "Input Count" → `InputCount` rename (still 2026-07-27)
+  was cosmetic, not a fix: `Developer/plugins/MultiFlip-Flop V2.0.qplug`
+  reads it as `Properties["InputCount"]` both before and after, bracket
+  notation either way, so the rename bought nothing. `cpseries`'s "TCP Log"
+  property (`Developer/plugins/Dolby CPSeries Control V4.0.qplug`, read via
+  `Properties["TCP Log"]` in `Developer/Modules/cpseries_class.lua`) was
+  never renamed and was never broken — proof the constraint never existed.
+  Leave "TCP Log" as-is; do not "fix" it, and do not rename other spaced
+  property names on this basis alone.
 - **Section comments, plain, not decorated** — group runtime code loosely
   into aliases, variables/flags, objects (sockets/timers), constants, helper
   functions, event handlers, initialization, each marked with a plain
