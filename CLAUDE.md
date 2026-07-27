@@ -161,7 +161,7 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   ├── MultiFlip-Flop V1.1.qplug
     │   └── reference.lua             Template/cheat-sheet of every component & control type
     └── Modules/                      Runtime logic pulled in by plugins via require()
-        ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (require("class/class") is now unresolved, see below)
+        ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base)
         ├── strict.lua                Global-variable guard (errors on undeclared globals)
         ├── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale)
         ├── dolbysweep.lua            Sweep tone generator runtime
@@ -229,13 +229,14 @@ These are provided by the Q-SYS host, not defined in this repo:
 
 ### Key module patterns
 
-- **`class/class`** (was a submodule, removed): provided minimal Lua OOP
-  (`QKnob = class()`, `obj = QKnob:new(...)`, `Class:init(...)`). The
-  submodule was deleted and `qknob.lua`'s `require("class/class")` is now
-  unresolved — `QKnob`, and everything built on it (`dolbyfader.lua`,
-  `cpseries.lua`), will fail to load until this is either restored (re-add
-  the submodule) or the `class()` base is reimplemented/vendored some other
-  way. This is a known break, not an oversight.
+- **No external OOP base.** `qknob.lua` no longer depends on any `class()`
+  library or submodule (the vendored `jonstoler/class.lua` used briefly on
+  2026-07-27 was removed the same day). `QKnob` is defined directly in
+  `qknob.lua` as a plain table with its own `__index`/`__newindex` metamethods:
+  `QKnob:set(name, {value=, get=, set=})` declares a computed property backed
+  by a private per-instance table, and `QKnob:new(...)` creates an instance and
+  calls `obj:init(...)`. Same external API as before (`QKnob:new(...)`,
+  `QKnob:set(...)`, `QKnob:SetString` override), just self-contained.
 - **`qknob.lua`**: wraps a `Text` control as a first-class numeric knob. Keeps
   `Value`/`String`/`Position` in sync via `__index`/`__newindex` metatables and
   a 1 ms polling `Timer` that mirrors external position changes. Subclasses
