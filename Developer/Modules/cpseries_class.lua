@@ -415,6 +415,8 @@
       		  local n = tonumber(result)
       		  if n == nil then return end -- non-numeric value (nan/garbage): ignore, don't crash
       		  n = tonumber(string.format('%.f',n))
+      		  if n == nil then return end -- an overflowed value (e.g. 1e400 -> inf) formats to a string
+      		                               -- tonumber can't parse back ("inf"/"nan"), ignore rather than crash
   	   			if action == Actions.fader then
       		  		n = n / 10
 				end
