@@ -167,15 +167,18 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 │   └── CP850 Emulator.quc
 │
 ├── vendor/                            Read-only reference material (git submodules) —
-│   │                                 `git submodule update --init` after cloning if
-│   │                                 empty; never edit contents, it's all upstream's
+│   │                                 `git submodule update --init --recursive` after
+│   │                                 cloning if empty; never edit contents, it's all
+│   │                                 upstream's
 │   ├── qsys-plugins/                  QSC's own org (confirmed: support contact
 │   │   │                             qsyscontrolfeedback@qsc.com in each README)
-│   │   ├── BasePlugin/               Plugin template (added 2026-07-27)
+│   │   ├── BasePlugin/               Plugin template (added 2026-07-27); its own
+│   │   │   └── PluginCompile/         nested submodule, the VS Code compile-to-.qplug
+│   │   │                             tool -- no longer vendored a second time at the
+│   │   │                             top level, see "Git" below
 │   │   ├── ExamplePlugin/             Filled-in example (Mixer + Video Switcher UI);
+│   │   │   └── PluginCompile/         same nested submodule as BasePlugin's, same commit
 │   │   │                             ExamplePlugin.qplug is a full worked build
-│   │   ├── PluginCompile/             The VS Code compile-to-.qplug tool BasePlugin
-│   │   │                             itself uses as a submodule
 │   │   └── PluginEncryptionTool/      plugin_tool_release.exe — standalone .qplug ->
 │   │                                 .qplugx encryption, Windows binary
 │   └── q-sys-community/
@@ -525,19 +528,22 @@ Typical loop:
   (`q-sys-community/q-sys-plugin-guide`, not QSC) — all read-only reference
   material (see "Repository layout" and "Plugin structure/naming
   convention" above). Same rule as always: commit submodule pointer changes
-  deliberately, don't bump one incidentally. `git submodule update --init`
-  (deliberately **not** `--recursive`, see next bullet) after cloning if any
-  are empty (a `SessionStart` hook already does this automatically in a
-  Claude Code session).
-- **Never `git submodule update --recursive` in this repo.** `BasePlugin`
-  and `ExamplePlugin` each declare their own nested `PluginCompile`
-  submodule — the exact same repo this project also vendors directly at
-  `vendor/qsys-plugins/PluginCompile` (same commit, confirmed via `git
-  submodule status --recursive`). A recursive update would clone it a
-  second and third time for no benefit — this repo only reads these as
-  reference material, never builds anything with them, so a vendored
-  repo's own nested submodules add nothing. `.claude/hooks/
-  init-submodules.sh` uses plain `--init` for exactly this reason; if you
-  ever genuinely need a specific vendored repo's own nested content, target
-  it explicitly (`git submodule update --init --recursive <that one path>`),
-  never the whole tree.
+  deliberately, don't bump one incidentally.
+- **No duplicate submodule vendoring (revised 2026-07-27, same day as the
+  original fix).** `BasePlugin` and `ExamplePlugin` each declare their own
+  nested `PluginCompile` submodule (confirmed via `git submodule status
+  --recursive`, same commit both places). This repo first "fixed" that by
+  vendoring `PluginCompile` a third time at the top level
+  (`vendor/qsys-plugins/PluginCompile`) and keeping submodule init
+  non-recursive so the nested copies stayed empty placeholders — that
+  avoided the clone cost but kept three separate `.gitmodules`-visible
+  copies of the same repo. Superseded same day: the top-level
+  `vendor/qsys-plugins/PluginCompile` submodule was removed entirely: it
+  contributed nothing `BasePlugin`'s and `ExamplePlugin`'s own nested
+  copies don't already provide, once the whole tree is initialized
+  recursively. `.claude/hooks/init-submodules.sh` now runs `git submodule
+  update --init --recursive`, so a fresh clone gets `PluginCompile`'s
+  content solely through the two nested paths
+  (`vendor/qsys-plugins/BasePlugin/PluginCompile` and
+  `vendor/qsys-plugins/ExamplePlugin/PluginCompile`) — one fewer top-level
+  `.gitmodules` entry, same content reachable, no duplication either way.
