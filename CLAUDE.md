@@ -699,3 +699,47 @@ Typical loop:
   (`vendor/qsys-plugins/BasePlugin/PluginCompile` and
   `vendor/qsys-plugins/ExamplePlugin/PluginCompile`) — one fewer top-level
   `.gitmodules` entry, same content reachable, no duplication either way.
+
+### Open question (2026-07-27): Button control `.Value` type, not yet resolved
+
+A repo-wide audit (2026-07-27) flagged 8+ call sites across `dolbyfader.lua`,
+`cpseries.lua`, `dolbysweep.lua`, and `MultiFlip-Flop V2.0.qplug` that compare
+a Button control's `.Value` to a number (`== 1` / `== 0`) inside live
+EventHandlers (`Ref`, `Selector`, `Enable`, `Mute`, `Exclusive`, `State_N`),
+reasoning by analogy from the already-fixed `dolbysweep.lua` `Start.Value`
+bug (a one-time init guard, confirmed 2026-07-27 as needing `== false`, since
+Q-SYS defaults a never-touched Button control to a literal Lua `false`).
+
+That analogy turned out to be unconfirmed and likely wrong for the
+EventHandler case specifically. Real evidence gathered the same day,
+directly from two currently-maintained official QSC plugins (not vendored
+here, fetched from `github.com/qsys-plugins` via `WebFetch`):
+- `Roku/Roku.qplug`'s `Connect` control (`ControlType="Button",
+  ButtonType="Toggle"`) is read inside a live EventHandler as
+  `Connect.Value == 1` / `== 0` — numeric, not boolean.
+- `ShureAxient/ShureAxient.qplug` sidesteps the question entirely, always
+  reading `.Boolean` instead of `.Value` for button state.
+
+Neither confirms `.Value` is ever a Lua boolean during an EventHandler-driven
+read. The working hypothesis (NOT independently verified against real
+Q-SYS Designer/hardware — this session had no way to run Designer, a
+licensed Windows GUI app, and said so rather than guessing) is that a
+Button control's `.Value` may start as a literal `false` only in its pristine,
+never-yet-interacted-with state (which is what `Start`'s one-time init guard
+checks, before any design ever ran), but becomes a genuine number (0/1) once
+the control has been set/interacted with at all — which is the case for
+every one of the 8+ flagged EventHandler reads, all triggered by an actual
+button press.
+
+**Net effect: none of the 8+ flagged sites were changed.** They were left
+as-is (numeric comparison) rather than "fixed" to match `Start`'s pattern,
+because doing so looked more likely to introduce a regression than fix one,
+given the Roku evidence. This is still not certain either way — the one
+thing that would settle it is reading `type(Controls.SomeButton.Value)`
+from inside a live EventHandler on real Q-SYS Designer or the CP Emulator
+bench, which no session so far has been able to do. If a future session
+gets bench/Designer access, that one-line check resolves this permanently;
+until then, don't apply the audit's suggested fix to those 8+ sites, and
+don't treat the `Start` fix as a confirmed template for every other Button
+control without re-checking whether it's a pristine-state read or a live
+EventHandler read first.
