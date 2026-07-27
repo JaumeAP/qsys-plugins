@@ -69,6 +69,13 @@ invoke it when the task calls for it:
 
 1. `changelog-rules` (`.claude/skills/changelog-rules/SKILL.md`) — how to
    write and maintain changelog entries (versioning, format, flush-on-push).
+2. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
+   PR conventions (workflow shape, reading `pull_request_read` results,
+   merge mechanics); generalized 2026-07-27 from a qsys-plugins-specific
+   skill of the same name. Must never encode a standing auto-merge policy —
+   a portable file installs into every repo it's imported into, so a rule
+   like that written here would silently apply everywhere, not just where
+   someone actually agreed to it.
 
 (`git-rules` removed from the portable bundle 2026-07-25, explicit user
 request — deleted from `.claude/skills/`, its `skillOverrides` entry
