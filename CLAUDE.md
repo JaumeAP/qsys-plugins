@@ -166,6 +166,14 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 │   ├── CP750 Emulator.quc
 │   └── CP850 Emulator.quc
 │
+├── vendor/qsys-plugins/               Read-only reference material (git submodules)
+│   └── BasePlugin/                   github.com/qsys-plugins/BasePlugin — QSC's own
+│                                     plugin template (added 2026-07-27; see "Plugin
+│                                     structure/naming convention" below for what it
+│                                     confirms vs. what qsc-q-sys added on top).
+│                                     `git submodule update --init` after cloning if
+│                                     empty; never edit its contents, it's upstream's
+│
 └── Developer/                        Working sources (edit here)
     ├── plugins/                      Plugin definition files (layout + skeleton)
     │   ├── DolbyFader V2.0.qplug
@@ -341,6 +349,31 @@ construction syntax, was checked against three outside sources before being
 applied, see above). Follow it for every new plugin and every edit that
 touches an existing one's structure:
 
+**Cross-checked against the real thing** (2026-07-27, same day): QSC's own
+plugin template is vendored at `vendor/qsys-plugins/BasePlugin/` (see
+"Repository layout" above) specifically to make this checkable without
+re-deriving it from web search summaries. Reading its actual files
+confirmed part of the list below as genuinely QSC's own convention and
+identified the rest as `qsc-q-sys`'s own added style, layered on top of the
+real thing rather than reverse-engineered from it — each bullet below says
+which:
+
+- **Confirmed against `vendor/.../BasePlugin`**: PascalCase Controls/
+  functions/globals/aliases (its `runtime.lua` uses `Status =
+  Controls.Status`, `ReportStatus`, `Connect`, `Connected`, ...); Timer/socket
+  objects declared global, never local (`PollTimer = Timer.New()`); grouping
+  runtime code into sections (aliases, variables/flags, sockets, timers/
+  constants, helper functions, event handlers, initialization) — though the
+  template marks them with plain `-- Section name` comments, not the
+  decorated `--*** Name ***` banners below.
+- **Not present in `vendor/.../BasePlugin`, so `qsc-q-sys` house style, not
+  a QSC mandate** — kept anyway since nothing here is wrong, just unproven
+  as "official": enum tables in place of string literals (the template
+  writes `ControlType = "Indicator"` directly); the decorated `--*** Name
+  ***` section banners; a `-- CHANGELOG` block embedded in the plugin file.
+  If asked to strip this repo's convention down to only what's confirmed,
+  these three are the ones to drop first.
+
 - **Mandatory section order** in every `.qplug`: file header comment →
   `PluginInfo` → (design-time-safe `require`s, e.g. `qsys_enums`) →
   Design-time Identity (`GetColor`/`GetPrettyName`) → Properties
@@ -454,6 +487,12 @@ Typical loop:
 
 - AI-assisted changes land on a task-specific `claude/...` branch (named per
   session/PR); there is no single long-lived AI branch to target.
-- The repo no longer has a git submodule (`Developer/Modules/class` was
-  removed). If one gets added back in the future, commit its pointer
-  changes deliberately; don't bump it incidentally.
+- `Developer/Modules/class` (a vendored OOP base) was the last submodule and
+  was removed; a new one was added 2026-07-27 —
+  `vendor/qsys-plugins/BasePlugin`, QSC's own plugin template, read-only
+  reference material (see "Repository layout" and "Plugin structure/naming
+  convention" above). Same rule as always: commit submodule pointer changes
+  deliberately, don't bump one incidentally. `git submodule update --init`
+  after cloning if `vendor/qsys-plugins/BasePlugin/` is empty (a
+  `SessionStart` hook already does this automatically in a Claude Code
+  session).
