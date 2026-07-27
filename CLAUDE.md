@@ -63,7 +63,11 @@ sub-items are numbered too (e.g. `3.1`, `3.2`), never dashes/bullets.
 ## Portable skills (installed with the config)
 
 These generic skills travel with this file and the rest of the `.claude/`
-config (see `.claude/config-export-import.md`). Pointers only, not summaries — same
+config (see `.claude/config-export-import.md`) — still always bundled as
+files on export, but offered as optional choices on import into another
+repo since 2026-07-27 (explicit user request), not force-installed the
+way they were before. This repo itself always keeps and uses all four
+regardless. Pointers only, not summaries — same
 drift-safety reason as above; each skill is the authority on its own topic,
 invoke it when the task calls for it:
 

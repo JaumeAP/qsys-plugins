@@ -40,8 +40,10 @@ directions, mechanized best-effort by
    `00-START-HERE.md`, `skills-lock.json` (trimmed to `find-skills`'
    own entry) — lives under `references/`. A `.skill` package may
    contain only ONE `SKILL.md` (the claude.ai/Skills API upload path
-   rejects more than one), so the four mandatory skills' own `SKILL.md`
-   files are renamed to `references/skills/<name>/<name>.md` inside the
+   rejects more than one), so the four bundled skills' own `SKILL.md`
+   files (still always bundled as files, optional to install since
+   2026-07-27 — see step 2.5) are renamed to
+   `references/skills/<name>/<name>.md` inside the
    package — restore each one back to `SKILL.md` when actually
    installing it into a target repo's `.claude/skills/<name>/`, that
    rename is what makes it a real, loadable skill again.
@@ -183,30 +185,36 @@ directions, mechanized best-effort by
         between produces a spurious double-blank-line diff every single
         import, cosmetic but needless. Join them directly, no inserted
         separator.
-   2.5. **The four mandatory generic skills, always the incoming
-        version**: `changelog-rules`, `file-operations`,
-        `find-skills`, `github-rules` load automatically, no prompt, on
-        every import — they're the baseline every repo needs (2026-07-24:
-        `find-skills` promoted from the optional group in 2.6 into this
-        mandatory one — it was already always bundled by the export-side
-        loop in what was then `export-config.sh` (now
-        `export-config-skill.sh`), this closes the gap on the import side
-        to match; 2026-07-25: `git-rules` retired from this mandatory
-        group entirely by explicit user request — see
-        `removed-files.txt`; 2026-07-27: `github-rules` promoted into this
-        mandatory group after being generalized from a qsys-plugins-
-        specific skill into portable GitHub PR conventions — it must
-        never encode a standing auto-merge policy, since a rule written
-        here would silently apply to every repo it gets installed into).
-        Same substitution treatment as 2.2/2.4 — these four
-        always get overwritten with whatever the bundle carries, even
-        if the target repo already has its own (older or different)
-        copy. The skip-if-installed rule in 2.6/2.7 does NOT apply to
-        these four, since skipping would leave a stale version in place
-        instead of syncing to the current one.
+   2.5. **The four generic skills, offered as optional choices (made
+        optional 2026-07-27, explicit user request; previously a
+        mandatory blind-copy)**: `changelog-rules`, `file-operations`,
+        `find-skills`, `github-rules` are bundled as files exactly like
+        any 2.6 pack, but no longer force-installed or silently
+        overwritten. Fold them into the same 2.6 offering (same
+        individual-selection UI, same already-installed filter — don't
+        present a skill from this group that's already in the target's
+        `.claude/skills/`), rather than a separate step. If one of these
+        four is already installed in the target, offer to sync it to the
+        bundle's version instead of skipping it outright (they're common
+        and foundational enough that a stale copy is worth flagging even
+        though updating it is no longer forced) — only apply the update
+        if the user says yes.
+        (History: 2026-07-24 `find-skills` promoted from the then-optional
+        group in 2.6 into this one — it was already always bundled by the
+        export-side loop in what was then `export-config.sh` (now
+        `export-config-skill.sh`), this closed the gap on the import side
+        to match; 2026-07-25 `git-rules` retired from this group entirely
+        by explicit user request, see `removed-files.txt`; 2026-07-27
+        `github-rules` promoted into this group after being generalized
+        from a qsys-plugins-specific skill into portable GitHub PR
+        conventions — it must never encode a standing auto-merge policy,
+        since a rule written here would silently apply to every repo it
+        gets installed into; same day, the whole group was switched from
+        mandatory/blind-copy to optional/offered, per the note above.)
    2.6. **Additional packs actually bundled as files, always offer,
         optional to accept**: every skill beyond the four in 2.5 that
-        the bundle actually carries as files — the full list is
+        the bundle actually carries as files, offered together with those
+        four in the same selection step — the full list is
         open-ended and growing over time (see
         `.claude/scripts/export-config-skill.sh` for what it currently
         contains, not repeated here) — always ask the user which ones
@@ -236,8 +244,11 @@ directions, mechanized best-effort by
         anything to offer — run it every time regardless. Same
         skip-if-installed rule as 2.6 applies here too. If the user
         wants a pack, fetch EVERY line belonging to it, each live via
-        `npx skills add <owner/repo> -s <skill>` (`find-skills` is
-        always available per 2.5) — no version pin, always whatever is
+        `npx skills add <owner/repo> -s <skill>` — this works whether or
+        not the target accepted `find-skills` in 2.5 (that skill is now
+        optional too), since `npx skills` is just a CLI command, not
+        something requiring the `find-skills` SKILL.md file itself to be
+        present — no version pin, always whatever is
         current upstream at that moment, never the version this repo
         happened to have when the list was written. Loop this step
         (2026-07-24): right after installing whatever was picked,
