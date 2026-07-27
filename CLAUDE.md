@@ -63,7 +63,11 @@ sub-items are numbered too (e.g. `3.1`, `3.2`), never dashes/bullets.
 ## Portable skills (installed with the config)
 
 These generic skills travel with this file and the rest of the `.claude/`
-config (see `.claude/config-export-import.md`). Pointers only, not summaries — same
+config (see `.claude/config-export-import.md`) — still always bundled as
+files on export, but offered as optional choices on import into another
+repo since 2026-07-27 (explicit user request), not force-installed the
+way they were before. This repo itself always keeps and uses all four
+regardless. Pointers only, not summaries — same
 drift-safety reason as above; each skill is the authority on its own topic,
 invoke it when the task calls for it:
 
@@ -709,8 +713,6 @@ Typical loop:
 
 ### Git
 
-- AI-assisted changes land on a task-specific `claude/...` branch (named per
-  session/PR); there is no single long-lived AI branch to target.
 - `Developer/Modules/class` (a vendored OOP base) was the last submodule and
   was removed; five new ones were added 2026-07-27 under `vendor/` — four
   from QSC's own `qsys-plugins` org (`BasePlugin`, `ExamplePlugin`,
