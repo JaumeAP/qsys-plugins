@@ -1,0 +1,3 @@
+[submodule "vendor/qsys-plugins/BasePlugin"]
+	path = vendor/qsys-plugins/BasePlugin
+	url = https://github.com/qsys-plugins/BasePlugin.git
