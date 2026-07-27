@@ -322,6 +322,60 @@ already rooted in a global `Controls.*.EventHandler` field, so none of them
 were actually at risk of collection — but they're all global anyway now, per
 the convention below, since it costs nothing and removes the doubt.
 
+### Full Q-SYS Lua extension API (reference, confirmed 2026-07-27)
+
+The host's Lua environment adds 36 extension objects beyond native Lua, all
+documented on the official "Q-SYS Extensions to Lua" index page and its 36
+sub-pages (`help.qsys.com/Content/Control_Scripting/Using_Lua_in_Q-Sys/`),
+each read directly this session, not from a search-engine summary. Only
+`Controls`, `Timer`, `TcpSocket`, and `System.IsEmulating` are used anywhere
+in this repo today (see above) — the rest are listed here purely as a
+reference for future plugins, none of it in use:
+
+| Class | Purpose | Constructor | Key methods/properties/events |
+|---|---|---|---|
+| `ChannelGroup` | Identifies which Channel Group a Control Script sits in | none (direct access) | `.Index` — current group number, 0 if none |
+| `Component` | Reference a Named Component (Code Name + Script Access enabled) | `Component.New(name)` | `.GetComponents()`, `.GetControls()` |
+| `Controls` (I/O) | Read/write a Control Script's own connected input/output pins | none (`Controls.Inputs`/`Controls.Outputs`) | Inputs: `.Value`/`.Position`/`.String`/`.Boolean`/`.EventHandler` (ro); Outputs: same plus `.RampTime`, `.Legend`, `:Trigger()` (rw) |
+| `Crypto` | Base64/CRC16/HMAC/MD5/PBKDF2 and block cipher helpers | none (static) | `Base64Encode/Decode`, `CRC16Compute`, `Digest`, `Encrypt/Decrypt`, `GetRandomBytes`, `HMAC`, `MD5Compute`, `PBKDF2`; `Crypto.Cipher`/`Crypto.Hash` type tables |
+| `Dante` | GPIO control/monitoring of Dante devices | `DanteBrowser.New()`, `DanteDevice.New(name)` | Browser: `.Browse`; Device: `:SetGpio()`, `:GetGpio()`, `.Gpio`, `.Response`, `.EventHandler` |
+| `Design` | Design/platform/redundancy status and device inventory | none | `Design.GetStatus()`, `Design.GetInventory()` |
+| `dir` (Directory) | List/create/remove folders under `media/` or `design/` | none | `dir.get(path)`, `dir.create(path)`, `dir.remove(path)` |
+| `Email` | Send email from a script | none | `Email.Send(table)`, handler `function(table, error)` |
+| `EzSVG` | Build SVG images dynamically (status/level visualization) | `EzSVG.Document(w,h)`, `.Path(props)`, `.Circle(x,y,r)`, `.Line(x1,y1,x2,y2)` | `toString()`, `add()`, `setStyle()`, `moveToA()`, `lineToA()`, `archToA()` |
+| `HttpClient` | HTTP(S) requests, TLS 1.0-1.3 | none (direct calls) | `Download`, `Upload`, `Get`, `Post`, `Put`, `Patch`, `Delete`, `CreateUrl`, `EncodeParams`, `EncodeString`, `DecodeString` |
+| `JSON` | Lua table ⇄ JSON string | `require("json")` | `json.encode`, `json.decode`, `json.null` (docs recommend RapidJSON for large data) |
+| `Log` | Write to the Core's system log | none | `Log.Message`, `Log.Error` |
+| `LPeg` | Parsing Expression Grammar pattern matching | `require("lpeg")` | `match`, `type`, `version`, `P`, `B`, `R`, `S`, `V`, `locale`, `C`, `Carg`, `Cb`, `Cc`, `Cf`, `Cg`, `Cp`, `Cs`, `Ct` |
+| `Lua bitstring` | Binary/hex packing for protocol work | `require "bitstring"` | `pack`, `unpack`, `compile`, `bindump`, `hexdump`, `binstream`, `hexstream`, `frombinstream`, `fromhexstream` |
+| `LuaDate` | Gregorian date/time arithmetic and formatting | `require "date"` | per-instance `add*`/`get*`/`set*`/`span*`/`tolocal`/`toutc`/`fmt`/`copy`; module `date.diff`, `date.epoch`, `date.isleapyear` |
+| `LuaXML` | XML ⇄ Lua table mapping | `require("LuaXML")` | `xml.new`, `.append`, `.children`, `.decode`, `.encode`, `.load`, `.save`, `.eval`, `.tag`, `.str`, `.find`, `.registerCode` |
+| `Mixer` | Control a named Mixer component | `Mixer.New(name)` | `SetCrossPointGain/Mute/Solo/Delay`, `SetInputGain/Mute/Solo/CueEnable/CueAfl`, `SetOutputGain/Mute`, `SetCueGain/Mute`, `GetMixerCrossPoints` |
+| `NamedControl` | Read/set any Named Control by name | none (static) | `SetString/GetString`, `SetPosition/GetPosition`, `SetValue/GetValue`, `Trigger` |
+| `Network` | Host/interface info | none | `Network.GetHostByName()`, `Network.Interfaces()` |
+| `Notifications` | Pub/sub between scripts on the same Core | none (static) | `Notifications.Subscribe/Publish/Unsubscribe` |
+| `Ping` | Reachability check for a host | `Ping.New(host)` | `start`, `stop`, `setTimeoutInterval`, `setPingInterval`, `EventHandler`, `ErrorHandler` |
+| `QRCode` | Generate a QR code SVG for a URL | none | `QRCode.GenerateSVG(url, mode)` |
+| `RapidJSON` | Fast JSON encode/decode, schema validation | `require("rapidjson")` | `encode`, `decode`, `load`, `dump`, `null`, `object()`, `array()`, `Document()`, `SchemaDocument()`, `SchemaValidator()` |
+| `SerialPorts` | RS-232 via a wired Inventory component | auto-created by wiring | `.EventHandler`, `.IsOpen`, `.BufferLength`, `:Open/Close/Write/Read/ReadLine/Search`; events `Connected`/`Reconnect`/`Data`/`Closed`/`Error`/`Timeout` |
+| `SerialServerPorts` | Emulate a hardware serial port over the network | accessed by index, e.g. `SerialServerPorts[1]` | `.IsOpen`, `.BufferLength`, `:Event`, `:Write`, `:Read`, `:ReadLine`, `:Search`, `.OnOpen`, `.OnClose`, `.Data` |
+| `Snapshot` | Load/save Q-SYS snapshots at runtime | none | `Snapshot.GetNames()`, `.Load(name, bank, ramp)`, `.Save(name, bank)` |
+| `SNMP` | Act as an SNMP Manager (v2c/v3) | `SNMPSession.New(SNMP.SessionType.v2c\|v3)` | `setHostName`, `setAuthType/Prot`, `setPrivProt`, `setUserName`, `setPassPhrase`, `setPrivPassPhrase`, `setCommunity`, `startSession`, `getRequest`, `setRequest`, `EventHandler`, `ErrorHandler` |
+| `SNMPTrap` | Receive SNMP traps | `SNMPTrap.New(name)` | `startSession()`, `EventHandler`, `ErrorHandler` |
+| `Ssh` | SSH client (like `TcpSocket` plus auth/PKI) | `Ssh.New()` | `Connect`, `Disconnect`, `Write`, `Read`, `ReadLine`, `Search`, `*Timeout` props, `IsConnected`, `IsInteractive`, `PublicKey`/`PrivateKey`/`Certificate`; events incl. `LoginFailed` |
+| `System` | Core/runtime environment info | none | `.BuildVersion`, `.LockingId`, `.IsEmulating`, `.MajorVersion`, `.MinorVersion`, `.Version` |
+| `TcpSocket` | Client TCP/IP, event-based, reconnecting | `TcpSocket.New()`, `.NewTls()` | see "Q-SYS runtime globals" above |
+| `TcpSocketServer` | Listen for inbound TCP connections | `TcpSocketServer.New()` | `Listen(port)`, `Close()`, `EventHandler` (fires with a new socket instance per connection) |
+| `Timer` | Delays/scheduled events | `Timer.New()` | `EventHandler`, `Start(sec)`, `Stop()`, `IsRunning()`, `Timer.CallAfter(fn, delay)`, `Timer.Now()` |
+| `Uci` | Control User Control Interfaces | none (static) | `GetLayerVisibility`, `GetUcis`, `GetUciPages`, `GetUciPageLayers`, `GetVariable/SetVariable`, `SetLayerVisibility`, `SetPage`, `SetScreen`, `SetSharedLayerVisibility`, `SetUCI`, `LogOff`, `ShowDialog` |
+| `UDPSocket` | Send/receive UDP, incl. multicast | `UdpSocket.New()` | `Open(ip, port)`, `Close()`, `Send(ip, port, data)`, `JoinMulticast(addr, localIp)`, `EventHandler`/`Data`, `MulticastTtl` |
+| `WebSocket` | Two-way framed messaging over ws/wss | `WebSocket.New()` | `Connect()`, `Write()`, `Close()`, `Ping()`; events `Connected`/`Data`/`Error`/`Closed`/`Pong` |
+
+`Timer`, `TcpSocket`, `Ssh`, `SerialPorts`/`SerialServerPorts`, and `UDPSocket`
+all share the same "keep it global, never `local`" GC-safety requirement
+noted above for `Timer`/`TcpSocket` specifically — the same closure-chain
+reasoning applies to any of them if a future plugin uses one.
+
 ### Key module patterns
 
 - **No external OOP base.** `qknob.lua` no longer depends on any `class()`
@@ -455,11 +509,12 @@ earlier 403 was not universal — `WebFetch` against `help.qsys.com` (the
 Reserved Functions, the TCPSocket Code Example, and Storing Secrets in
 Plugins directly rather than via search-engine summary; see the
 `GetPages(props)` table row and the `TcpSocket` bullet above for what that
-confirmed. HTTPClient, SerialPort Usage, and Dynamic Pages were only seen via
-search-engine summary, not fetched directly — HTTPClient does GET/POST/PUT
-over HTTP(S); SerialPort has TCPSocket-like read/write handlers for a
-device's serial port; Dynamic Pages is listed as a Code Examples topic with
-no further detail found yet. Storing Secrets in Plugins' documented pattern:
+confirmed. Update, same day: `HttpClient` and `SerialPorts` were later
+fetched directly too, along with the other 34 Q-SYS Lua extension pages —
+see "Full Q-SYS Lua extension API" above for the complete result. Dynamic
+Pages remains unconfirmed — only seen as a Code Examples topic listing via
+search-engine summary, no direct fetch attempted, no further detail known.
+Storing Secrets in Plugins' documented pattern:
 keep the secret in a hidden embedded Custom Controls component (its controls
 are only reachable from the plugin they're embedded in, and persist with the design
 state), copy user input into it on `EventHandler`, and mask the visible
