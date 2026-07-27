@@ -240,7 +240,8 @@
  			end
  			if private.isMacro then
 				if action == Actions.format and self.EventHandler then
-		  			self.EventHandler(Actions.formname.key,getValue(self,Actions.formname))
+					local s = getValue(self,Actions.formname)
+					if s ~= nil then self.EventHandler(Actions.formname.key,s) end
 				end
 			else
 				if action == Actions.formlist then
@@ -253,9 +254,19 @@
 					for t,v in ipairs(getValue(self,Actions.formlist)) do
 						if t == getValue(self,Actions.format) then s = v end
 					end
-					setValue(self,Actions.formname,s)
-					if self.EventHandler then
-						self.EventHandler(Actions.formname.key,s)
+					-- The format index has no entry in the list yet: the device
+					-- has not reported its format list, or reported a shorter
+					-- one. Leave the name mirror alone and stay quiet instead of
+					-- publishing a nil formname -- the plugin's event handler
+					-- asserts on a nil result, so pressing a format button
+					-- before the list arrived used to crash the component.
+					-- Same rule Action() already applies to the reverse
+					-- direction, where an unresolvable name is ignored.
+					if s ~= nil then
+						setValue(self,Actions.formname,s)
+						if self.EventHandler then
+							self.EventHandler(Actions.formname.key,s)
+						end
 					end
 				end
 	  		end
