@@ -38,6 +38,9 @@
 --        drives a TcpSocket connection to the processor and reports
 --        fader/mute/format/formname/formlist back through
 --        DolbyCP.EventHandler in cpseries.lua.
+-- Dev-only, no version bump: wired in strict.lua (Developer/Modules/
+-- strict.lua) right after the runtime guard, dropped automatically from the
+-- production build (see CLAUDE.md).
 
 PluginInfo =
 {
@@ -198,5 +201,16 @@ function GetComponents(props)
 end
 
 if not Controls and Reflect then return end
+
+-- Dev-only safety net: catches a typo'd global (e.g. reading 'Controlls')
+-- immediately instead of silently creating/reading nil. Dropped from the
+-- production build automatically -- everything after the guard line is
+-- discarded by build_distributable.sh in favor of the explicitly inlined
+-- module list, so this never ships. Names below are every custom global
+-- this plugin's require chain creates on first write, in the order they
+-- first appear; QKnob/DKNob/DolbyFaderEventHandler come from dolbyfader.lua
+-- being required inside cpseries.lua.
+require "strict"
+Global("QKnob", "DKNob", "DolbyFaderEventHandler", "CPSeries", "CPModels", "CPProtocol", "DolbyCP", "sock", "Print")
 
 require "CPSeries"

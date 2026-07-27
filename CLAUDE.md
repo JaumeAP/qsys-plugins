@@ -397,7 +397,36 @@ reasoning applies to any of them if a future plugin uses one.
   override `QKnob:SetString` for unit suffixes (e.g. dolbysweep appends `'s'`).
 - **`strict.lua`**: installs a metatable on `_G` that raises on read/write of
   undeclared globals; declare intentional globals with `Global("name", ...)`.
-  Not currently `require`d by any plugin — opt in if you need it while debugging.
+  Wired into `DolbyFader V2.0.qplug`, `Dolby Sweep V2.0.qplug`, and
+  `Dolby CPSeries Control V4.0.qplug` (2026-07-27) as a dev-only safety net:
+  `require "strict"` plus a `Global(...)` call sits right after the runtime
+  guard, before the plugin's own `require`. This placement is deliberate —
+  everything after the guard line in a Developer head file is dropped by
+  `build_distributable.sh` in favor of the explicitly inlined module list
+  (see "Developer workflow" below), so strict-mode is active whenever the
+  plugin loads straight from `Developer/plugins/` (Designer, bench-testing)
+  but never ships in the root distributable. Each plugin declares only the
+  custom globals its own require chain creates on first write (host globals
+  like `Controls`/`Properties`/`Timer`/`TcpSocket`/`System` already exist
+  before the plugin's code runs, so they never need declaring):
+  `DolbyFader`/`Dolby Sweep` both pull in `QKnob` (from `qknob.lua`);
+  `DolbyFader` adds `DKNob`, `DolbyFaderEventHandler`; `Dolby Sweep` adds
+  `period`, `timer`; `CPSeries` adds `DKNob`, `DolbyFaderEventHandler`
+  (via its own `require "dolbyfader"`), `CPSeries`, `CPModels`,
+  `CPProtocol`, `DolbyCP`, `sock`, and `Print` (declared defensively, even
+  though `Print` is normally already host-provided, so `cpseries_class.lua`'s
+  override — see below — never depends on load order). Verified by loading
+  each Developer head file's runtime pass under a stubbed host (2026-07-27);
+  the repo's own `Developer/tests/` doesn't exercise this path (its
+  dist tests run the already-built root files, which never see these
+  lines), so this was checked by hand, not by `run.sh`.
+  `MultiFlip-Flop` is NOT wired up: it has no custom globals to protect
+  (its runtime block only ever writes into the existing `Controls`/
+  `Properties` tables) and, more importantly, its root `.qplug` is a plain
+  copy of the Developer source with no build-script stripping step (see
+  "Developer workflow" below) — so unlike the other three, there is no
+  automatic mechanism to keep a `require "strict"` here from shipping to
+  production. Add it only alongside a real removal step if that changes.
 - **`cpseries_models.lua` / `cpseries_protocol.lua`**: per-model wire config
   (TCP port, `KEY=VALUE` vs `"param value"` dialect) and message formatting/
   GET framing. Neither touches `Controls` — they're pure protocol logic,
