@@ -1,0 +1,29 @@
+# Permission entries that must never travel into the portable config
+# bundle, because they are not generic -- either they exist only for
+# this repo's own project-specific tooling, or they are tied to this
+# particular session/environment rather than to the repo at all. One
+# exact permission string per line, must match an entry under
+# .claude/settings.json's permissions.allow/ask/deny verbatim.
+#
+# Consumed only by export-config-skill.sh at export time, to filter
+# settings.json before bundling it. This file itself is never copied
+# into the bundle -- same treatment as ensure-lua53.sh.
+
+# Project-specific: Lua 5.3 test suite tooling (see ensure-lua53.sh and
+# CLAUDE.md's "What this repo is") -- meaningless grants for a repo
+# without that same tooling.
+Bash(lua *)
+Bash(lua5.3 *)
+Bash(lua5.4 *)
+Bash(luac *)
+Bash(luac5.3 *)
+Bash(luac5.4 *)
+Bash(luarocks *)
+Bash(apt-get update *)
+Bash(apt-get install *)
+Bash(apt-get remove *)
+
+# Instance-specific: an MCP connector ID unique to this particular
+# session/environment, not to this repo -- meaningless (and likely
+# invalid) in any other session that imports the bundle.
+mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__add_repo

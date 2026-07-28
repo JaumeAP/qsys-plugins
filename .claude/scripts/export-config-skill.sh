@@ -74,8 +74,11 @@ repeated here.
   "Project-specific rules"), meant to be copied into a target repo's own
   CLAUDE.md, replacing its common part while preserving its
   Project-specific rules section untouched.
-- `references/settings.json` -- the hook registrations, copied straight
-  over the target's `.claude/settings.json`.
+- `references/settings.json` -- the hook registrations and generic
+  permissions, filtered (project-specific hook registrations and
+  permissions from `.claude/local-only-permissions.txt` stripped, see
+  `config-export-import.md`) before being merged into the target's
+  `.claude/settings.json`.
 - `references/hooks/*.sh` -- every mechanized hook, copied straight into
   the target's `.claude/hooks/`.
 - `references/recommended-skills.txt` -- optional skill packs a target
@@ -132,7 +135,45 @@ sed '/^## Project-specific rules/,$d' CLAUDE.md > "$skill_dir/references/CLAUDE.
 cp .claude/config-export-import.md "$skill_dir/references/"
 cp .claude/recommended-skills.txt "$skill_dir/references/"
 [ -f .claude/removed-files.txt ] && cp .claude/removed-files.txt "$skill_dir/references/"
-cp .claude/settings.json "$skill_dir/references/"
+
+# bundled_hooks is the single source of truth for which hooks are
+# portable -- reused below both to copy the hook files themselves and to
+# strip settings.json of registrations for any hook NOT in this list
+# (e.g. a project-specific SessionStart hook like ensure-lua53.sh, which
+# is deliberately excluded from this array further down).
+bundled_hooks=(check-reply-format.sh config-ingest-reminder.sh
+  init-submodules.sh no-commit-on-main.sh precompact-hygiene-flag.sh
+  rule-check-reminder.sh skill-creation-reminder.sh
+  submodule-clone-fixup.sh)
+
+# settings.json is NOT a blind copy: it can carry two kinds of
+# project-specific leakage that would otherwise ship into every target
+# repo's bundle --
+#   1. hook registrations for a hook this script doesn't bundle (that
+#      hook file never travels, so the registration would point at
+#      nothing in the target repo);
+#   2. permission entries that only make sense for this repo's own
+#      tooling (declared explicitly in local-only-permissions.txt,
+#      since a script can't infer "project-specific" from a permission
+#      string alone).
+# Both are stripped here before the file is written into the bundle.
+hook_allowlist_json="$(printf '%s\n' "${bundled_hooks[@]}" | jq -R . | jq -s .)"
+if [ -f .claude/local-only-permissions.txt ]; then
+  local_perms_json="$(grep -vE '^\s*(#|$)' .claude/local-only-permissions.txt | jq -R . | jq -s .)"
+else
+  local_perms_json='[]'
+fi
+jq --argjson allowed_hooks "$hook_allowlist_json" --argjson local_perms "$local_perms_json" '
+  .hooks |= (with_entries(
+    .value |= (
+      map(.hooks |= map(select((.command | split("/") | last) as $b | ($allowed_hooks | index($b)) != null)))
+      | map(select(.hooks | length > 0))
+    )
+  ))
+  | .permissions |= (with_entries(
+      .value |= map(select(. as $p | ($local_perms | index($p)) == null))
+    ))
+' .claude/settings.json > "$skill_dir/references/settings.json"
 
 # Same self-describing note the old export-config.sh used to include --
 # kept here too for exact parity, even though this package's own
@@ -168,11 +209,7 @@ if [ -f .claude/skills-lock.json ]; then
   jq '.skills |= {"find-skills": .["find-skills"]}' .claude/skills-lock.json > "$skill_dir/references/skills-lock.json"
 fi
 
-for hook in check-reply-format.sh config-ingest-reminder.sh \
-  init-submodules.sh no-commit-on-main.sh \
-  precompact-hygiene-flag.sh \
-  rule-check-reminder.sh skill-creation-reminder.sh \
-  submodule-clone-fixup.sh; do
+for hook in "${bundled_hooks[@]}"; do
   [ -f ".claude/hooks/$hook" ] && cp ".claude/hooks/$hook" "$skill_dir/references/hooks/"
 done
 
