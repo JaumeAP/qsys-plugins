@@ -32,7 +32,10 @@
       "Bash(apt-get remove *)",
       "Bash(mkdir *)",
       "mcp__github__update_pull_request",
-      "mcp__github__merge_pull_request"
+      "mcp__github__merge_pull_request",
+      "mcp__github__create_pull_request",
+      "mcp__Claude_Code_Remote__subscribe_pr_activity",
+      "mcp__Claude_Code_Remote__unsubscribe_pr_activity"
     ],
     "ask": [
       "Bash(git push --force *)",
