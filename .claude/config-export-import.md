@@ -166,7 +166,11 @@ directions, mechanized best-effort by
         the restore, then diverged: removed from the bundle again later
         2026-07-28 (explicit user request), this time staying out for
         good as a `recommended-skills.txt` fetch-on-demand entry instead
-        — see `removed-files.txt` and 2.5.
+        — see 2.5. Deliberately NOT added to `removed-files.txt` this
+        time (also explicit user request): an already-installed copy in
+        a target repo is fine to leave alone, this only stops future
+        imports from shipping/refreshing it, not a reason to reach into
+        a repo that already chose to keep it.
    2.3. **Contradiction check, mandatory on every import**: every
         imported hook/common rule always wins over a conflicting rule
         the target repo already has — the general principle 2.2 already

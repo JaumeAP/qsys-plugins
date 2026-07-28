@@ -106,9 +106,11 @@ repeated here.
   optional import choice (step 2.5) -- briefly removed from the
   bundle entirely on 2026-07-27, restored from git history and put back
   as optional on 2026-07-28. (`find-skills` was restored the same way
-  and then removed from the bundle again later 2026-07-28 -- see
-  `removed-files.txt` -- so it isn't one of these three; it's a
-  fetch-on-demand entry in `recommended-skills.txt` instead.) Each one's
+  and then removed from the bundle again later 2026-07-28, staying out
+  for good this time, so it isn't one of these three -- it's a
+  fetch-on-demand entry in `recommended-skills.txt` instead, and
+  deliberately NOT in `removed-files.txt`, since an already-installed
+  copy elsewhere is fine to leave alone.) Each one's
   entry point is named `<name>.md` here
   instead of `SKILL.md`, because a `.skill` package may only contain one
   `SKILL.md` (this one) -- nesting more would fail validation on upload.

@@ -112,13 +112,19 @@ it's back, not gone.)
 (`find-skills` took the same round trip as `changelog-rules` up through
 the 2026-07-28 restore, then diverged: removed from the bundle again
 later the same day, explicit user request, this time staying out for
-good — see `removed-files.txt`. Its `.claude/skills/find-skills/`
+good. Its `.claude/skills/find-skills/`
 directory and `.claude/skills-lock.json`, which only ever tracked its
 own installed hash, are both deleted again from this repo too, not just
 from the export. It's now a `recommended-skills.txt` entry instead:
 fetch it live on demand with `npx skills add vercel-labs/skills -s
 find-skills`, same as any other skill in that file, rather than having
-it always on disk.)
+it always on disk. Deliberately NOT added to `removed-files.txt` this
+time (explicit user request): that file actively deletes a listed path
+from a target repo on import, and an already-installed `find-skills`
+elsewhere is a perfectly fine skill someone may still want, just not
+handed out for free anymore — this only stops future imports from
+shipping/refreshing it, it doesn't reach into a repo that already has
+it.)
 
 (`file-operations` needs no pointer here beyond the numbered list above
 — its own description triggers it by context when there's file I/O to
