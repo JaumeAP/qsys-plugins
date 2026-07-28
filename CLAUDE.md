@@ -771,6 +771,19 @@ Typical loop:
   (`vendor/qsys-plugins/BasePlugin/PluginCompile` and
   `vendor/qsys-plugins/ExamplePlugin/PluginCompile`) — one fewer top-level
   `.gitmodules` entry, same content reachable, no duplication either way.
+- **Standing automation authorization (2026-07-28, explicit user request).**
+  In this repo, the full git/PR cycle — commit, push, opening a PR, and
+  merging it once `mergeable_state` is `clean` and not draft — is
+  pre-authorized: proceed without asking for confirmation at each step,
+  instead of the general default (confirm before push/merge). This does
+  NOT cover destructive or hard-to-reverse operations outside that normal
+  cycle — force-push, `git reset --hard`, `git branch -D`, rewriting
+  already-pushed history, or closing a PR as superseded rather than
+  merging it — those still get confirmed first, per the general "Executing
+  actions with care" policy. This is a repo-specific standing rule and
+  lives only here, not in the portable `github-rules` skill, which
+  deliberately never encodes a standing auto-merge policy of its own since
+  it travels into other repos unchanged.
 
 ### Continuity notes
 
