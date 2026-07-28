@@ -17,13 +17,3 @@
 # no longer stating it.
 hooks/local-merge-reminder.sh
 hooks/sync-command-reminder.sh
-
-# skills/git-rules -- removed 2026-07-25, explicit user request (CLAUDE.md's
-# "Portable skills" section). Git workflow now follows plain judgement plus
-# the rest of CLAUDE.md's rules, not a dedicated skill. This entry was found
-# missing on a 2026-07-28 audit -- the skill directory and its
-# settings.json skillOverrides entry were removed from this repo at the
-# time, but the path was never actually added here, so an older import
-# with skills/git-rules already installed would have kept it orphaned
-# forever instead of being cleaned up.
-skills/git-rules
