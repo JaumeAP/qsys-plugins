@@ -85,12 +85,24 @@ the more relevant method to look at.
 
 ## Watching PR activity
 
-Where a `subscribe_pr_activity`-style tool exists, PRs opened this way
-typically get subscribed right after creation, and unsubscribed once merged
-or closed -- keeps webhook/activity noise relevant to only what's still open.
-This mirrors how PR review comments and CI failures generally get handled:
+Where a `subscribe_pr_activity`-style tool exists, it's only worth reaching
+for when the PR is actually going to stay open after this turn -- still a
+draft, checks genuinely pending, or a review being waited on. In that case,
+subscribe right after creation and unsubscribe once merged or closed, so
+webhook/activity noise stays relevant to only what's still open. This
+mirrors how PR review comments and CI failures generally get handled:
 investigate, then either fix, ask, or note why no action is needed, rather
 than letting events pile up unaddressed.
+
+Skip subscribing (and skip asking whether to watch) for the routine fast
+path in "Merging: the default is full automation" below -- a PR that gets
+merged synchronously, moments after opening, closes before there's any
+window for a webhook event to arrive in. Subscribing and then immediately
+unsubscribing around a merge that already happened is pure overhead: extra
+tool calls, and on a repo whose permission config doesn't pre-allow those
+two tools, extra prompts for the same "yes, of course" answer each time.
+The watch step earns its keep only for a PR that genuinely keeps living
+after this turn ends.
 
 ## Merging: the default is full automation
 
