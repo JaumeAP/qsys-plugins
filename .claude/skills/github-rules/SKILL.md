@@ -38,9 +38,12 @@ system-level instructions -- if so, this is restating something you already
 have rather than adding a new rule; worth checking before assuming this
 skill is the only place it comes from.)
 
-Worth doing this check proactively, before making the next edit, rather
-than reactively discovering mid-edit that the branch is stale -- the
-difference matters mechanically, not just tidiness. Checked on an already
+Do this check first, before the first `Edit`/`Write` call of a new task on
+an existing branch -- not partway through once already mid-edit. This is
+a standing practice to build into how a task starts, not a nice-to-have
+that's fine to skip under momentum: once an edit is already in flight,
+the check still has to happen eventually, just at a strictly worse moment.
+The difference matters mechanically, not just tidiness. Checked on an already
 clean working tree (the normal state right after a previous push), the
 restart above is exactly the two commands shown, nothing else: no
 stash/stash-pop needed to protect an in-progress edit, because there isn't

@@ -63,16 +63,24 @@ sub-items are numbered too (e.g. `3.1`, `3.2`), never dashes/bullets.
 ## Portable skills (installed with the config)
 
 These generic skills travel with this file and the rest of the `.claude/`
-config (see `.claude/config-export-import.md`). `file-operations` and
-`github-rules` are mandatory/blind-copy on import into another repo
-(each was briefly made optional 2026-07-27, then moved back the same
-day, both explicit user request). `changelog-rules` and `find-skills`
-are optional choices on import instead: made optional 2026-07-27, then
+config (see `.claude/config-export-import.md`). `file-operations`,
+`github-rules`, and `find-skills` are mandatory/blind-copy on import into
+another repo. `changelog-rules` is an
+optional choice on import instead: made optional 2026-07-27, then
 deleted from the bundle entirely later the same day (a session-long
-audit found neither had actually been invoked that session), then
+audit found it hadn't actually been invoked that session), then
 restored from git history and put back as optional 2026-07-28 (explicit
 user request) rather than staying deleted. This repo itself always
-keeps and uses all four regardless. Pointers
+keeps and uses all four regardless — except `changelog-rules`, disabled
+locally the same day via
+`skillOverrides: {"changelog-rules": "off"}`
+in `.claude/settings.local.json` (gitignored, explicit user request:
+keep the `SKILL.md` on disk so it still exports/bundles normally as
+optional, but don't use it in this repo's own sessions; kept out of
+`.claude/settings.json` specifically so the override doesn't travel
+into the export bundle and silently disable it in a target repo too —
+`export-config-skill.sh` only ever copies `settings.json`, never
+`settings.local.json`). Pointers
 only, not summaries — same
 drift-safety reason as above; each skill is the authority on its own topic,
 invoke it when the task calls for it:
@@ -81,7 +89,7 @@ invoke it when the task calls for it:
    write and maintain changelog entries (versioning, format, flush-on-push).
 2. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
    PR conventions (workflow shape, reading `pull_request_read` results,
-   merge mechanics); generalized 2026-07-27 from a qsys-plugins-specific
+   merge mechanics); generalized 2026-07-27 from an earlier repo-specific
    skill of the same name. Must never encode a standing auto-merge policy —
    a portable file installs into every repo it's imported into, so a rule
    like that written here would silently apply everywhere, not just where
@@ -96,13 +104,13 @@ the rest of this file's rules, not a dedicated skill.)
 
 (`changelog-rules` and `find-skills` briefly removed from the portable
 bundle 2026-07-27, explicit user request, then restored from git history
-2026-07-28, also explicit user request, and put back as optional rather
-than mandatory this time. `removed-files.txt` no longer lists them —
-they're back, not gone.)
-
-(`file-operations` needs no pointer here beyond the numbered list above
-— its own description triggers it by context when there's file I/O to
-do.)
+2026-07-28, also explicit user request. `changelog-rules` stayed optional
+from there on; `find-skills` took a longer road — removed from the
+bundle again the same day as a `recommended-skills.txt` fetch-on-demand
+entry, then, after weighing whether that was actually worth it, made
+mandatory/always-present again the same day, its final resting state, at
+least so far. `removed-files.txt` no longer lists either — they're
+back, not gone.)
 
 **Find Skills**: `find-skills`, imported from `vercel-labs/skills`
 (`skills/find-skills/SKILL.md`) — discovers and installs third-party
@@ -111,6 +119,10 @@ import time. Tracked in `skills-lock.json`. Note its own workflow can
 install other skills straight from that ecosystem, bypassing this
 repo's own skill-creator/config-ingest governance — worth keeping in
 mind wherever it ends up.
+
+(`file-operations` needs no pointer here beyond the numbered list above
+— its own description triggers it by context when there's file I/O to
+do.)
 
 **Which additional skills travel on export is defined in
 `.claude/scripts/export-config-skill.sh`** — not repeated here, to avoid

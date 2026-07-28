@@ -12,16 +12,20 @@
 #
 # A .skill package may contain exactly ONE SKILL.md (the claude.ai/Skills
 # API upload path rejects more than one). This bundle carries FOUR
-# skills as files: file-operations and github-rules are
-# mandatory/blind-copy as of 2026-07-27 (each was briefly made an
-# optional import choice the same day, then moved back by explicit user
-# request -- github-rules first, file-operations shortly after -- see
-# config-export-import.md step 2.2); changelog-rules and find-skills are
-# optional import choices (step 2.5) -- both were briefly removed from
-# the bundle entirely on 2026-07-27 (explicit user request, neither had
-# actually been invoked in a session-long audit), then restored from git
-# history and put back as optional on 2026-07-28 (also explicit user
-# request) rather than staying deleted. Each skill has its
+# skills as files: file-operations, github-rules, and find-skills are
+# mandatory/blind-copy (each of the first two was briefly made an
+# optional import choice on 2026-07-27, then moved back the same day by
+# explicit user request -- github-rules first, file-operations shortly
+# after; find-skills took a longer road -- optional, then deleted
+# entirely, restored as optional, deleted again as fetch-on-demand only,
+# then finally made mandatory/always-present again on 2026-07-28,
+# explicit user request each step -- see config-export-import.md step
+# 2.2); changelog-rules is the one remaining
+# optional import choice (step 2.5) -- briefly removed from
+# the bundle entirely on 2026-07-27 (explicit user request, part of a
+# session-long audit that found it hadn't actually been invoked), then
+# restored from git history and put back as optional on 2026-07-28 (also
+# explicit user request) rather than staying deleted. Each skill has its
 # own SKILL.md -- those get renamed to
 # <name>.md under references/skills/<name>/ inside the package, so the
 # whole bundle still fits in one valid .skill. Whoever applies the
@@ -97,13 +101,19 @@ repeated here.
   repo can export its own bundle later instead of only ever being an
   import destination.
 - `references/skills/<name>/<name>.md` -- four generic skills.
-  `file-operations` and `github-rules` are mandatory/blind-copy (step
-  2.2) as of 2026-07-27, each briefly made an optional import choice the
-  same day before being moved back (`github-rules` first,
-  `file-operations` shortly after). `changelog-rules` and `find-skills`
-  are optional import choices (step 2.5) -- briefly removed from the
-  bundle entirely on 2026-07-27, restored from git history and put back
-  as optional on 2026-07-28. Each one's entry point is named `<name>.md` here
+  `file-operations`, `github-rules`, and `find-skills` are
+  mandatory/blind-copy (step 2.2). `file-operations`/`github-rules` were
+  each briefly made an optional import choice on 2026-07-27, then moved
+  back the same day (`github-rules` first, `file-operations` shortly
+  after). `find-skills` had a longer round trip the same general period
+  -- optional, deleted entirely, restored as optional, deleted again as
+  fetch-on-demand only, then finally made mandatory/always-present again
+  on 2026-07-28 -- explicit user request at every step, current state
+  being: always present, not merely recommended. `changelog-rules` is
+  the one remaining optional import choice (step 2.5) -- briefly removed
+  from the bundle entirely on 2026-07-27, restored from git history and
+  put back as optional on 2026-07-28. Each one's
+  entry point is named `<name>.md` here
   instead of `SKILL.md`, because a `.skill` package may only contain one
   `SKILL.md` (this one) -- nesting more would fail validation on upload.
   **When actually installing one of these into a target repo's
