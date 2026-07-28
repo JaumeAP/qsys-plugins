@@ -806,3 +806,13 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   item above. (2) `cpseries_commlib.lua:406`'s `readData(self,true)` call
   passes an argument `readData` (only takes `self`) always ignores —
   harmless, just misleading. Neither fixed.
+- **`claude/test-osx0oe` has three unpushed-to-PR commits (2026-07-28):**
+  `09f575e`/`9c350d0`/`07b3c03` — `settings.json` PR-workflow permission
+  allowlist plus two `github-rules` speedup fixes (skip PR-activity
+  watching and skip the draft-then-ready toggle on the synchronous
+  fast-merge path). Working tree clean, branch pushed, no PR opened for
+  them yet — this session's own established convention is to wait for an
+  explicit "ObrePr" rather than auto-opening one (PR #28, the export-
+  bundle fix earlier the same day, is already merged and unrelated).
+  Next session: open a PR for these three when asked, or fold in further
+  batched work first per `github-rules`' batching guidance.
