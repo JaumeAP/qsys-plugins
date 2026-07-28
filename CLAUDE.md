@@ -783,6 +783,20 @@ Typical loop:
   `reset --hard`, `branch -D`, rewriting published history) are still
   excluded from the default and get confirmed first, same as the skill
   says.
+- **PR creation can still be gated per-session despite the above
+  (2026-07-28, explicit user request).** The calling environment can
+  layer its own "do not create a pull request unless the user explicitly
+  asks for one" instruction on top of everything above, reloaded fresh
+  each session regardless of what this file or `github-rules` say --
+  observed directly this session (PR #28 wasn't opened until the user
+  said "ObrePr", even though the shared automation default above already
+  covers PR creation). No file in this repo can remove that gate when
+  it's present; only the user re-authorizing can. When it's live, the
+  user wants to be asked for that authorization rather than silently
+  falling back to asking "ObrePr" every single cycle without ever
+  surfacing that the gate exists at all -- ask once, early in the
+  session, whether to treat that authorization as standing for the rest
+  of the session.
 
 ### Continuity notes
 
