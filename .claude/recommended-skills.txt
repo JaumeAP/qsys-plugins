@@ -24,4 +24,3 @@ firecrawl-scrape -> firecrawl/firecrawl-claude-plugin
 firecrawl-search -> firecrawl/firecrawl-claude-plugin
 frontend-design -> anthropics/claude-code
 karpathy-guidelines -> forrestchang/andrej-karpathy-skills
-find-skills -> vercel-labs/skills

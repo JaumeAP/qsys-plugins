@@ -1,8 +1,8 @@
 # Config export/import (cross-repo `.claude/` propagation)
 
-This repo's `.claude/` tooling (`settings.json`, `hooks/`, the two
-generic skills — `file-operations`, `github-rules`, all under
-`.claude/skills/`, plus this file) is meant to be portable
+This repo's `.claude/` tooling (`settings.json`, `hooks/`, the four
+generic skills — `changelog-rules`, `file-operations`,
+`find-skills`, `github-rules`, all under `.claude/skills/`, plus this file) is meant to be portable
 across all my repos, same as `CLAUDE.md`. Which additional skills also
 travel (if any) is defined in `.claude/scripts/export-config-skill.sh` — not
 repeated here. This file is deliberately plain, not a `SKILL.md`
@@ -37,14 +37,14 @@ directions, mechanized best-effort by
    root, `SKILL.md`): a top-level `SKILL.md` documents the bundle itself
    and is the one entry point; every other file — `CLAUDE.md`,
    `settings.json`, `hooks/*.sh`, this file, `recommended-skills.txt`,
-   `00-START-HERE.md`, `removed-files.txt` — lives under `references/`.
-   (No `skills-lock.json` here since 2026-07-27: it only ever tracked
-   `find-skills`' own installed hash, and that skill was removed from
-   the bundle the same day — see step 2.5.) A `.skill` package may
+   `00-START-HERE.md`, `removed-files.txt`, `skills-lock.json` (trimmed to
+   `find-skills`' own entry) — lives under `references/`. A `.skill`
+   package may
    contain only ONE `SKILL.md` (the claude.ai/Skills API upload path
-   rejects more than one), so the two bundled skills' own `SKILL.md`
-   files (`file-operations` and `github-rules`, both mandatory
-   blind-copies as of 2026-07-27 — see step 2.2) are renamed to
+   rejects more than one), so the four bundled skills' own `SKILL.md`
+   files (`file-operations` and `github-rules` mandatory blind-copies;
+   `changelog-rules` and `find-skills` optional — see step 2.2/2.5) are
+   renamed to
    `references/skills/<name>/<name>.md` inside the
    package — restore each one back to `SKILL.md` when actually
    installing it into a target repo's `.claude/skills/<name>/`, that
@@ -154,9 +154,11 @@ directions, mechanized best-effort by
         `.claude/skills/<name>/`, same as the
         hooks above — always overwritten with whatever the bundle
         carries, even if the target already has its own copy, no
-        ask/offer step. `changelog-rules` and `find-skills` are gone
-        from the bundle entirely as of the same day, see 2.5 and
-        `removed-files.txt`, not merely moved between groups.
+        ask/offer step. `changelog-rules` and `find-skills` stay in the
+        optional group instead, see 2.5 — briefly deleted from the
+        bundle entirely 2026-07-27, then restored from git history and
+        put back as optional 2026-07-28 (explicit user request both
+        times), rather than staying deleted or becoming mandatory.
    2.3. **Contradiction check, mandatory on every import**: every
         imported hook/common rule always wins over a conflicting rule
         the target repo already has — the general principle 2.2 already
@@ -197,19 +199,17 @@ directions, mechanized best-effort by
         between produces a spurious double-blank-line diff every single
         import, cosmetic but needless. Join them directly, no inserted
         separator.
-   2.5. **The generic-skills optional group is currently empty**: as of
-        2026-07-27 neither generic skill this bundle carries
-        (`file-operations`, `github-rules`) is optional — both are
-        mandatory blind-copies, see 2.2. This step number is kept as a
-        placeholder (steps 2.6 onward reference "beyond 2.5" and stay
-        correct either way) in case a generic skill is made optional
-        again later, rather than renumbering every step that follows.
-        `changelog-rules` and `find-skills` are not optional either —
-        both were removed from the bundle entirely (see `removed-files.txt`),
-        a different thing from being merely offered-not-forced.
-        `find-skills` stays recoverable via `recommended-skills.txt`;
-        `changelog-rules` has no such path, since it isn't fetchable
-        from an external repo.
+   2.5. **`changelog-rules` and `find-skills`, offered as optional
+        choices**: bundled as files exactly like any 2.6 pack, but not
+        force-installed or silently overwritten. Fold them into the same
+        2.6 offering (same individual-selection UI, same
+        already-installed filter — don't present one that's already in
+        the target's `.claude/skills/`), rather than a separate step. If
+        one is already installed in the target, offer to sync it to the
+        bundle's version instead of skipping it outright — only apply
+        the update if the user says yes.
+        `file-operations` and `github-rules` are NOT in this optional
+        group — both are mandatory blind-copies, see 2.2.
         (History: 2026-07-24 `find-skills` promoted from the then-optional
         group in 2.6 into the then-mandatory one — it was already always
         bundled by the export-side loop in what was then `export-config.sh`
@@ -222,11 +222,15 @@ directions, mechanized best-effort by
         was switched from mandatory/blind-copy to optional/offered, then
         later the same day `github-rules` was moved back to mandatory,
         `changelog-rules`/`find-skills` were dropped from the bundle
-        entirely, and finally `file-operations` was also moved back to
-        mandatory, leaving this group empty.)
+        entirely, and `file-operations` was also moved back to
+        mandatory, leaving this group empty; 2026-07-28
+        `changelog-rules`/`find-skills` were restored from git history
+        and put back here as optional, explicit user request, rather
+        than staying deleted or becoming mandatory like the other two.)
    2.6. **Additional packs actually bundled as files, always offer,
-        optional to accept**: every skill beyond `file-operations` and
-        `github-rules` (both mandatory per 2.2; 2.5 is currently empty)
+        optional to accept**: every skill beyond `changelog-rules` and
+        `find-skills` in 2.5 (and beyond `file-operations`/`github-rules`,
+        mandatory per 2.2)
         that the bundle actually carries as files — the full list is
         open-ended and growing over time (see
         `.claude/scripts/export-config-skill.sh` for what it currently
@@ -258,9 +262,8 @@ directions, mechanized best-effort by
         skip-if-installed rule as 2.6 applies here too. If the user
         wants a pack, fetch EVERY line belonging to it, each live via
         `npx skills add <owner/repo> -s <skill>` — this works whether or
-        not `find-skills` itself is installed (it isn't even bundled as
-        a file anymore as of 2026-07-27, see 2.5; it's just one more
-        entry in `recommended-skills.txt` now), since `npx skills` is
+        not the target accepted `find-skills` in 2.5 (that skill is
+        optional there — see 2.5), since `npx skills` is
         just a CLI command, not something requiring the `find-skills`
         SKILL.md file itself to be
         present — no version pin, always whatever is
