@@ -21,12 +21,15 @@
       "Bash(git merge *)",
       "Bash(git rebase *)",
       "Bash(lua *)",
+      "Bash(lua5.3 *)",
       "Bash(lua5.4 *)",
       "Bash(luac *)",
+      "Bash(luac5.3 *)",
       "Bash(luac5.4 *)",
       "Bash(luarocks *)",
       "Bash(apt-get update *)",
       "Bash(apt-get install *)",
+      "Bash(apt-get remove *)",
       "Bash(mkdir *)",
       "mcp__github__update_pull_request",
       "mcp__github__merge_pull_request"
@@ -45,6 +48,10 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/init-submodules.sh"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/ensure-lua53.sh"
           }
         ]
       }

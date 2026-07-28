@@ -17,3 +17,18 @@
 # no longer stating it.
 hooks/local-merge-reminder.sh
 hooks/sync-command-reminder.sh
+#
+# skills/changelog-rules, skills/find-skills, skills-lock.json -- removed
+# 2026-07-27, explicit user request, after a session-long audit found
+# neither had actually been invoked that session (changelog-rules: no
+# touched file carries a "## Changelog" section, and this repo's own
+# convention keeps version history in git log instead of restating it
+# in-file; find-skills: no skill-discovery/install request came up).
+# skills-lock.json only ever tracked find-skills' own installed hash, so
+# it's removed too rather than left as an empty husk. find-skills is
+# still recoverable on demand -- see recommended-skills.txt -- via
+# `npx skills add vercel-labs/skills -s find-skills`, which works as a
+# plain CLI command regardless of whether this SKILL.md is installed.
+skills/changelog-rules
+skills/find-skills
+skills-lock.json
