@@ -1,7 +1,7 @@
 # Config export/import (cross-repo `.claude/` propagation)
 
-This repo's `.claude/` tooling (`settings.json`, `hooks/`, the four
-generic skills — `changelog-rules`, `file-operations`,
+This repo's `.claude/` tooling (`settings.json`, `hooks/`, the three
+generic skills — `file-operations`,
 `find-skills`, `github-rules`, all under `.claude/skills/`, plus this file) is meant to be portable
 across all my repos, same as `CLAUDE.md`. Which additional skills also
 travel (if any) is defined in `.claude/scripts/export-config-skill.sh` — not
@@ -16,7 +16,7 @@ directions, mechanized best-effort by
 1. **Export** (this repo → another repo, on request, e.g. "exporta la
    configuració"): run `.claude/scripts/export-config-skill.sh` — bundles
    `CLAUDE.md` + `.claude/settings.json` + `.claude/hooks/` + this file
-   + the four generic skills + every current additional pack (each
+   + the three generic skills + every current additional pack (each
    pack keeps its own license, carried along on
    export) — NOT `CLAUDE.md`'s own
    "Project-specific rules" section (that's THIS repo's content, not
@@ -59,9 +59,9 @@ directions, mechanized best-effort by
    to `find-skills`' own entry) — lives under `references/`. A `.skill`
    package may
    contain only ONE `SKILL.md` (the claude.ai/Skills API upload path
-   rejects more than one), so the four bundled skills' own `SKILL.md`
+   rejects more than one), so the three bundled skills' own `SKILL.md`
    files (`file-operations` and `github-rules` mandatory
-   blind-copies; `changelog-rules` and `find-skills` optional — see step
+   blind-copies; `find-skills` optional — see step
    2.2/2.5) are
    renamed to
    `references/skills/<name>/<name>.md` inside the
@@ -180,12 +180,14 @@ directions, mechanized best-effort by
         fetch-on-demand-only later that day → made
         mandatory/always-present here → and then, later the same day
         (explicit user request again), moved to the optional group
-        instead — see 2.5, where it now sits alongside `changelog-rules`,
-        its final resting state, at least so far. `changelog-rules`
-        itself was briefly deleted from the bundle entirely 2026-07-27,
-        then restored from git history and put back as optional
-        2026-07-28 (explicit user request both times), rather than
-        staying deleted or becoming mandatory.
+        instead — see 2.5, its final resting state, at least so far.
+        `changelog-rules` walked a similar
+        path for a while (briefly deleted from the bundle entirely
+        2026-07-27, then restored from git history and put back as
+        optional 2026-07-28) but ended differently: deleted from the
+        bundle a second and final time, also 2026-07-28, also explicit
+        user request -- see the "NOT in this optional group" note under
+        2.5 for where it stands now.
         **Call this out explicitly while narrating this step (2026-07-28,
         explicit user request):** the bundled `github-rules` now defaults
         to full automation of the routine commit/push/PR/merge cycle —
@@ -236,17 +238,22 @@ directions, mechanized best-effort by
         between produces a spurious double-blank-line diff every single
         import, cosmetic but needless. Join them directly, no inserted
         separator.
-   2.5. **`changelog-rules` and `find-skills`, offered as optional
-        choices**: both bundled as
-        files exactly like any 2.6 pack, but not
-        force-installed or silently overwritten. Fold them into the same
+   2.5. **`find-skills`, offered as an optional
+        choice**: bundled as a
+        file exactly like any 2.6 pack, but not
+        force-installed or silently overwritten. Fold it into the same
         2.6 offering (same individual-selection UI, same
         already-installed/update-check treatment — see 2.6 for exactly
         what that means when already in the target's
         `.claude/skills/`), rather than a separate step.
         `file-operations` and `github-rules` are NOT in
         this optional group — both are mandatory blind-copies, see
-        2.2.
+        2.2. `changelog-rules` is NOT in this group either any more —
+        removed from the bundle entirely (2026-07-28, explicit user
+        request, same treatment as `git-rules`: skill directory deleted,
+        `skillOverrides` entry dropped, path added to
+        `removed-files.txt` so an older import elsewhere gets pruned of
+        it too).
         (History: 2026-07-24 `find-skills` promoted from the then-optional
         group in 2.6 into the then-mandatory one — it was already always
         bundled by the export-side loop in what was then `export-config.sh`
@@ -270,11 +277,13 @@ directions, mechanized best-effort by
         arrangement was actually worth it, made mandatory/always-present
         again the same day, and finally, later the same day (explicit
         user request), moved back here to the optional group — its final
-        resting state, at least so far — while `changelog-rules` stayed
-        here as optional throughout.)
+        resting state, at least so far. `changelog-rules` stayed
+        here as optional for the rest of that history, but was then
+        removed from the bundle entirely, also 2026-07-28, also explicit
+        user request — same treatment as `git-rules`, see the note just
+        above.)
    2.6. **Additional packs actually bundled as files, always offer,
-        optional to accept**: every skill beyond `changelog-rules`/
-        `find-skills` in
+        optional to accept**: every skill beyond `find-skills` in
         2.5 (and beyond `file-operations`/`github-rules`,
         mandatory per 2.2)
         that the bundle actually carries as files — the full list is
