@@ -160,7 +160,14 @@ There *is* a small test suite under `Developer/tests/` (added 2026-07-27):
 plain Lua 5.3 — matching Q-SYS Designer's own embedded Lua version, not 5.4
 (confirmed 2026-07-27 against Q-SYS Help, which points to the Lua 5.3
 Reference Manual for native Lua support) — no framework, run with
-`Developer/tests/run.sh`. It stubs the
+`Developer/tests/run.sh`. `.claude/hooks/ensure-lua53.sh` (SessionStart,
+added 2026-07-28) checks for `lua5.3`/`luac5.3` on `PATH` and installs the
+`lua5.3` package via `apt-get` if missing, best-effort, so a fresh
+container has it before `run.sh` is ever invoked; this hook is
+project-specific (installs a runtime only this repo's own test suite
+needs) and deliberately not part of the portable `.claude/` bundle, per
+`config-export-import.md`'s own example of what stays out of the export.
+It stubs the
 Q-SYS host globals so plugin logic can be driven from a terminal. It does not
 replace testing in Designer — it only covers the plugins' own logic, not real
 DSP behaviour, timing, or the Designer UI — but it catches regressions before
