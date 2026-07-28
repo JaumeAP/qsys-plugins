@@ -63,14 +63,17 @@ sub-items are numbered too (e.g. `3.1`, `3.2`), never dashes/bullets.
 ## Portable skills (installed with the config)
 
 These generic skills travel with this file and the rest of the `.claude/`
-config (see `.claude/config-export-import.md`). `file-operations`,
-`github-rules`, and `find-skills` are mandatory/blind-copy on import into
-another repo. `changelog-rules` is an
-optional choice on import instead: made optional 2026-07-27, then
+config (see `.claude/config-export-import.md`). `file-operations` and
+`github-rules` are mandatory/blind-copy on import into
+another repo. `changelog-rules` and `find-skills` are an
+optional choice on import instead: `changelog-rules` made optional
+2026-07-27, then
 deleted from the bundle entirely later the same day (a session-long
 audit found it hadn't actually been invoked that session), then
 restored from git history and put back as optional 2026-07-28 (explicit
-user request) rather than staying deleted. This repo itself always
+user request) rather than staying deleted. `find-skills` moved to
+optional 2026-07-28 too (explicit user request), after its own longer
+mandatory/optional history below. This repo itself always
 keeps and uses all four regardless — except `changelog-rules`, disabled
 locally the same day via
 `skillOverrides: {"changelog-rules": "off"}`
@@ -108,7 +111,9 @@ bundle 2026-07-27, explicit user request, then restored from git history
 from there on; `find-skills` took a longer road — removed from the
 bundle again the same day as a `recommended-skills.txt` fetch-on-demand
 entry, then, after weighing whether that was actually worth it, made
-mandatory/always-present again the same day, its final resting state, at
+mandatory/always-present again the same day. Superseded later the same
+day, also explicit user request: moved to optional instead, alongside
+`changelog-rules` — its final resting state, at
 least so far. `removed-files.txt` no longer lists either — they're
 back, not gone.)
 
@@ -118,7 +123,8 @@ skills via the `npx skills` CLI, #1 by install count on skills.sh at
 import time. Tracked in `skills-lock.json`. Note its own workflow can
 install other skills straight from that ecosystem, bypassing this
 repo's own skill-creator/config-ingest governance — worth keeping in
-mind wherever it ends up.
+mind wherever it ends up. Optional on import (see above), same offered/
+diff-checked treatment as `changelog-rules`.
 
 (`file-operations` needs no pointer here beyond the numbered list above
 — its own description triggers it by context when there's file I/O to
