@@ -66,20 +66,20 @@ These generic skills travel with this file and the rest of the `.claude/`
 config (see `.claude/config-export-import.md`). `file-operations` and
 `github-rules` are mandatory/blind-copy on import into another repo
 (each was briefly made optional 2026-07-27, then moved back the same
-day, both explicit user request). `changelog-rules` and `find-skills`
-are optional choices on import instead: made optional 2026-07-27, then
+day, both explicit user request). `changelog-rules` is an
+optional choice on import instead: made optional 2026-07-27, then
 deleted from the bundle entirely later the same day (a session-long
-audit found neither had actually been invoked that session), then
+audit found it hadn't actually been invoked that session), then
 restored from git history and put back as optional 2026-07-28 (explicit
 user request) rather than staying deleted. This repo itself always
-keeps and uses all four regardless — except `changelog-rules` and
-`find-skills`, both disabled locally the same day via
-`skillOverrides: {"changelog-rules": "off", "find-skills": "off"}`
+keeps and uses all three regardless — except `changelog-rules`, disabled
+locally the same day via
+`skillOverrides: {"changelog-rules": "off"}`
 in `.claude/settings.local.json` (gitignored, explicit user request:
-keep each `SKILL.md` on disk so both still export/bundle normally as
-optional, but don't use either in this repo's own sessions; kept out of
+keep the `SKILL.md` on disk so it still exports/bundles normally as
+optional, but don't use it in this repo's own sessions; kept out of
 `.claude/settings.json` specifically so the override doesn't travel
-into the export bundle and silently disable them in a target repo too —
+into the export bundle and silently disable it in a target repo too —
 `export-config-skill.sh` only ever copies `settings.json`, never
 `settings.local.json`). Pointers
 only, not summaries — same
@@ -103,23 +103,26 @@ dropped from `settings.json`, and its path added to
 from target repos too. Git workflow now follows plain judgement +
 the rest of this file's rules, not a dedicated skill.)
 
-(`changelog-rules` and `find-skills` briefly removed from the portable
+(`changelog-rules` briefly removed from the portable
 bundle 2026-07-27, explicit user request, then restored from git history
 2026-07-28, also explicit user request, and put back as optional rather
-than mandatory this time. `removed-files.txt` no longer lists them —
-they're back, not gone.)
+than mandatory this time. `removed-files.txt` no longer lists it —
+it's back, not gone.)
+
+(`find-skills` took the same round trip as `changelog-rules` up through
+the 2026-07-28 restore, then diverged: removed from the bundle again
+later the same day, explicit user request, this time staying out for
+good — see `removed-files.txt`. Its `.claude/skills/find-skills/`
+directory and `.claude/skills-lock.json`, which only ever tracked its
+own installed hash, are both deleted again from this repo too, not just
+from the export. It's now a `recommended-skills.txt` entry instead:
+fetch it live on demand with `npx skills add vercel-labs/skills -s
+find-skills`, same as any other skill in that file, rather than having
+it always on disk.)
 
 (`file-operations` needs no pointer here beyond the numbered list above
 — its own description triggers it by context when there's file I/O to
 do.)
-
-**Find Skills**: `find-skills`, imported from `vercel-labs/skills`
-(`skills/find-skills/SKILL.md`) — discovers and installs third-party
-skills via the `npx skills` CLI, #1 by install count on skills.sh at
-import time. Tracked in `skills-lock.json`. Note its own workflow can
-install other skills straight from that ecosystem, bypassing this
-repo's own skill-creator/config-ingest governance — worth keeping in
-mind wherever it ends up.
 
 **Which additional skills travel on export is defined in
 `.claude/scripts/export-config-skill.sh`** — not repeated here, to avoid

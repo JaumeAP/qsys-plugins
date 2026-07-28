@@ -17,3 +17,16 @@
 # no longer stating it.
 hooks/local-merge-reminder.sh
 hooks/sync-command-reminder.sh
+#
+# skills/find-skills, skills-lock.json -- removed from the bundle again
+# 2026-07-28, explicit user request: after briefly restoring find-skills
+# as an optional bundled skill earlier the same day, the user decided it
+# should instead be fetched on demand rather than shipped -- see
+# recommended-skills.txt, `npx skills add vercel-labs/skills -s
+# find-skills` works as a plain CLI command whether or not this SKILL.md
+# is installed. skills-lock.json only ever tracked find-skills' own
+# installed hash, so it's removed again too. changelog-rules is NOT
+# included here -- it stays bundled as optional, just disabled locally
+# via settings.local.json (see CLAUDE.md's "Portable skills" section).
+skills/find-skills
+skills-lock.json
