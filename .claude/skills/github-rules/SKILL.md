@@ -126,6 +126,18 @@ A repo's own `CLAUDE.md` or skills always win over this default -- if a
 repo documents its own merge policy (stricter or looser), follow that
 instead of this file.
 
+The mirror-image case also happens: the calling environment itself can
+layer its own "do not create a pull request unless the user explicitly
+asks for one" instruction on top of everything above, reloaded fresh
+each session regardless of what this file or a repo's `CLAUDE.md` say --
+observed directly: a PR wasn't opened until the user explicitly asked,
+even though the automation default here already covers PR creation. No
+file in any repo can remove that gate when it's present; only the user
+re-authorizing can. When it's live, ask for that authorization once,
+early in the session, and treat it as standing for the rest of the
+session -- rather than silently falling back to asking before every
+single PR without ever surfacing that the gate exists at all.
+
 This default covers only the routine cycle -- committing, pushing, opening
 a PR, merging a clean one. It does NOT extend to destructive or
 hard-to-reverse git operations: force-push, `git reset --hard`,
