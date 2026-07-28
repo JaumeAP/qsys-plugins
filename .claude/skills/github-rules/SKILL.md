@@ -23,10 +23,16 @@ Work usually lands on a task-specific branch, pushed with
 `git push -u origin <branch>`. From there a PR is opened through the GitHub
 MCP tools (e.g. `mcp__github__create_pull_request`) when available -- prefer
 them over the `gh` CLI in environments where `gh` isn't installed or
-authenticated; check which is actually usable rather than assuming. New PRs
-are commonly opened as drafts, with the decision to mark one ready and merge
-it left as an explicit, in-the-moment call rather than something to automate
-by default.
+authenticated; check which is actually usable rather than assuming. A PR
+going through the routine fast-merge path (see "Merging: the default is
+full automation" below) opens directly as non-draft -- opening it as a
+draft only to immediately toggle it back to ready (`update_pull_request`
+`draft: false`, a required mechanical step before a draft can merge) is
+the same kind of open-then-immediately-undo round trip already trimmed
+from PR-activity watching above. Open as a draft instead when the work
+genuinely isn't ready to merge yet -- still in progress, deliberately
+held for review, or otherwise outside that fast path -- and mark it
+ready as its own explicit, in-the-moment call once it actually is.
 
 If a PR's branch already merged in an earlier session and there's follow-up
 work to do, restarting the branch from the current default branch (rather
