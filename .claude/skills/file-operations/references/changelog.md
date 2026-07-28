@@ -3,17 +3,17 @@
 - **v1.2.0** (2026-07-05) - Restructured for progressive disclosure
   - refactor: split monolithic 1609-line SKILL.md into SKILL.md (<150
     lines) + references/ (functions, guards, testing, changelog)
-  - fix: real importable `scripts/fileops.py` module -- replaces the
+  - bugfix: real importable `scripts/fileops.py` module -- replaces the
     "extract code from markdown via regex" pattern the tests
     previously relied on (which also pointed at a filename,
     `file-operations-skill.md`, that never matched `SKILL.md`)
-  - fix: title no longer claims "Audio Streaming" -- no audio
+  - bugfix: title no longer claims "Audio Streaming" -- no audio
     functions existed in the source
-  - test scripts (`test_fileops.py`, `stress_fileops.py`,
+  - chore: test scripts (`test_fileops.py`, `stress_fileops.py`,
     `corruption_fileops.py`, `sweep_fileops.py`) now `import fileops`
     directly instead of parsing markdown at runtime
-  - verified: all four test scripts pass against the extracted module
-    in this container
+  - chore: verified all four test scripts pass against the extracted
+    module in this container
 
 - **v1.1.0** (2026-07-04) - New guards, wired logging, perf and test fixes
   - feature: Write blocklist guard (do-not-touch paths, opt-in FILEOPS_BLOCKED_PATHS)
