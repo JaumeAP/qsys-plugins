@@ -36,7 +36,13 @@ A merged PR is a finished unit of work, not something to reopen or extend.
 (Some calling environments already bake this exact pattern into their own
 system-level instructions -- if so, this is restating something you already
 have rather than adding a new rule; worth checking before assuming this
-skill is the only place it comes from.)
+skill is the only place it comes from.) Push the restarted branch right
+away, before any new work -- `git push origin <branch> --force-with-lease`
+-- rather than waiting for the next real commit: some environments run a
+personal git-check hook that diffs HEAD against the branch's own stale
+remote ref, and until that ref is updated it will flag the default
+branch's own merge commit as an unverified/unpushed commit of yours, which
+it isn't.
 
 Do this check first, before the first `Edit`/`Write` call of a new task on
 an existing branch -- not partway through once already mid-edit. This is
