@@ -72,13 +72,14 @@ deleted from the bundle entirely later the same day (a session-long
 audit found neither had actually been invoked that session), then
 restored from git history and put back as optional 2026-07-28 (explicit
 user request) rather than staying deleted. This repo itself always
-keeps and uses all four regardless — except `changelog-rules`, disabled
-locally the same day via `skillOverrides: {"changelog-rules": "off"}`
+keeps and uses all four regardless — except `changelog-rules` and
+`find-skills`, both disabled locally the same day via
+`skillOverrides: {"changelog-rules": "off", "find-skills": "off"}`
 in `.claude/settings.local.json` (gitignored, explicit user request:
-keep the `SKILL.md` on disk so it still exports/bundles normally as
-optional, but don't use it in this repo's own sessions; kept out of
+keep each `SKILL.md` on disk so both still export/bundle normally as
+optional, but don't use either in this repo's own sessions; kept out of
 `.claude/settings.json` specifically so the override doesn't travel
-into the export bundle and silently disable it in a target repo too —
+into the export bundle and silently disable them in a target repo too —
 `export-config-skill.sh` only ever copies `settings.json`, never
 `settings.local.json`). Pointers
 only, not summaries — same
