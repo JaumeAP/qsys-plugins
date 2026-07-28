@@ -78,18 +78,32 @@ This mirrors how PR review comments and CI failures generally get handled:
 investigate, then either fix, ask, or note why no action is needed, rather
 than letting events pile up unaddressed.
 
-## Merging: don't encode a standing policy here
+## Merging: the default is full automation
 
-Whether PRs get merged automatically or always wait for explicit approval is
-worth treating as an in-the-moment decision informed by what's actually being
-asked and by the specific repo's own conventions (a repo's own `CLAUDE.md` or
-skills may say more), not something to hardcode in this file as "always do
-X." This matters more than it might seem: a portable file like this one gets
-installed into many repos, so a standing auto-merge rule written here would
-silently apply everywhere it's installed, including repos where nobody
-actually agreed to that. If a repo's own conventions establish a clear rule
-about this, follow that repo's own documentation for it -- don't add one here
-that would override every repo's local decision.
+The default across every repo this file is installed in: the normal
+commit/push/PR/merge cycle runs with minimum interaction, not waiting for an
+explicit "merge this" each time. Once a PR's `mergeable_state` is `clean`
+and it isn't a draft, merge it -- don't pause to ask first, same as pushing
+a branch or opening the PR itself. This default was chosen deliberately
+(not silently): each target repo's own import step still surfaces it before
+anyone installs the bundle there, so adopting it is an explicit, visible
+choice made at install time, not something sprung on a repo that never
+looked at what it was importing.
+
+A repo's own `CLAUDE.md` or skills always win over this default -- if a
+repo documents its own merge policy (stricter or looser), follow that
+instead of this file.
+
+This default covers only the routine cycle -- committing, pushing, opening
+a PR, merging a clean one. It does NOT extend to destructive or
+hard-to-reverse git operations: force-push, `git reset --hard`,
+`git branch -D`, or rewriting already-published history. Those stay a
+categorically different risk class and still get confirmed explicitly
+before running, regardless of how routine the rest of the cycle has become.
+On `main` specifically, a `no-commit-on-main` hook already enforces part of
+this structurally (direct commits to `main` are blocked) in any repo
+carrying this bundle's hooks -- but that hook alone doesn't cover every
+destructive case, so the confirm-first rule above still applies on its own.
 
 One non-obvious mechanical fact: a draft PR needs `draft: false` (via
 `mcp__github__update_pull_request` or equivalent) before merging will

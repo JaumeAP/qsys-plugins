@@ -165,6 +165,16 @@ directions, mechanized best-effort by
         bundle entirely 2026-07-27, then restored from git history and
         put back as optional 2026-07-28 (explicit user request both
         times), rather than staying deleted or becoming mandatory.
+        **Call this out explicitly while narrating this step (2026-07-28,
+        explicit user request):** the bundled `github-rules` now defaults
+        to full automation of the routine commit/push/PR/merge cycle —
+        merging a clean, non-draft PR without pausing to ask first. This
+        is a real behavior change for whoever installs the bundle, not
+        just a doc tweak, so say so plainly rather than letting it pass
+        as one more line in a bulk copy. It still excludes destructive/
+        history-rewriting operations (those stay confirm-first) and still
+        loses to any explicit merge policy the target repo's own
+        `CLAUDE.md` states.
    2.3. **Contradiction check, mandatory on every import**: every
         imported hook/common rule always wins over a conflicting rule
         the target repo already has — the general principle 2.2 already
