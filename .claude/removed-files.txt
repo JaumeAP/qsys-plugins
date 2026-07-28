@@ -17,3 +17,12 @@
 # no longer stating it.
 hooks/local-merge-reminder.sh
 hooks/sync-command-reminder.sh
+
+# skills/changelog-rules -- removed 2026-07-28, explicit user request.
+# Went through a longer history first (optional import choice, briefly
+# deleted from the bundle entirely, restored from git history and put
+# back as optional -- see CLAUDE.md's "Portable skills" section and
+# config-export-import.md step 2.5 for the full timeline) before this
+# final removal: changelog work now follows the repo-wide conventions
+# stated directly where needed, not a dedicated skill.
+skills/changelog-rules

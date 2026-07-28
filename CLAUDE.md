@@ -65,39 +65,31 @@ sub-items are numbered too (e.g. `3.1`, `3.2`), never dashes/bullets.
 These generic skills travel with this file and the rest of the `.claude/`
 config (see `.claude/config-export-import.md`). `file-operations` and
 `github-rules` are mandatory/blind-copy on import into
-another repo. `changelog-rules` and `find-skills` are an
-optional choice on import instead: `changelog-rules` made optional
-2026-07-27, then
-deleted from the bundle entirely later the same day (a session-long
-audit found it hadn't actually been invoked that session), then
-restored from git history and put back as optional 2026-07-28 (explicit
-user request) rather than staying deleted. `find-skills` moved to
-optional 2026-07-28 too (explicit user request), after its own longer
-mandatory/optional history below. This repo itself always
-keeps all four on disk regardless — but disables both
-`changelog-rules` and `find-skills` locally (2026-07-28 for
-`find-skills`, joining `changelog-rules`'s existing override) via
-`skillOverrides: {"changelog-rules": "off", "find-skills": "off"}`
+another repo. `find-skills` is an
+optional choice on import instead: moved to optional 2026-07-28
+(explicit user request), after its own longer mandatory/optional
+history below. This repo itself always
+keeps `find-skills` on disk regardless — but disables it
+locally via
+`skillOverrides: {"find-skills": "off"}`
 in `.claude/settings.local.json` (gitignored, explicit user request:
-keep both `SKILL.md`s on disk so they still export/bundle normally as
-optional, but don't use either in this repo's own sessions; kept out of
+keep the `SKILL.md` on disk so it still exports/bundles normally as
+optional, but don't use it in this repo's own sessions; kept out of
 `.claude/settings.json` specifically so the override doesn't travel
-into the export bundle and silently disable them in a target repo too —
+into the export bundle and silently disable it in a target repo too —
 `export-config-skill.sh` only ever copies `settings.json`, never
-`settings.local.json`). Deleting the skill directories outright was
+`settings.local.json`). Deleting the skill directory outright was
 tried first the same day and reverted within the same session: doing so
-also drops them from the next export (`export-config-skill.sh` only
+also drops it from the next export (`export-config-skill.sh` only
 bundles what it finds under this repo's own local `.claude/skills/`, no
 separate source of truth) — a real consequence for the portable bundle
-that "disable, don't delete" avoids, since the two are meant to remain
+that "disable, don't delete" avoids, since it's meant to remain
 available for any repo (including this one, later) to opt into. Pointers
 only, not summaries — same
 drift-safety reason as above; each skill is the authority on its own topic,
 invoke it when the task calls for it:
 
-1. `changelog-rules` (`.claude/skills/changelog-rules/SKILL.md`) — how to
-   write and maintain changelog entries (versioning, format, flush-on-push).
-2. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
+1. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
    PR conventions (workflow shape, reading `pull_request_read` results,
    merge mechanics); generalized 2026-07-27 from an earlier repo-specific
    skill of the same name. Must never encode a standing auto-merge policy —
@@ -115,14 +107,22 @@ the rest of this file's rules, not a dedicated skill.)
 (`changelog-rules` and `find-skills` briefly removed from the portable
 bundle 2026-07-27, explicit user request, then restored from git history
 2026-07-28, also explicit user request. `changelog-rules` stayed optional
-from there on; `find-skills` took a longer road — removed from the
+from there on, disabled locally alongside `find-skills` once that one
+also went optional later 2026-07-28 — until `changelog-rules` was
+deleted from the portable bundle entirely a second and final time, also
+2026-07-28, also explicit user request: same treatment as `git-rules`
+above (`.claude/skills/changelog-rules/` deleted, its now-moot
+`skillOverrides` entry dropped from `settings.local.json`, its path
+added to `.claude/removed-files.txt`). Changelog work now follows the
+repo-wide conventions stated directly where needed, not a dedicated
+skill — see the version-history/breaking-change note under "Plugin
+structure/naming convention" below.
+`find-skills` took a longer road of its own — removed from the
 bundle again the same day as a `recommended-skills.txt` fetch-on-demand
 entry, then, after weighing whether that was actually worth it, made
 mandatory/always-present again the same day. Superseded later the same
-day, also explicit user request: moved to optional instead, alongside
-`changelog-rules` — its final resting state, at
-least so far. `removed-files.txt` no longer lists either — they're
-back, not gone.)
+day, also explicit user request: moved to optional instead — its final
+resting state, at least so far.)
 
 **Find Skills**: `find-skills`, imported from `vercel-labs/skills`
 (`skills/find-skills/SKILL.md`) — discovers and installs third-party
@@ -130,8 +130,7 @@ skills via the `npx skills` CLI, #1 by install count on skills.sh at
 import time. Tracked in `skills-lock.json`. Note its own workflow can
 install other skills straight from that ecosystem, bypassing this
 repo's own skill-creator/config-ingest governance — worth keeping in
-mind wherever it ends up. Optional on import (see above), same offered/
-diff-checked treatment as `changelog-rules`.
+mind wherever it ends up. Optional on import (see above).
 
 (`file-operations` needs no pointer here beyond the numbered list above
 — its own description triggers it by context when there's file I/O to
@@ -624,8 +623,10 @@ one's structure:
   second name for the same value.
 - **`QKnob`'s own method names stay as they were** (`:new`, `:init`, `:set`,
   lowercase) — see "Key module patterns" above for why.
-- **Breaking changes get a major version bump** (per the repo-wide
-  `changelog-rules` skill), noted in the file header's version-history
+- **Breaking changes get a major version bump** (standard semver
+  practice; no dedicated changelog skill governs this repo's own files
+  any more, see "Portable skills" above), noted in the file header's
+  version-history
   prose. Renaming a `Controls` entry or a property is breaking: any Q-SYS
   design already wired to the old name needs those pins/properties
   reconnected after updating.
