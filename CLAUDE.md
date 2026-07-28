@@ -65,26 +65,25 @@ sub-items are numbered too (e.g. `3.1`, `3.2`), never dashes/bullets.
 These generic skills travel with this file and the rest of the `.claude/`
 config (see `.claude/config-export-import.md`). `file-operations` and
 `github-rules` are mandatory/blind-copy on import into
-another repo. `find-skills` is an
-optional choice on import instead: moved to optional 2026-07-28
-(explicit user request), after its own longer mandatory/optional
-history below. This repo itself always
-keeps `find-skills` on disk regardless — but disables it
-locally via
+another repo — the only two skills still bundled as files at all.
+`find-skills` moved to fetch-on-demand only 2026-07-28 (explicit user
+request), after its own longer mandatory/optional/bundled history
+below: no longer bundled as a file, listed instead in
+`.claude/recommended-skills.txt` (`find-skills -> vercel-labs/skills`)
+like any other unbundled recommendation, fetched live via
+`npx skills add vercel-labs/skills -s find-skills` by whoever wants it —
+a state it had already passed through once before this same day,
+reverted at the time, now the settled choice (see the history note
+below). This repo itself still
+keeps a local copy of `find-skills` on disk, disabled via
 `skillOverrides: {"find-skills": "off"}`
-in `.claude/settings.local.json` (gitignored, explicit user request:
-keep the `SKILL.md` on disk so it still exports/bundles normally as
-optional, but don't use it in this repo's own sessions; kept out of
-`.claude/settings.json` specifically so the override doesn't travel
-into the export bundle and silently disable it in a target repo too —
-`export-config-skill.sh` only ever copies `settings.json`, never
-`settings.local.json`). Deleting the skill directory outright was
-tried first the same day and reverted within the same session: doing so
-also drops it from the next export (`export-config-skill.sh` only
-bundles what it finds under this repo's own local `.claude/skills/`, no
-separate source of truth) — a real consequence for the portable bundle
-that "disable, don't delete" avoids, since it's meant to remain
-available for any repo (including this one, later) to opt into. Pointers
+in `.claude/settings.local.json` (gitignored). That local copy no
+longer has any bearing on what ships in the export either way, now that
+`find-skills` isn't bundled as a file regardless of what's installed
+locally — unlike `changelog-rules`' and `find-skills`' own earlier
+delete-vs-disable episode further below, back when `find-skills` was
+still a bundled file and deleting it locally would have dropped it from
+the next export too. Pointers
 only, not summaries — same
 drift-safety reason as above; each skill is the authority on its own topic,
 invoke it when the task calls for it:
@@ -120,17 +119,26 @@ structure/naming convention" below.
 `find-skills` took a longer road of its own — removed from the
 bundle again the same day as a `recommended-skills.txt` fetch-on-demand
 entry, then, after weighing whether that was actually worth it, made
-mandatory/always-present again the same day. Superseded later the same
-day, also explicit user request: moved to optional instead — its final
-resting state, at least so far.)
+mandatory/always-present again the same day, then superseded later the
+same day, also explicit user request: moved to optional (still a
+bundled file at that point) instead. Superseded once more, also
+2026-07-28, also explicit user request: moved off the bundled-file path
+entirely, back to fetch-on-demand-only via `recommended-skills.txt` —
+its final resting state, at least so far, ending up back where its
+first fetch-on-demand attempt left off, this time for good.)
 
 **Find Skills**: `find-skills`, imported from `vercel-labs/skills`
 (`skills/find-skills/SKILL.md`) — discovers and installs third-party
 skills via the `npx skills` CLI, #1 by install count on skills.sh at
-import time. Tracked in `skills-lock.json`. Note its own workflow can
+import time. Note its own workflow can
 install other skills straight from that ecosystem, bypassing this
 repo's own skill-creator/config-ingest governance — worth keeping in
-mind wherever it ends up. Optional on import (see above).
+mind wherever it ends up. Fetch-on-demand only now (see above), not a
+bundled file — no longer tracked in `skills-lock.json` in the export
+either, since that file existed specifically to carry `find-skills`'
+own installation provenance along with the bundled copy; a target repo
+fetching it fresh via `npx skills add` generates its own lock entry
+instead.
 
 (`file-operations` needs no pointer here beyond the numbered list above
 — its own description triggers it by context when there's file I/O to

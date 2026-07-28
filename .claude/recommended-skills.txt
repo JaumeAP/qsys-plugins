@@ -1,3 +1,4 @@
+find-skills -> vercel-labs/skills
 brainstorming -> obra/superpowers
 dispatching-parallel-agents -> obra/superpowers
 executing-plans -> obra/superpowers
