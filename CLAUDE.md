@@ -74,16 +74,23 @@ restored from git history and put back as optional 2026-07-28 (explicit
 user request) rather than staying deleted. `find-skills` moved to
 optional 2026-07-28 too (explicit user request), after its own longer
 mandatory/optional history below. This repo itself always
-keeps and uses all four regardless — except `changelog-rules`, disabled
-locally the same day via
-`skillOverrides: {"changelog-rules": "off"}`
+keeps all four on disk regardless — but disables both
+`changelog-rules` and `find-skills` locally (2026-07-28 for
+`find-skills`, joining `changelog-rules`'s existing override) via
+`skillOverrides: {"changelog-rules": "off", "find-skills": "off"}`
 in `.claude/settings.local.json` (gitignored, explicit user request:
-keep the `SKILL.md` on disk so it still exports/bundles normally as
-optional, but don't use it in this repo's own sessions; kept out of
+keep both `SKILL.md`s on disk so they still export/bundle normally as
+optional, but don't use either in this repo's own sessions; kept out of
 `.claude/settings.json` specifically so the override doesn't travel
-into the export bundle and silently disable it in a target repo too —
+into the export bundle and silently disable them in a target repo too —
 `export-config-skill.sh` only ever copies `settings.json`, never
-`settings.local.json`). Pointers
+`settings.local.json`). Deleting the skill directories outright was
+tried first the same day and reverted within the same session: doing so
+also drops them from the next export (`export-config-skill.sh` only
+bundles what it finds under this repo's own local `.claude/skills/`, no
+separate source of truth) — a real consequence for the portable bundle
+that "disable, don't delete" avoids, since the two are meant to remain
+available for any repo (including this one, later) to opt into. Pointers
 only, not summaries — same
 drift-safety reason as above; each skill is the authority on its own topic,
 invoke it when the task calls for it:
