@@ -222,7 +222,7 @@ directions, mechanized best-effort by
         side to match; 2026-07-25 `git-rules` retired from that group
         entirely by explicit user request, see `removed-files.txt`;
         2026-07-27 `github-rules` promoted into that group after being
-        generalized from a qsys-plugins-specific skill into portable
+        generalized from an earlier repo-specific skill into portable
         GitHub PR conventions, then the same day the whole group of four
         was switched from mandatory/blind-copy to optional/offered, then
         later the same day `github-rules` was moved back to mandatory,

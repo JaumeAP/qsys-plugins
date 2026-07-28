@@ -89,7 +89,7 @@ invoke it when the task calls for it:
    write and maintain changelog entries (versioning, format, flush-on-push).
 2. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
    PR conventions (workflow shape, reading `pull_request_read` results,
-   merge mechanics); generalized 2026-07-27 from a qsys-plugins-specific
+   merge mechanics); generalized 2026-07-27 from an earlier repo-specific
    skill of the same name. Must never encode a standing auto-merge policy —
    a portable file installs into every repo it's imported into, so a rule
    like that written here would silently apply everywhere, not just where
