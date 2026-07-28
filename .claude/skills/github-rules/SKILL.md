@@ -57,12 +57,20 @@ one yet, and the following push after committing new work stays a plain
 `git push` rather than needing `--force-with-lease` (that flag only earns
 its keep when a reactive restart rewrites a branch ref that was already
 pushed under the old history). Discovering the same staleness only after
-editing turns a two-command check into a five-step scramble. Similarly, if
-several small related edits are coming up in the same sitting, batching
-them into one PR cycle rather than a full open-then-merge cycle per tiny
-edit cuts down how often a restart is needed at all -- it's only ever
-required between PR cycles, never within a batch of unpushed commits on
-the same still-open PR.
+editing turns a two-command check into a five-step scramble.
+
+Default to batching multiple related edits into a single commit/PR cycle,
+rather than opening and merging a separate PR per small edit -- only skip
+batching when the user actually wants something shipped immediately on its
+own. A full cycle (commit, push, open PR, merge, restart the branch, push
+it again) is around eight steps; running it once for a handful of related
+changes costs about the same as running it once for a single line, so
+paying that cost repeatedly for changes that could have shipped together
+is pure overhead. A concrete case: four separate PR cycles for closely
+related edits to the same file in one sitting cost roughly 32 steps total,
+where batching them into one PR would have cost about 8. Batching also
+means a branch restart is only ever needed between cycles, never within
+one, which is the other reason it's worth defaulting to.
 
 ## Reading `pull_request_read get_status` correctly
 
@@ -115,6 +123,15 @@ One non-obvious mechanical fact: a draft PR needs `draft: false` (via
 `mcp__github__update_pull_request` or equivalent) before merging will
 succeed -- the merge method itself (`merge`/`squash`/`rebase`) is usually
 self-evident from the tool's own schema, not worth restating here.
+
+For a routine PR where nothing points to a real conflict -- no CI
+configured, a doc/config-only change, a PR just opened by this same
+routine moments ago -- skip the separate `pull_request_read` status check
+before merging. Call the merge directly and only fall back to reading the
+PR's status if the merge call itself fails. The read almost always just
+re-confirms what's already known (the PR was opened clean seconds ago),
+so spending a round-trip on it by default is wasted motion; save that
+check for cases where something actually looks uncertain.
 
 ## Reading `mergeable_state`
 
