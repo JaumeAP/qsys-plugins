@@ -280,11 +280,19 @@ directions, mechanized best-effort by
         lines, but fetch every line individually underneath. These
         aren't bundled as files at all, only their names and source
         repos are. This step is NOT conditional on 2.6 having found
-        anything to offer — run it every time regardless. Same
-        already-installed/update-check treatment as 2.6 applies here too
-        (these are fetched fresh via `npx skills add` each time anyway,
-        so "diffing" here just means: if already installed, don't
-        re-fetch it unprompted, only on explicit request). If the user
+        anything to offer — run it every time regardless. The
+        already-installed check works differently here than 2.6
+        (corrected 2026-07-28, explicit user request): these have no
+        local bundle snapshot to diff against in the first place, only a
+        live upstream source repo, so "is there a newer version" means
+        checking that source online, not comparing two local files. For
+        a recommended skill already installed in the target, check the
+        source repo (e.g. its latest commit/release touching the skill's
+        path, or just re-running the fetch and comparing the result) for
+        a newer version before assuming the local copy is current —
+        `npx skills add` always pulls whatever is current upstream
+        regardless, so this check is really "would re-running it change
+        anything," and only worth surfacing/offering if it would. If the user
         wants a pack, fetch EVERY line belonging to it, each live via
         `npx skills add <owner/repo> -s <skill>` — this works whether or
         not `find-skills` itself is installed (it isn't even bundled as
