@@ -29,7 +29,25 @@ directions, mechanized best-effort by
    content. Before
    handing it over, strip every project-specific mention (repo name, project
    terminology, paths) so the result is fully generalist — safe to drop
-   unmodified into any project. Always export the CURRENT state of these
+   unmodified into any project.
+   **`settings.json` specifically is filtered, not blind-copied, before
+   it goes into the bundle** (2026-07-28 fix — a plain `cp` was found to
+   leak two kinds of project-specific content into an otherwise generic
+   bundle): `export-config-skill.sh` strips (a) any hook registration
+   whose command targets a hook NOT in that script's own bundled-hooks
+   list (a project-specific hook like `ensure-lua53.sh` is excluded from
+   that list on purpose, but its `settings.json` registration would
+   otherwise still ship, pointing at a hook file the target repo never
+   receives), and (b) any permission string listed in
+   `.claude/local-only-permissions.txt` — this repo's own declared list
+   of permissions (e.g. `Bash(lua5.3 *)`, `Bash(apt-get install *)`)
+   that exist solely for its own tooling. Both filters are generic
+   mechanisms driven by data the source repo declares (the hooks array,
+   the permissions file), not hardcoded knowledge of any one repo's
+   specifics, so they travel unchanged like the rest of the script.
+   `local-only-permissions.txt` itself is NOT part of the bundle,
+   consumed only at export time — same treatment as a project-specific
+   hook. Always export the CURRENT state of these
    files, never a stale cached copy. **Final handoff: one packaged,
    generically-named `.skill` file** (2026-07-24, replacing the earlier
    plain-`.zip` delivery once verified byte-for-byte equivalent — a

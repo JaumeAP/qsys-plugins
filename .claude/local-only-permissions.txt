@@ -1,0 +1,21 @@
+# Permission entries that exist only to support this repo's own
+# project-specific tooling (Lua 5.3 test suite, see ensure-lua53.sh and
+# CLAUDE.md's "What this repo is") and must never travel into the
+# portable config bundle -- exported into another repo they'd be
+# meaningless grants for tools that repo doesn't use. One exact
+# permission string per line, must match an entry under
+# .claude/settings.json's permissions.allow/ask/deny verbatim.
+#
+# Consumed only by export-config-skill.sh at export time, to filter
+# settings.json before bundling it. This file itself is never copied
+# into the bundle -- same treatment as ensure-lua53.sh.
+Bash(lua *)
+Bash(lua5.3 *)
+Bash(lua5.4 *)
+Bash(luac *)
+Bash(luac5.3 *)
+Bash(luac5.4 *)
+Bash(luarocks *)
+Bash(apt-get update *)
+Bash(apt-get install *)
+Bash(apt-get remove *)
