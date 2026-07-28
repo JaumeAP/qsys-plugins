@@ -1,6 +1,6 @@
 #!/bin/bash
-# Stop hook: checks the last chat-text reply against mechanically checkable
-# CLAUDE.md rules and blocks (forcing a rewrite) if violated:
+# Stop hook: checks the current turn's chat-text reply against mechanically
+# checkable CLAUDE.md rules and blocks (forcing a rewrite) if violated:
 #   1. First line starts with "Rebut:" (applied to every reply, not just
 #      replies to orders -- a shell script can't reliably tell the two
 #      apart, so this is broader than the literal CLAUDE.md wording).
@@ -16,6 +16,26 @@
 #      Catalan text that legitimately contains English code/commands/paths
 #      (verified: a Catalan reply full of git commands still scores
 #      correctly as Catalan since technical tokens aren't counted).
+#
+# Fixed 2026-07-28 (found by actually hitting this in a real session): a
+# single turn commonly produces MULTIPLE separate assistant text blocks --
+# an opening "Rebut: ..." acknowledgment, then tool calls, then a closing
+# summary once the work is done. The old version only ever looked at the
+# LAST text block in the whole transcript, so a turn that correctly said
+# "Rebut: ..." once at the start still got blocked because its final
+# summary block didn't repeat the prefix -- forcing a near-duplicate
+# resend, exactly the kind of repeated-looking answer CLAUDE.md's "First
+# line of every reply" rule was never meant to require twice per turn.
+# Now: gather every assistant text block since the last REAL user message
+# (a "user"-type transcript entry is only a genuine human turn if its
+# content is a plain string, or an array whose types don't include
+# "tool_result" -- a tool_result IS recorded as a "user" entry in Claude
+# Code's transcript format, so that check is what actually finds the turn
+# boundary instead of the most recent tool result). The "Rebut:" check
+# runs against the FIRST such block (the true first line of the reply);
+# the formatting/language checks run against all of them joined, so a
+# violation anywhere in the turn still gets caught.
+#
 # stop_hook_active guards against infinite loops: if this hook already
 # forced one retry, it steps aside on the next Stop instead of blocking
 # again, even if still non-compliant.
@@ -43,31 +63,39 @@ if [ -z "$sid" ] || [ ! -f "$transcript_path" ]; then
   exit 0
 fi
 
-last_text="$(jq -rs '
-  [.[] | select(.type=="assistant") | select(.message.content | map(.type=="text") | any)]
-  | if length>0 then (.[-1].message.content | map(select(.type=="text").text) | join("\n")) else "" end
-' "$transcript_path" 2>/dev/null || echo "")"
+turn_blocks_json="$(jq -rs '
+  to_entries
+  | (map(select(.value.type=="user" and ((.value.message.content|type)=="string" or (.value.message.content|map(.type)|index("tool_result")|not))))
+     | if length>0 then last.key else -1 end) as $lastUserKey
+  | [.[] | select(.key > $lastUserKey and .value.type=="assistant")
+     | select(.value.message.content | map(.type=="text") | any)
+     | (.value.message.content | map(select(.type=="text").text) | join("\n"))]
+' "$transcript_path" 2>/dev/null || echo "[]")"
 
-if [ -z "$last_text" ]; then
+block_count="$(echo "$turn_blocks_json" | jq 'length' 2>/dev/null || echo 0)"
+if [ "$block_count" -eq 0 ]; then
   echo '{}'
   exit 0
 fi
 
+first_block="$(echo "$turn_blocks_json" | jq -r '.[0]')"
+all_text="$(echo "$turn_blocks_json" | jq -r 'join("\n")')"
+
 problems=()
-first_line="$(printf '%s\n' "$last_text" | head -1)"
+first_line="$(printf '%s\n' "$first_block" | head -1)"
 if ! printf '%s' "$first_line" | grep -q '^Rebut:'; then
   problems+=("no comenca per 'Rebut:'")
 fi
-if printf '%s' "$last_text" | grep -qE '\*\*|—|…|\.\.\.|^#{1,6}[[:space:]]|\|.+\|.+\|'; then
+if printf '%s' "$all_text" | grep -qE '\*\*|—|…|\.\.\.|^#{1,6}[[:space:]]|\|.+\|.+\|'; then
   problems+=("format prohibit (negreta/guio llarg/el.lipsis/taula/capcalera)")
 fi
-if printf '%s' "$last_text" | grep -qE '^[[:space:]]*[-*][[:space:]]'; then
+if printf '%s' "$all_text" | grep -qE '^[[:space:]]*[-*][[:space:]]'; then
   problems+=("llista amb pics/guionets en lloc de numeracio")
 fi
 
-total_words=$(printf '%s' "$last_text" | wc -w)
-en_count=$(printf '%s' "$last_text" | grep -oiE '\b(the|is|are|this|that|will|would|should|have|has|been|with|from|your|what|when|where|because|please|thanks|here|there|and|for|not|but|can)\b' | wc -l || true)
-ca_count=$(printf '%s' "$last_text" | grep -oiE '\b(que|es|amb|per|els|les|una|del|dels|pero|tambe|mes|aquest|aquesta|com|quan|perque|si|ja|fet|vols|pots|puc|aqui|no|el|la|un|de|i|a)\b' | wc -l || true)
+total_words=$(printf '%s' "$all_text" | wc -w)
+en_count=$(printf '%s' "$all_text" | grep -oiE '\b(the|is|are|this|that|will|would|should|have|has|been|with|from|your|what|when|where|because|please|thanks|here|there|and|for|not|but|can)\b' | wc -l || true)
+ca_count=$(printf '%s' "$all_text" | grep -oiE '\b(que|es|amb|per|els|les|una|del|dels|pero|tambe|mes|aquest|aquesta|com|quan|perque|si|ja|fet|vols|pots|puc|aqui|no|el|la|un|de|i|a)\b' | wc -l || true)
 if [ "$total_words" -ge 15 ] && [ "$en_count" -ge 3 ] && [ "$en_count" -gt "$ca_count" ]; then
   problems+=("sembla estar en angles, no en catala (heuristica de paraules)")
 fi
