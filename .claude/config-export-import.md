@@ -215,11 +215,9 @@ directions, mechanized best-effort by
         a file exactly like any 2.6 pack, but not
         force-installed or silently overwritten. Fold it into the same
         2.6 offering (same individual-selection UI, same
-        already-installed filter — don't present it if it's already in
-        the target's `.claude/skills/`), rather than a separate step. If
-        it's already installed in the target, offer to sync it to the
-        bundle's version instead of skipping it outright — only apply
-        the update if the user says yes.
+        already-installed/update-check treatment — see 2.6 for exactly
+        what that means when it's already in the target's
+        `.claude/skills/`), rather than a separate step.
         `file-operations` and `github-rules` are NOT in this optional
         group — both are mandatory blind-copies, see 2.2. `find-skills`
         is NOT here either, and for a different reason: it isn't bundled
@@ -255,10 +253,17 @@ directions, mechanized best-effort by
         to load, presenting a list they can select from individually
         (not an all-or-nothing choice); only copy in the packs actually
         chosen. Before presenting this list, check what's already under
-        the target repo's own `.claude/skills/` and don't offer a skill
-        that's already there, whether or not this exact bundle put it
-        there originally — filter it out of the list first, don't rely
-        on the user noticing and declining it themselves. Selecting
+        the target repo's own `.claude/skills/`. For a skill already
+        there, don't just filter it out silently — diff its installed
+        `SKILL.md` (and any bundled resource files) against the
+        bundle's version first (content compare, not a version number —
+        neither side necessarily carries one). Identical: filter it out
+        of the list as before, nothing to offer. Different: still leave
+        it out of the main install-selection list (it's not a fresh
+        install), but separately flag it as an available update and
+        offer to sync it to the bundle's version — only apply if the
+        user says yes. Don't rely on the user noticing a stale copy
+        themselves; this check is what surfaces it. Selecting
         none of the offered packs is always a valid answer — never
         force a pick when the honest answer is "install nothing."
    2.7. **Recommended-but-not-bundled skills, always offer too**: once
@@ -276,7 +281,10 @@ directions, mechanized best-effort by
         aren't bundled as files at all, only their names and source
         repos are. This step is NOT conditional on 2.6 having found
         anything to offer — run it every time regardless. Same
-        skip-if-installed rule as 2.6 applies here too. If the user
+        already-installed/update-check treatment as 2.6 applies here too
+        (these are fetched fresh via `npx skills add` each time anyway,
+        so "diffing" here just means: if already installed, don't
+        re-fetch it unprompted, only on explicit request). If the user
         wants a pack, fetch EVERY line belonging to it, each live via
         `npx skills add <owner/repo> -s <skill>` — this works whether or
         not `find-skills` itself is installed (it isn't even bundled as
