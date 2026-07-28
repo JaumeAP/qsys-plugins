@@ -292,15 +292,21 @@ directions, mechanized best-effort by
         a newer version before assuming the local copy is current —
         `npx skills add` always pulls whatever is current upstream
         regardless, so this check is really "would re-running it change
-        anything," and only worth surfacing/offering if it would. If the user
+        anything," and only worth surfacing/offering if it would.
+        **Standing order (2026-07-28, explicit user request): before
+        installing ANY other line from this file, install `find-skills`
+        first if it isn't already present** — fetch
+        `npx skills add vercel-labs/skills -s find-skills` as the very
+        first action this step takes, ahead of whatever the user
+        actually asked for, then proceed to the rest of the step
+        normally. This is a standing procedural rule, not merely a
+        technical dependency — `npx skills add` itself still works
+        perfectly fine without `find-skills` installed (it's just a CLI
+        command, not something requiring that particular SKILL.md file
+        to be present), so this ordering is about consistency going
+        forward, not a hard requirement npx itself imposes. If the user
         wants a pack, fetch EVERY line belonging to it, each live via
-        `npx skills add <owner/repo> -s <skill>` — this works whether or
-        not `find-skills` itself is installed (it isn't even bundled as
-        a file, see 2.5/2.6; it's a `recommended-skills.txt` entry, one
-        more line to fetch this same way), since `npx skills` is
-        just a CLI command, not something requiring the `find-skills`
-        SKILL.md file itself to be
-        present — no version pin, always whatever is
+        `npx skills add <owner/repo> -s <skill>` — no version pin, always whatever is
         current upstream at that moment, never the version this repo
         happened to have when the list was written. Loop this step
         (2026-07-24): right after installing whatever was picked,
