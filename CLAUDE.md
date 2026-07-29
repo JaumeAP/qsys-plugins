@@ -857,3 +857,29 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   retry `add_repo` first in case it was fixed out-of-band; if not,
   this needs investigating outside the chat entirely (Anthropic/Claude
   Code Remote side), not more retries here.
+- **Remote branch deletion blocked, cleanup left half-done (2026-07-29):**
+  18 stale `origin/claude/*` branches were audited against their PRs;
+  17 were confirmed safe to delete (PR merged, PR closed-without-merge,
+  or already an ancestor of `main`) and the user approved deleting all
+  17, keeping only `claude/next-vawkbf` (PR#41, still open, tracks the
+  `qsc-q-sys` submodule attempt above). `git push origin --delete
+  <branch>` failed on every one of the 17 with `RPC failed; HTTP 403`
+  from this session's own git proxy (`127.0.0.1:<port>/git/...`), while
+  plain pushes and the PR merge earlier in the same session worked fine
+  — the proxy specifically denies ref deletion, not push in general.
+  There is also no `mcp__github__delete_branch`-equivalent tool available
+  (only `create_branch` exists in this session's GitHub MCP toolset).
+  Deliberately not worked around with a raw API call using the
+  environment's own token, same reasoning as the `qsc-q-sys` item above.
+  Still pending, branch names unchanged since this audit: `bootstrap-
+  build-qplug`, `check-gh5uhs`, `claude-md-docs-5kvq1u`, `claude-md-docs-
+  Ehgoa`, `claude-md-docs-m7fzvp`, `claude-md-docs-qd0h3m`, `continua-
+  pc6eq1`, `learning-archive-policy-o4denr`, `probe-plugcc-include`,
+  `probe-plugcc-include-cleanup`, `probe-plugcc-include-fix`, `qsc-qsys-
+  a44799`, `remove-class-submodule`, `revisio-iirycs`, `test-coverage-
+  analysis-49cewy`, `test-osx0oe`, `todo-implementation-vbd57a`. Next
+  session: retry the push-based delete first in case the proxy policy
+  changed; otherwise this needs the user deleting them by hand from the
+  GitHub UI (PR page's "Delete branch" button, or Settings > Branches),
+  or investigating the proxy/connector side directly, not more retries
+  from inside a session.
