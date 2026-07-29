@@ -249,16 +249,19 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 │   ├── MultiFlip-Flop.qplug          (v2.0)
 │   ├── MultiFlip-Flop.qplugx
 │   ├── Dolby CPSeries Control V4.0.qplug
-│   └── Dolby CPSeries Control V4.0.qplugx   Packaged/encrypted (JSON envelope);
-│                                     all four .qplugx built 2026-07-27 via
-│                                     .github/workflows/build-qplugx.yml
-│                                     (GitHub Actions, windows-latest),
-│                                     replacing the old stale
-│                                     "Dolby CPSeries Control V2.2.qplugx"
-│                                     (last hand-compiled at v2.2, now removed).
-│                                     Never hand-edited; regenerate via the
-│                                     workflow (or Designer's "Save as
-│                                     compiled plugin") after any .qplug rebuild.
+│   ├── Dolby CPSeries Control V4.0.qplugx   Packaged/encrypted (JSON envelope);
+│   │                                 all four .qplugx built 2026-07-27 via
+│   │                                 .github/workflows/build-qplugx.yml
+│   │                                 (GitHub Actions, windows-latest),
+│   │                                 replacing the old stale
+│   │                                 "Dolby CPSeries Control V2.2.qplugx"
+│   │                                 (last hand-compiled at v2.2, now removed).
+│   │                                 Never hand-edited; regenerate via the
+│   │                                 workflow (or Designer's "Save as
+│   │                                 compiled plugin") after any .qplug rebuild.
+│   └── SubharmonicSynth.qplug        (v0.6, added 2026-07-29) No .qplugx yet --
+│                                     not run through build-qplugx.yml/the
+│                                     encryption tool since being incorporated.
 │
 ├── Dolby CP Emulator/                Q-SYS User Components (.quc) that emulate
 │   ├── CP650 Emulator.quc            real Dolby processors for bench testing
@@ -319,21 +322,34 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   │   ├── controls.lua
     │   │   ├── layout.lua
     │   │   └── runtime.lua           No shared-file dependency (simplest case)
-    │   └── Dolby CPSeries Control/
-    │       ├── plugin.lua            #include order: shared/dolbyfader.lua, models.lua,
-    │       │                         protocol.lua, commlib.lua, runtime.lua (all direct,
-    │       │                         depth-1 includes -- see the #include rules below)
+    │   ├── Dolby CPSeries Control/
+    │   │   ├── plugin.lua            #include order: shared/dolbyfader.lua, models.lua,
+    │   │   │                         protocol.lua, commlib.lua, runtime.lua (all direct,
+    │   │   │                         depth-1 includes -- see the #include rules below)
+    │   │   ├── info.lua
+    │   │   ├── properties.lua
+    │   │   ├── controls.lua
+    │   │   ├── layout.lua
+    │   │   ├── models.lua            Per-model wire config (private to this plugin)
+    │   │   ├── protocol.lua          Per-model message formatting/GET framing (private)
+    │   │   ├── commlib.lua           CPSeries class, per-model protocol state machine
+    │   │   │                         (private to this plugin, formerly
+    │   │   │                         Developer/Modules/cpseries_commlib.lua)
+    │   │   └── runtime.lua           Application layer: TCP connection lifecycle,
+    │   │                             Controls wiring (formerly Developer/Modules/cpseries.lua)
+    │   └── SubharmonicSynth/         Bass enhancement / subharmonic-style boost for
+    │       ├── plugin.lua            LFE/Sub channels (incorporated 2026-07-29 from an
+    │       │                         external contribution, restructured onto this
+    │       │                         repo's own convention -- see the Continuity notes
+    │       │                         below for the full incorporation story)
     │       ├── info.lua
-    │       ├── properties.lua
-    │       ├── controls.lua
-    │       ├── layout.lua
-    │       ├── models.lua            Per-model wire config (private to this plugin)
-    │       ├── protocol.lua          Per-model message formatting/GET framing (private)
-    │       ├── commlib.lua           CPSeries class, per-model protocol state machine
-    │       │                         (private to this plugin, formerly
-    │       │                         Developer/Modules/cpseries_commlib.lua)
-    │       └── runtime.lua           Application layer: TCP connection lifecycle,
-    │                                 Controls wiring (formerly Developer/Modules/cpseries.lua)
+    │       ├── controls.lua          No properties.lua -- GetProperties() returns {}
+    │       ├── layout.lua            directly in plugin.lua, same as DolbyFader
+    │       └── runtime.lua           Sub-path LPF+PEQ+Gain / dry-path Gain / 2->1 Mix;
+    │                                 guarded one-time init sets SubGain/QFactor/Cutoff
+    │                                 defaults (the original's per-control `DefaultValue`
+    │                                 field isn't a real Q-SYS key, so those defaults
+    │                                 never actually applied pre-incorporation)
     ├── shared/                       Code #include'd by more than one plugin
     │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua
     │   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
@@ -362,6 +378,7 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
         ├── test_dist_fader.lua       Root Dolby Fader distributable, both host passes
         ├── test_dist_sweep.lua       Root Dolby Sweep distributable, both host passes
         ├── test_dist_flipflop.lua    Root MultiFlip-Flop distributable, both host passes
+        ├── test_dist_subharmonic.lua Root SubharmonicSynth distributable, both host passes
         └── wire_trace.lua            Diffs two builds by the bytes they put on the wire
 ```
 
@@ -942,6 +959,39 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   `period`/`timer` and `Dolby CPSeries Control`'s `DolbyCP`/`sock` globals
   were never in the list, so `M.clear()` never reset them between test
   runs.
+- **SubharmonicSynth incorporated as a 5th plugin (2026-07-29, explicit
+  user request, uploaded as `SubharmonicSynth_v0_6.qplug`):** a bass
+  enhancement / subharmonic-style boost for LFE/Sub channels, restructured
+  onto this repo's own convention rather than dropped in as-is. Split into
+  `Developer/plugins/SubharmonicSynth/{plugin,info,controls,layout,
+  runtime}.lua` (no `properties.lua` — `GetProperties()` returns `{}`
+  directly in `plugin.lua`, same pattern as DolbyFader), built via
+  PLUGCC.exe into the root `SubharmonicSynth.qplug` (no `.qplugx` yet).
+  Controls renamed to PascalCase (`DryLevel`/`SubLevel`/`SubGain`/
+  `QFactor`/`Cutoff`/`Bypass`, were `dry_level`/`sub_level`/`sub_gain`/
+  `q_factor`/`cutoff`/`bypass`) — breaking only relative to the original
+  upload, nothing in this repo was ever wired to the old names. Found and
+  fixed a real latent bug in the uploaded source: its per-control
+  `DefaultValue` field is not a real Q-SYS `GetControls` key (confirmed
+  against Q-SYS Help and the vendored templates — none of the other four
+  plugins use one either), so `SubGain`/`QFactor`/`Cutoff`'s intended
+  defaults (9 dB / 1.0 / 80 Hz) never actually applied on a fresh
+  instantiation; replaced with a guarded one-time `runtime.lua` init
+  (`if Controls.Cutoff.Value == 0 then ... end`, mirroring the pattern
+  already used by `cpseries.lua`/`dolbysweep.lua`). Also dropped the
+  original's `AddEventHandler` chaining helper (every control here has
+  exactly one handler, so the indirection bought nothing) in favor of
+  this repo's plain `Controls.X.EventHandler = function` style, and gated
+  `PrintFormat` on `Properties.plugin_show_debug.Value` like the rest of
+  this repo's debug output (was unconditional in the original). New
+  `Developer/tests/test_dist_subharmonic.lua` (23 checks: both host
+  passes, the one-time init, bypass routing, cutoff re-tune without
+  re-init) registered in `run.sh` and `harness.lua`'s `M.DIST`; embedded
+  components (`Lpf`/`Peq`/`GainSub`/`GainDry`/`Mix`) built ad hoc in the
+  test the same way Dolby Sweep's own test builds `Sine`, no stub changes
+  needed — `filter_lowpass`/`equalizer_parametric`/`gain`/`mixer` were
+  already covered component-type shapes. Full suite green afterward
+  (175 checks total, no regressions in the other four plugins).
 - **Button control `.Value` type, resolved (2026-07-29):** confirmed via
   the newly-vendored `vendor/qsc-q-sys` submodule's reverse-engineered docs
   (`components_emulator/docs/qsys-plugins.md`, cross-checked against its own

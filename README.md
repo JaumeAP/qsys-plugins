@@ -8,4 +8,6 @@ Component that controls All CP Dolby Processors from CP650 to CP950A
 Dolby Sweet Tone Generator
 ### Multi-Flipflop
 Multiple FlipFlop in one component
+### SubharmonicSynth
+Bass enhancement / subharmonic-style boost for LFE/Sub channels
 
