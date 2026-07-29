@@ -746,6 +746,26 @@ Typical loop:
    `.qplugx` also needs updating, that step still only happens inside
    Designer — this script only produces `.qplug`.
 
+**`PLUGCC.exe` cannot replace `build_distributable.sh` as-is (confirmed
+2026-07-29).** `vendor/qsys-plugins/BasePlugin/PluginCompile/PLUGCC.exe`
+(and `ExamplePlugin`'s copy of the same submodule) is QSC's own inliner,
+invoked by `.vscode/tasks.json` as `PLUGCC.exe "<folderBasename>"
+"<workspaceFolder>\plugin.lua"`. Binary strings (`ParseIncludes`,
+`includeRegex`, `_addIncludeComments`) confirm it does read source blocks
+directly and inline them, but only via its own `--[[ #include "file.lua"
+]]` comment-directive syntax embedded in the head file — see
+`BasePlugin/plugin.lua`, where every `Get*` callback body contains one of
+these markers pointing at `properties.lua`/`controls.lua`/`layout.lua`/
+`runtime.lua`/etc. It does not parse plain Lua `require(...)` calls, so it
+cannot inline this repo's `Developer/Modules/*.lua` layout as-is; adopting
+it would mean rewriting the `Developer/plugins/*.qplug` head files to use
+`#include` markers instead of `require`, a structural change, not a
+drop-in swap for `build_distributable.sh`. It is also a Windows .NET
+Framework 4.8 binary (`PLUGCC.exe.config` pins `v4.8`) with no `mono`/
+`wine` available in this dev container, so it cannot be run here even to
+test the idea. Not adopted; `build_distributable.sh` stays the build
+path for all four plugins.
+
 ### Conventions when editing
 
 - **Preserve `PluginInfo.Id`** — it is the stable plugin UUID; changing it makes
