@@ -74,16 +74,15 @@ like any other unbundled recommendation, fetched live via
 `npx skills add vercel-labs/skills -s find-skills` by whoever wants it —
 a state it had already passed through once before this same day,
 reverted at the time, now the settled choice (see the history note
-below). This repo itself still
-keeps a local copy of `find-skills` on disk, disabled via
-`skillOverrides: {"find-skills": "off"}`
-in `.claude/settings.local.json` (gitignored). That local copy no
-longer has any bearing on what ships in the export either way, now that
-`find-skills` isn't bundled as a file regardless of what's installed
-locally — unlike `changelog-rules`' and `find-skills`' own earlier
-delete-vs-disable episode further below, back when `find-skills` was
-still a bundled file and deleting it locally would have dropped it from
-the next export too. Pointers
+below). This repo's own local copy of `find-skills` was deleted
+outright 2026-07-29 (explicit user request), same treatment as
+`git-rules`/`changelog-rules` above (`.claude/skills/find-skills/`
+deleted, path added to `.claude/removed-files.txt`). It had been meant
+to stay on disk but disabled via a `skillOverrides: {"find-skills":
+"off"}` entry in `.claude/settings.local.json` (gitignored) — but that
+settings file was never actually present in this checkout, so the
+local copy was live (not disabled) the whole time until this deletion.
+Pointers
 only, not summaries — same
 drift-safety reason as above; each skill is the authority on its own topic,
 invoke it when the task calls for it:
@@ -124,8 +123,10 @@ same day, also explicit user request: moved to optional (still a
 bundled file at that point) instead. Superseded once more, also
 2026-07-28, also explicit user request: moved off the bundled-file path
 entirely, back to fetch-on-demand-only via `recommended-skills.txt` —
-its final resting state, at least so far, ending up back where its
-first fetch-on-demand attempt left off, this time for good.)
+ending up back where its first fetch-on-demand attempt left off. Its
+local copy went one step further 2026-07-29, also explicit user
+request: deleted outright rather than kept disk-side and disabled, see
+above.)
 
 **Find Skills**: `find-skills`, imported from `vercel-labs/skills`
 (`skills/find-skills/SKILL.md`) — discovers and installs third-party

@@ -26,3 +26,13 @@ hooks/sync-command-reminder.sh
 # final removal: changelog work now follows the repo-wide conventions
 # stated directly where needed, not a dedicated skill.
 skills/changelog-rules
+
+# skills/find-skills -- removed 2026-07-29, explicit user request. Had
+# already gone fetch-on-demand-only 2026-07-28 (not bundled as a file
+# in the export any more -- see CLAUDE.md's "Portable skills" section),
+# but this repo's own local copy stayed on disk after that, meant to
+# stay disabled via a skillOverrides entry in the gitignored
+# settings.local.json. That override file was never actually present
+# in this checkout, so the local copy was live, not disabled, until
+# this removal deleted it outright instead.
+skills/find-skills
