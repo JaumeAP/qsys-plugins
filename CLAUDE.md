@@ -224,7 +224,7 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 ├── .vscode/settings.json             Associates *.qplug with the Lua language
 │
 ├── *.qplug / *.qplugx                Distributable plugins (repo root), built by
-│   │                                 Developer/tools/build_distributable.sh
+│   │                                 Developer/tools/build_distributable_plugcc.sh
 │   ├── DolbyFader.qplug              (v2.0)
 │   ├── DolbyFader.qplugx
 │   ├── Dolby Sweep V2.0.qplug
@@ -293,11 +293,17 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   ├── cpseries_models.lua       Per-model wire config (TCP port, KEY=VALUE vs "param value")
     │   └── cpseries_protocol.lua     Per-model message formatting and GET framing
     ├── tools/
-    │   └── build_distributable.sh    Builds a root distributable from a Developer/ head +
-    │                                 named modules (see below). Supports a pre-guard /
-    │                                 post-guard module split for a plugin that needs a
-    │                                 module at design time, not just runtime -- none of
-    │                                 the four plugins here currently need that group
+    │   ├── build_distributable_plugcc.sh  Standard build (since 2026-07-29): runs
+    │   │                             QSC's own PLUGCC.exe against the Developer/
+    │   │                             sources, auto-deriving the module list from
+    │   │                             their require() calls (see "Developer workflow")
+    │   └── build_distributable.sh    Superseded by the above, kept for reference/
+    │                                 fallback. Builds a root distributable from a
+    │                                 Developer/ head + named modules (see below).
+    │                                 Supports a pre-guard / post-guard module split
+    │                                 for a plugin that needs a module at design
+    │                                 time, not just runtime -- none of the four
+    │                                 plugins here currently need that group
     └── tests/                        Lua 5.3 test suite, no framework (see its README)
         ├── run.sh                    Syntax pass over every source, then every test
         ├── qsys_stub.lua             Stand-in for the Q-SYS host globals
@@ -314,7 +320,8 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 **`Developer/` holds the source of truth.** The root-level `.qplug` files are
 single-file distributable builds with their `Developer/Modules/*.lua`
 dependencies inlined and `require` stripped (built by
-`Developer/tools/build_distributable.sh`, see "Developer workflow" below) —
+`Developer/tools/build_distributable_plugcc.sh`, see "Developer workflow"
+below) —
 never hand-edit them, or they drift from `Developer/` and the next rebuild
 silently discards the hand edit. The four root `.qplugx` files are packaged
 builds produced from those same `.qplug` files by
@@ -727,16 +734,14 @@ Typical loop:
    (`System.IsEmulating` is true) or against a `Dolby CP Emulator/*.quc` on the
    bench.
 5. Bump `Version`/`BuildVersion` in `PluginInfo`, then rebuild the root
-   distributable with `Developer/tools/build_distributable.sh <head.qplug>
-   <output.qplug> -- <module1> <module2> ...` — never hand-edit the root
-   file, it's a single-file build with `Developer/Modules/*.lua` inlined and
-   `require` stripped, so a hand edit just gets discarded on the next
-   rebuild. The leading `--` (empty pre-guard group) is currently right for
-   all four plugins here — none of them need a module loaded before the
-   runtime guard, only a plugin whose `GetControls`/`GetControlLayout` reads
-   something from an external module at design time would need that group.
-   See any of the four root `.qplug` files' build for the exact module list,
-   or re-run the command from that plugin's own rewrite commit message.
+   distributable with `Developer/tools/build_distributable_plugcc.sh
+   <head.qplug> <output.qplug>` — never hand-edit the root file, it's a
+   single-file build with `Developer/Modules/*.lua` inlined and `require`
+   stripped, so a hand edit just gets discarded on the next rebuild. No
+   module list to pass: unlike the superseded `build_distributable.sh` (see
+   below), this script derives the module list itself from the `require()`
+   calls already in the head file and in `Developer/Modules/*.lua`, so
+   there's nothing to keep in sync by hand.
    `MultiFlip-Flop` is the exception: it has no Modules/ dependency at all,
    so its root file is a plain copy of the Developer source, no build script
    needed.
@@ -746,29 +751,60 @@ Typical loop:
    `.qplugx` also needs updating, that step still only happens inside
    Designer — this script only produces `.qplug`.
 
-**`PLUGCC.exe` cannot replace `build_distributable.sh` as-is (confirmed
-2026-07-29).** `vendor/qsys-plugins/BasePlugin/PluginCompile/PLUGCC.exe`
-(and `ExamplePlugin`'s copy of the same submodule) is QSC's own inliner,
+**PLUGCC.exe is the standard build path (adopted 2026-07-29, supersedes
+`build_distributable.sh`).** `vendor/qsys-plugins/BasePlugin/PluginCompile/
+PLUGCC.exe` is QSC's own inliner (a Windows .NET Framework 4.8 binary),
 invoked by `.vscode/tasks.json` as `PLUGCC.exe "<folderBasename>"
-"<workspaceFolder>\plugin.lua"`. Binary strings (`ParseIncludes`,
-`includeRegex`, `_addIncludeComments`) confirm it does read source blocks
-directly and inline them, but only via its own `--[[ #include "file.lua"
-]]` comment-directive syntax embedded in the head file — see
-`BasePlugin/plugin.lua`, where every `Get*` callback body contains one of
-these markers pointing at `properties.lua`/`controls.lua`/`layout.lua`/
-`runtime.lua`/etc. It does not parse plain Lua `require(...)` calls, so it
-cannot inline this repo's `Developer/Modules/*.lua` layout as-is; adopting
-it would mean rewriting the `Developer/plugins/*.qplug` head files to use
-`#include` markers instead of `require`, a structural change, not a
-drop-in swap for `build_distributable.sh`. It is a Windows .NET
-Framework 4.8 binary (`PLUGCC.exe.config` pins `v4.8`), unrunnable in this
-Linux dev container (no `mono`/`wine`) — but that is not a hard blocker on
-its own: `.github/workflows/build-qplugx.yml` already proves a
-`windows-latest` GitHub Actions runner executes this repo's other Windows
-binary (`plugin_tool_release.exe`), so `PLUGCC.exe` could in principle run
-the same way (untested). The actual blocker is the `#include`/`require`
-mismatch above, not where the binary can execute. Not adopted;
-`build_distributable.sh` stays the build path for all four plugins.
+"<workspaceFolder>\plugin.lua"`. It inlines source via its own
+`--[[ #include "file.lua" ]]` comment-directive syntax (see
+`BasePlugin/plugin.lua`), confirmed to resolve nested `#include` chains
+recursively (tested against a mono-run minimal case, not just asserted from
+the binary's `ParseIncludes`/`includeRegex`/`_addIncludeComments` strings).
+It does not understand plain Lua `require(...)`, so it can't read
+`Developer/plugins/*.qplug` / `Developer/Modules/*.lua` as-is — but those
+files are never touched: `Developer/tools/build_distributable_plugcc.sh`
+auto-converts a temporary copy's `require("X")` calls into `#include`
+markers (resolving `require`'s case-insensitive module names — e.g.
+`require "CPSeries"` against `cpseries.lua` — against the real on-disk
+filename first, since PLUGCC needs an exact match), computes a topological
+order over the resulting dependency graph, and hands PLUGCC one
+`do -- name\n--[[ #include "name.lua" ]]\nend` block per module, each
+exactly once. That last part matters: naively converting every `require`
+in place and letting PLUGCC's own recursion handle it pastes a module in
+twice when two different modules both depend on it (`cpseries_commlib` and
+`cpseries_protocol` both require `cpseries_models`) — PLUGCC's `#include` is
+pure textual substitution with no `require()`-style load-once caching.
+Flattening to one block per module in dependency order is what
+`build_distributable.sh` already did by hand; the new script computes that
+same list instead of taking it as an argument. The dev-only
+`require "strict"` + `Global(...)` block (see "Key module patterns") is
+dropped entirely, never converted, exactly like `build_distributable.sh`'s
+guard-line truncation — strict-mode must never ship to production.
+`Developer/plugins/*.qplug` and `Developer/Modules/*.lua` themselves are
+UNCHANGED and still use plain `require` — that's deliberate (explicit
+user decision, 2026-07-29): the `#include` marker is a Lua comment, inert
+unless PLUGCC has already preprocessed the file, so converting the actual
+Developer sources to `#include` would break loading `Developer/plugins/
+*.qplug` directly in Designer via the `package.path` prelude (step 1-4
+above) — Designer doesn't run PLUGCC, it just executes the file as-is. The
+`#include` form only ever exists in a throwaway temp dir the build script
+generates and deletes.
+Validated 2026-07-29 for all three Modules-dependent plugins (DolbyFader,
+Dolby Sweep, CPSeries): full `Developer/tests/run.sh` suite green against
+the PLUGCC-built output, plus `wire_trace.lua` byte-for-byte identical
+against the prior `build_distributable.sh` build for CPSeries (the most
+complex of the three). Root `.qplug` files at the repo root now come from
+this script. Runs under `mono` in this Linux dev container (confirmed
+working: `apt-get install mono-complete`, then `PLUGCC_RUNNER=mono
+Developer/tools/build_distributable_plugcc.sh ...`, mono is the default
+`PLUGCC_RUNNER`) or natively on a `windows-latest` GitHub Actions runner
+(`.github/workflows/build-qplug-plugcc.yml`, manual dispatch, mirrors
+`build-qplugx.yml`'s convention: `PLUGCC_RUNNER=""` + `shell: bash`, never
+commits the output back automatically).
+`build_distributable.sh` is superseded, not deleted (kept for reference/
+fallback since this hasn't been validated against a real Designer/bench
+load, only the local test suite) — do not extend it further; new plugins
+or module changes should go through `build_distributable_plugcc.sh`.
 
 ### Conventions when editing
 

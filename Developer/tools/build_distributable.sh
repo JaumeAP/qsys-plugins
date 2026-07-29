@@ -1,4 +1,10 @@
 #!/bin/bash
+# SUPERSEDED 2026-07-29 by build_distributable_plugcc.sh (runs QSC's own
+# PLUGCC.exe, auto-derives the module list instead of taking it as an
+# argument -- see CLAUDE.md's "Developer workflow"). Kept for reference/
+# fallback, not deleted, since the PLUGCC path hasn't been validated
+# against a real Designer/bench load yet. Do not extend this further.
+#
 # Build a root-level single-file plugin distributable from its Developer/
 # sources: the plugin definition head (PluginInfo + Get* callbacks), then
 # every module it require()s pasted inline in dependency order, with the

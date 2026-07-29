@@ -1,0 +1,77 @@
+name: Build .qplug (PLUGCC)
+
+# Manual only, same convention as build-qplugx.yml: this is an alternative
+# way to produce the root single-file .qplug distributables, running QSC's
+# own vendored PLUGCC.exe (vendor/qsys-plugins/BasePlugin/PluginCompile,
+# a Windows binary, hence windows-latest) via
+# Developer/tools/build_distributable_plugcc.sh instead of
+# Developer/tools/build_distributable.sh. No manual module list is passed
+# in either case -- the script derives it from the require() calls already
+# in Developer/plugins/*.qplug and Developer/Modules/*.lua.
+#
+# MultiFlip-Flop isn't listed: it has no Developer/Modules/ dependency at
+# all (its root file is a plain copy of the Developer source), so there is
+# nothing for either build script to inline.
+#
+# Output is uploaded as a workflow artifact only -- this never commits the
+# .qplug back to the repo; downloading and adding it is a separate,
+# deliberate step, same as build-qplugx.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: "Which plugin to build"
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - DolbyFader
+          - Dolby Sweep
+          - Dolby CPSeries Control
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build selected plugin(s) with PLUGCC.exe
+        shell: bash
+        env:
+          PLUGCC_RUNNER: ""
+        run: |
+          set -euo pipefail
+          declare -A heads=(
+            ["DolbyFader"]="Developer/plugins/DolbyFader V2.0.qplug"
+            ["Dolby Sweep"]="Developer/plugins/Dolby Sweep V2.0.qplug"
+            ["Dolby CPSeries Control"]="Developer/plugins/Dolby CPSeries Control V4.0.qplug"
+          )
+          declare -A outs=(
+            ["DolbyFader"]="DolbyFader.qplug"
+            ["Dolby Sweep"]="Dolby Sweep V2.0.qplug"
+            ["Dolby CPSeries Control"]="Dolby CPSeries Control V4.0.qplug"
+          )
+
+          selected="${{ inputs.plugin }}"
+          mkdir -p out
+          if [ "$selected" = "all" ]; then
+            names=("DolbyFader" "Dolby Sweep" "Dolby CPSeries Control")
+          else
+            names=("$selected")
+          fi
+
+          for name in "${names[@]}"; do
+            head="${heads[$name]}"
+            out="out/${outs[$name]}"
+            echo "Building $name..."
+            ./Developer/tools/build_distributable_plugcc.sh "$head" "$out"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qplug-plugcc-build
+          path: out/*.qplug
+          if-no-files-found: error
