@@ -5,6 +5,11 @@ name: Build .qplugx
 # plugin_tool_release.exe (vendor/qsys-plugins/PluginEncryptionTool/release/),
 # a Windows binary, hence windows-latest. Output is uploaded as a workflow
 # artifact only -- this never commits the .qplugx back to the repo.
+#
+# submodules: false + a manual, scoped submodule init (PluginEncryptionTool
+# only) deliberately avoids `submodules: recursive`, which would also try
+# to clone vendor/qsc-q-sys and fail on this runner's default token (same
+# fix already applied to build-qplug.yml -- see CLAUDE.md continuity notes).
 on:
   workflow_dispatch:
     inputs:
@@ -26,7 +31,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
+
+      - name: Init only the PluginEncryptionTool submodule (plugin_tool_release.exe lives there)
+        shell: pwsh
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule update --init vendor/qsys-plugins/PluginEncryptionTool
 
       - name: Encrypt selected plugin(s)
         shell: pwsh
