@@ -1,0 +1,79 @@
+name: Build .qplug (PLUGCC)
+
+# Manual only. Builds a restructured plugin's .qplug from
+# Developer/plugins/<name>/plugin.lua using QSC's own PLUGCC.exe
+# (vendor/qsys-plugins/ExamplePlugin/PluginCompile/PLUGCC.exe), a Windows
+# binary -- hence windows-latest, same reasoning as build-qplugx.yml.
+# Replaces Developer/tools/build_distributable.sh for any plugin that has
+# been migrated onto this file-split convention (currently: MultiFlip-Flop
+# only). Confirmed PLUGCC.exe resolves a relative #include path outside a
+# file's own folder (see CLAUDE.md continuity notes), so a plugin that
+# shares Developer/Modules/*.lua-style code can #include it from a shared
+# folder without duplicating it per plugin.
+#
+# submodules: false + a manual, scoped submodule init (ExamplePlugin only,
+# with an SSH->HTTPS URL rewrite for its own nested PluginCompile
+# submodule) deliberately avoids `submodules: recursive`, which would also
+# try to clone vendor/qsc-q-sys and fail on this runner's default token
+# (see CLAUDE.md continuity notes / PR #41's known-issue).
+#
+# Output is uploaded as a workflow artifact only -- this never commits the
+# built .qplug back to the repo, same pattern as build-qplugx.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: "Which restructured plugin to build (Developer/plugins/<name>/)"
+        required: true
+        type: choice
+        options:
+          - MultiFlip-Flop
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Init only the ExamplePlugin submodule (PLUGCC.exe lives there)
+        shell: pwsh
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule update --init vendor/qsys-plugins/ExamplePlugin
+          git -C vendor/qsys-plugins/ExamplePlugin submodule update --init PluginCompile
+
+      - name: Compile with PLUGCC.exe
+        shell: pwsh
+        run: |
+          $plugcc = Join-Path $env:GITHUB_WORKSPACE "vendor\qsys-plugins\ExamplePlugin\PluginCompile\PLUGCC.exe"
+          if (-not (Test-Path $plugcc)) {
+            throw "PLUGCC.exe not found at $plugcc"
+          }
+          $name = "${{ inputs.plugin }}"
+          $pluginDir = Join-Path $env:GITHUB_WORKSPACE "Developer\plugins\$name"
+          $pluginLua = Join-Path $pluginDir "plugin.lua"
+          if (-not (Test-Path $pluginLua)) {
+            throw "plugin.lua not found at $pluginLua"
+          }
+
+          Push-Location $pluginDir
+          & $plugcc $name $pluginLua
+          $exitCode = $LASTEXITCODE
+          Pop-Location
+
+          if ($exitCode -ne 0) {
+            throw "PLUGCC.exe failed (exit $exitCode)"
+          }
+          $outPath = Join-Path $pluginDir "$name.qplug"
+          if (-not (Test-Path $outPath)) {
+            throw "PLUGCC.exe reported success but produced no output at $outPath"
+          }
+          Write-Host "Built: $outPath"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qplug-build-${{ inputs.plugin }}
+          path: Developer/plugins/${{ inputs.plugin }}/${{ inputs.plugin }}.qplug
+          if-no-files-found: error

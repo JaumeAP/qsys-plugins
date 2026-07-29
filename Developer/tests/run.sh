@@ -32,7 +32,8 @@ while IFS= read -r -d '' f; do
 	fi
 done < <(
 	find "$repo/Developer/Modules" -name '*.lua' -print0
-	find "$repo/Developer/plugins" -name '*.qplug' -print0
+	find "$repo/Developer/plugins" -maxdepth 1 -name '*.qplug' -print0
+	find "$repo/Developer/plugins" -mindepth 2 -name '*.lua' -print0
 	find "$repo" -maxdepth 1 -name '*.qplug' -print0
 )
 
