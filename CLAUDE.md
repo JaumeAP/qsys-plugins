@@ -732,11 +732,20 @@ Typical loop:
    (`System.IsEmulating` is true) or against a `Dolby CP Emulator/*.quc` on the
    bench.
 5. Bump `Version`/`BuildVersion` in `PluginInfo`, then rebuild the root
-   distributable with `Developer/tools/build_distributable.sh <head.qplug>
-   <output.qplug> -- <module1> <module2> ...` — never hand-edit the root
-   file, it's a single-file build with `Developer/Modules/*.lua` inlined and
-   `require` stripped, so a hand edit just gets discarded on the next
-   rebuild. The leading `--` (empty pre-guard group) is currently right for
+   distributable with `Developer/tools/build_distributable.sh [--bump
+   ver_maj|ver_min|ver_fix|ver_dev] <head.qplug> <output.qplug> --
+   <module1> <module2> ...` — never hand-edit the root file, it's a
+   single-file build with `Developer/Modules/*.lua` inlined and `require`
+   stripped, so a hand edit just gets discarded on the next rebuild.
+   `--bump` (added 2026-07-29, naming/semantics mirrors QSC's own
+   PluginCompile build task under
+   `vendor/qsys-plugins/BasePlugin/PluginCompile` — see that repo's own
+   README for the original) does the version bump on `<head.qplug>` in
+   place, before building, instead of by hand: `ver_maj`/`ver_min`/
+   `ver_fix`/`ver_dev` bump that octet of `BuildVersion` and zero
+   everything after it; `ver_maj`/`ver_min` also update the public
+   `Version` field's major.minor to match. Omit `--bump` to keep bumping
+   by hand first, same as before. The leading `--` (empty pre-guard group) is currently right for
    all four plugins here — none of them need a module loaded before the
    runtime guard, only a plugin whose `GetControls`/`GetControlLayout` reads
    something from an external module at design time would need that group.
