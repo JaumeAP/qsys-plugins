@@ -1,0 +1,62 @@
+name: Probe PLUGCC cross-folder include
+
+# Throwaway diagnostic, not a real build step: checks whether PLUGCC.exe
+# (vendor/qsys-plugins/ExamplePlugin/PluginCompile/PLUGCC.exe) resolves an
+# #include path pointing outside the including file's own folder. Neither
+# BasePlugin nor ExamplePlugin nor the community guide show an example of
+# this, so it's unconfirmed -- this probe answers it empirically instead of
+# guessing. See CLAUDE.md continuity notes. Delete this workflow and
+# .plugcc-include-test/ once the question is answered either way.
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Init only the ExamplePlugin submodule (PLUGCC.exe lives there)
+        shell: pwsh
+        run: |
+          git submodule update --init vendor/qsys-plugins/ExamplePlugin
+          git -C vendor/qsys-plugins/ExamplePlugin submodule update --init PluginCompile
+
+      - name: Run PLUGCC.exe against the cross-folder #include probe
+        shell: pwsh
+        run: |
+          $plugcc = Join-Path $env:GITHUB_WORKSPACE "vendor\qsys-plugins\ExamplePlugin\PluginCompile\PLUGCC.exe"
+          if (-not (Test-Path $plugcc)) {
+            throw "PLUGCC.exe not found at $plugcc"
+          }
+          $pluginDir = Join-Path $env:GITHUB_WORKSPACE ".plugcc-include-test\plugin"
+          $pluginLua = Join-Path $pluginDir "plugin.lua"
+
+          Push-Location $pluginDir
+          & $plugcc "IncludeTest" $pluginLua
+          $exitCode = $LASTEXITCODE
+          Pop-Location
+
+          $outPath = Join-Path $pluginDir "IncludeTest.qplug"
+          Write-Host "PLUGCC.exe exit code: $exitCode"
+          if (Test-Path $outPath) {
+            Write-Host "----- built IncludeTest.qplug -----"
+            Get-Content $outPath | Write-Host
+            Write-Host "------------------------------------"
+            if ((Get-Content $outPath -Raw) -match "SharedMarkerControl") {
+              Write-Host "RESULT: cross-folder #include WORKED -- ../shared/shared.lua was resolved"
+            } else {
+              Write-Host "RESULT: cross-folder #include did NOT resolve -- SharedMarkerControl missing from output"
+            }
+          } else {
+            Write-Host "RESULT: PLUGCC.exe produced no output file -- likely failed on the ../ include path"
+          }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: plugcc-include-probe
+          path: .plugcc-include-test/plugin/IncludeTest.qplug
+          if-no-files-found: warn
