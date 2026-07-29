@@ -27,14 +27,17 @@
 -- own `if Controls then` block #include's Developer/shared/dolbyfader.lua
 -- (also used by CPSeries, moved there rather than duplicated) directly,
 -- which in turn #include's Developer/shared/qknob.lua (also used by
--- Dolby Sweep) -- PLUGCC.exe only expands #include directives up to 2
--- levels deep from plugin.lua (confirmed by trial: a 3-level chain
--- through an intermediate runtime.lua left the innermost #include as a
--- literal, unexpanded comment, silently dropping QKnob -- see CLAUDE.md
--- continuity notes), so the plugin.lua -> shared/dolbyfader.lua ->
--- shared/qknob.lua chain has to stay exactly 2 deep, same shape as Dolby
--- Sweep's own working plugin.lua -> runtime.lua -> shared/qknob.lua
--- chain. No functional change from v2.0.0.1; the dev-only 'strict'
+-- Dolby Sweep). Confirmed by trial (2026-07-29): PLUGCC.exe always
+-- resolves a #include path relative to the ORIGINAL plugin.lua's own
+-- directory (the process cwd PLUGCC.exe is invoked from), never relative
+-- to whichever file textually contains the directive -- a nesting-depth
+-- theory was tried first and disproved. So shared/dolbyfader.lua's own
+-- internal include of qknob.lua has to be written as the path seen from
+-- Developer/plugins/DolbyFader/ ("../../shared/qknob.lua"), the exact
+-- same string plugin.lua itself uses to reach shared/dolbyfader.lua, not
+-- as the path seen from shared/dolbyfader.lua's own folder ("qknob.lua").
+-- See CLAUDE.md continuity notes. No functional change from v2.0.0.1;
+-- the dev-only 'strict'
 -- globals guard is dropped rather than carried over, same call as
 -- MultiFlip-Flop/Dolby Sweep's own restructuring, since it never shipped
 -- to production and PLUGCC.exe has no equivalent stripping step

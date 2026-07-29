@@ -4,7 +4,7 @@
 
 	do
 
-		--[[ #include "qknob.lua" ]]
+		--[[ #include "../../shared/qknob.lua" ]]
 
 		-- Objects
 		-- QKnob wraps the 'Level' Text control; must stay global (never
