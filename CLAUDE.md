@@ -1397,3 +1397,25 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   existing missing-Rebut-only scoped message is unchanged. Format/list
   violations were extended the same way -- the offending line (with its
   line number in the joined turn text) is now quoted too, not just named.
+- **`check-reply-format.sh` re-demanded a fresh 'Rebut:' line even when it
+  was already present and correct, fixed (2026-07-29, explicit user
+  request, reported live as "Doble missatge" after hitting it in this
+  exact session).** The quoted-fragment retry branch (added in the fix
+  right above) unconditionally appended "Comenca igualment per 'Rebut:
+  ...'" to the repair instruction, regardless of whether `missing_rebut`
+  was actually set. Real case: a reply's first block already opened with
+  a correct "Rebut: ..." line; a later block had a lone em-dash violation.
+  The hook still told the retry to prepend a fresh 'Rebut: ...' line to
+  the correction, so the user saw two separate "Rebut: ..."-opening
+  blocks in the same turn -- reading as a duplicated second reply, the
+  exact symptom the block-scoping fix above was meant to eliminate. Fixed:
+  the "Comenca per 'Rebut: ...'" instruction is now conditional on
+  `missing_rebut=1`; when Rebut was already fine, the fix text instead
+  says explicitly not to repeat it ("La linia 'Rebut: ...' ja hi era i ja
+  era correcta -- NO la repeteixis"). Verified against three synthetic
+  transcripts (no real session data): Rebut-already-correct +
+  format-only violation no longer demands a new Rebut line; Rebut-missing
+  + format violation still correctly demands one; the pre-existing
+  Rebut-missing-only path is unchanged. Same file, same day as the fix
+  above it -- this is the second bug found in the same retry-instruction
+  logic, both from actually hitting them live rather than from review.

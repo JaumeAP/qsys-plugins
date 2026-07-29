@@ -183,11 +183,24 @@ $(printf '%s' "$list_offenders" | sed 's/^/  > /')
 "
       fi
     fi
+    # Only re-demand the "Rebut:" line when it was ACTUALLY missing
+    # (missing_rebut=1). If it was already present and correct in the
+    # first block, telling the retry to prepend it again makes the
+    # correction read as a whole second reply -- a duplicated-looking
+    # "Rebut: ..." opening line is exactly what a user sees as a double
+    # message. Fixed 2026-07-29 after this exact case was hit in a real
+    # session: a lone em-dash violation (Rebut already fine) still forced
+    # a fresh 'Rebut: ...' line onto the correction.
+    if [ "$missing_rebut" -eq 1 ]; then
+      rebut_note="Comenca per 'Rebut: <ordre resumida en angles>' i tot seguit NOMES la traduccio/correccio d'aquests fragments concrets, res mes."
+    else
+      rebut_note="La linia 'Rebut: ...' ja hi era i ja era correcta -- NO la repeteixis. Escriu NOMES la traduccio/correccio d'aquests fragments concrets, sense cap linia 'Rebut:' nova."
+    fi
     if [ -n "$quotes" ]; then
       fix="Reescriu NOMES els fragments citats a sota -- mai la resta del torn, ja llegida i ja correcta:
-${quotes}Comenca igualment per 'Rebut: <ordre resumida en angles>' seguit NOMES de la traduccio/correccio d'aquests fragments concrets, res mes."
+${quotes}${rebut_note}"
     else
-      fix="Reescriu NOMES el fragment assenyalat, no tot el torn: l'usuari ja ha llegit la resta i repetir-la es un defecte per si mateix. Comenca per 'Rebut: <ordre resumida en angles>'."
+      fix="Reescriu NOMES el fragment assenyalat, no tot el torn: l'usuari ja ha llegit la resta i repetir-la es un defecte per si mateix. ${rebut_note}"
     fi
   fi
   reason="La teva resposta anterior incompleix regles de CLAUDE.md: ${joined}. ${fix}"
