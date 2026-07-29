@@ -71,6 +71,12 @@ jobs:
             throw "PLUGCC.exe reported success but produced no output at $outPath"
           }
           Write-Host "Built: $outPath"
+          # Also echoed to the job log (not just uploaded as an artifact):
+          # the artifact's blob-storage download URL isn't reachable through
+          # this session's egress proxy, but job logs are (GitHub API).
+          Write-Host "----- BEGIN $name.qplug -----"
+          Get-Content $outPath | Write-Host
+          Write-Host "----- END $name.qplug -----"
 
       - uses: actions/upload-artifact@v4
         with:
