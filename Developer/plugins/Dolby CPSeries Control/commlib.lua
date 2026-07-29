@@ -171,11 +171,22 @@
 		getState = function(self,action) return privates[self].value[action.index]["state"] end
 		setState = function(self,action,state)  privates[self].value[action.index]["state"] = state end
 
+		-- A stored value can be a Lua boolean (Actions.reset's `value or true`,
+		-- Mute's Controls.Mute.Boolean) or a number (everything arriving off
+		-- the wire, via tonumber() in received() below) for the exact same
+		-- logical action -- `false == 0` is never true in Lua (no boolean/
+		-- number coercion), so without this, an incoming wire echo of a value
+		-- just set locally as a boolean failed the "already equal" check and
+		-- re-fired the EventHandler redundantly. Normalize booleans to 0/1
+		-- before comparing so both representations of the same value compare
+		-- equal.
+		local function normalize(v) if type(v) == 'boolean' then return v and 1 or 0 end return v end
+
 		local function isEqual(a,b)
  			if type(a)=='table' and type(b) == "table" then
 				return comparetables( a, b)
 			elseif type(a)~='table' and type(b) ~= "table" then
-				return a == b end return false
+				return normalize(a) == normalize(b) end return false
 		end
 
 	 	Print = function(show,...)     --    show=false      show=true     show=nil

@@ -41,6 +41,10 @@ local PLUGIN_GLOBALS = {
 	"DKNob", "Print", "DolbyFaderEventHandler", "Class", "class",
 	"GetColor", "GetPrettyName", "GetProperties", "RectifyProperties",
 	"GetComponents", "GetControls", "GetControlLayout",
+	-- Dolby Sweep's own globals (see CLAUDE.md's strict.lua wiring notes)
+	"period", "timer",
+	-- Dolby CPSeries Control's own globals
+	"DolbyCP", "sock",
 }
 
 function M.clear()

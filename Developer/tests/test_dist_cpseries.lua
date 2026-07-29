@@ -7,7 +7,8 @@
 -- mistake; only running the file does.
 
 -- Resolve the sibling modules whatever the working directory is.
-package.path = (arg[0]:match("^(.*)[/\\]") or ".") .. "/?.lua;" .. package.path
+local test_dir = (arg[0]:match("^(.*)[/\\]") or ".")
+package.path = test_dir .. "/?.lua;" .. test_dir .. "/../host-emulator/?.lua;" .. package.path
 
 local h = require("harness")
 local qsys = require("qsys_stub")

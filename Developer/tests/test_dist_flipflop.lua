@@ -4,7 +4,8 @@
 -- control count for a given InputCount, the Exclusive interlock, and the
 -- init pass.
 
-package.path = (arg[0]:match("^(.*)[/\\]") or ".") .. "/?.lua;" .. package.path
+local test_dir = (arg[0]:match("^(.*)[/\\]") or ".")
+package.path = test_dir .. "/?.lua;" .. test_dir .. "/../host-emulator/?.lua;" .. package.path
 
 local h = require("harness")
 local qsys = require("qsys_stub")
