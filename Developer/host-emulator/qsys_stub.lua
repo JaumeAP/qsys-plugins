@@ -6,29 +6,37 @@
 -- Timers here never fire on their own -- there is no event loop. Tests drive
 -- them by hand with env:tick(), which is what makes the poll loop testable a
 -- step at a time.
---
--- Known gap, checked against Q-SYS Help 2026-07-29, not fixed because
--- nothing here needs it yet: M.control() always exposes .Value/.String/
--- .Position/.Values regardless of the real control's ControlType/ButtonType,
--- but Q-SYS itself does not -- a Trigger-type Button has no .Value/.String/
--- .Position at all (confirmed via Q-SYS Help's Controls IO page), and a
--- Meter-type Indicator uses a separate .Values (plural) array property this
--- stub does not implement. None of the four plugins here read .Value/
--- .Boolean on a Trigger control or use a Meter/2D-Panner/RTA/Responsalyzer
--- control (the only ones documented to use .Values), so this stays a
--- documented blind spot rather than a live bug -- but a future plugin that
--- reads .Value on its own Trigger button, or .Values on a Meter, would get
--- a silently wrong pass here instead of the error/nil Q-SYS would give.
 
 local M = {}
 
--- A single Q-SYS control. .Value and .Boolean are two accessors onto the
--- SAME underlying numeric storage, not independent fields -- confirmed via
--- vendor/qsc-q-sys's Component.GetControls docs: .Value is always a number,
--- .Boolean is a computed true/false view of it (reads as Value~=0, writes
--- as Value=1/0). A metatable keeps the two in sync so plugin code can read
--- or write either one interchangeably, matching real Q-SYS behavior.
-function M.control(v)
+-- A single Q-SYS control. kind selects which properties actually exist,
+-- checked against Q-SYS Help's Controls IO page (2026-07-29): a Trigger-type
+-- Button has no .Value/.String/.Position/.Boolean at all, only :Trigger()
+-- and .EventHandler -- omitted here entirely rather than defaulted to 0/"",
+-- so a future plugin that mistakenly reads .Value on its own Trigger button
+-- gets the same nil a missing field gives in real Lua, not a silently-passing
+-- 0. A Meter-type Indicator uses a separate .Values (plural) array property
+-- instead of .Value. Every other control type (Knob/Text/Toggle-or-Momentary
+-- Button/non-Meter Indicator) shares the normal kind: .Value and .Boolean
+-- are two accessors onto the SAME underlying numeric storage, not
+-- independent fields -- confirmed via vendor/qsc-q-sys's Component.GetControls
+-- docs: .Value is always a number, .Boolean is a computed true/false view of
+-- it (reads as Value~=0, writes as Value=1/0). A metatable keeps the two in
+-- sync so plugin code can read or write either one interchangeably, matching
+-- real Q-SYS behavior.
+function M.control(v, kind)
+	kind = kind or "normal"
+
+	if kind == "trigger" then
+		local c = { EventHandler = nil }
+		function c:Trigger() end
+		return c
+	end
+
+	if kind == "meter" then
+		return { Values = {}, EventHandler = nil }
+	end
+
 	if v == nil then v = 0 end
 	local c = { String = "", Position = 0, Color = "",
 	            Choices = {}, IsDisabled = false, EventHandler = nil }
@@ -64,11 +72,14 @@ function M.clear()
 	for _, g in ipairs(PLUGIN_GLOBALS) do _G[g] = nil end
 end
 
--- opts.controls   list of control names to create (plus opts.selectors toggles)
--- opts.selectors  how many `selector` buttons to create (0 = none)
--- opts.properties Properties table to expose
--- opts.emulating  System.IsEmulating
--- opts.definition true = definition pass (Controls nil, Reflect present)
+-- opts.controls         list of control names to create (plus opts.selectors toggles)
+-- opts.trigger_controls list of control names to create as ButtonType="Trigger"
+--                       (no .Value/.String/.Position/.Boolean, only :Trigger()
+--                       and .EventHandler -- see M.control's own comment)
+-- opts.selectors        how many `selector` buttons to create (0 = none)
+-- opts.properties       Properties table to expose
+-- opts.emulating        System.IsEmulating
+-- opts.definition       true = definition pass (Controls nil, Reflect present)
 --
 -- Returns an env handle: .controls, .step, .timers, .socket(), .tick(n)
 function M.install(opts)
@@ -84,9 +95,12 @@ function M.install(opts)
 
 	Reflect = nil
 
+	local is_trigger = {}
+	for _, name in ipairs(opts.trigger_controls or {}) do is_trigger[name] = true end
+
 	local controls = {}
 	for _, name in ipairs(opts.controls or {}) do
-		controls[name] = M.control(nil)
+		controls[name] = M.control(nil, is_trigger[name] and "trigger" or nil)
 	end
 	controls.Selector = {}
 	for i = 1, (opts.selectors or 0) do controls.Selector[i] = M.control(0) end

@@ -26,6 +26,7 @@ end
 h.section("runtime pass")
 local env = qsys.install({
 	controls = SWEEP_CONTROLS,
+	trigger_controls = { "Trigger" },  -- ButtonType="Trigger" (see controls.lua)
 	properties = { plugin_show_debug = { Value = 0 } },
 })
 -- The embedded 'Sine' component: only mute/level/frequency are touched.

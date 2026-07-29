@@ -884,6 +884,24 @@ Typical loop:
 separate file isn't auto-loaded at session start the way CLAUDE.md is, so
 it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
 
+- **`qsys_stub.lua`'s Trigger/Meter control-type gap, fixed (2026-07-29,
+  explicit user request — implemented, not just documented).** `M.control`
+  now takes an optional `kind` ("trigger", "meter", or the default): a
+  Trigger-type Button gets no `.Value`/`.String`/`.Position`/`.Boolean` at
+  all (only `:Trigger()`/`.EventHandler`), matching Q-SYS Help's Controls IO
+  page; a Meter-type Indicator gets `.Values` (plural) instead of `.Value`.
+  `M.install(opts)` grew `opts.trigger_controls` (a name list) to construct
+  the right controls as trigger-kind. Every genuine Trigger control across
+  the three affected test files is now marked: MultiFlip-Flop's
+  `Set_N`/`Reset_N`/`Toggle_N`, CPSeries's `Refresh`, Dolby Sweep's
+  `Trigger`. `test_dist_flipflop.lua`'s old blanket
+  `for _, c in pairs(env.controls) do c.Trigger = function() end end` (added
+  `:Trigger()` to every control regardless of type) is gone, replaced by the
+  properly-typed construction. Verified directly: `qsys.control(nil,
+  "trigger").Value` is now `nil`, `qsys.control(nil, "meter").Values` is a
+  table. No plugin currently reads `.Value`/`.Boolean` on a Trigger control
+  or uses `.Values`, so this changed no test outcomes — full
+  `Developer/tests/run.sh` still green, all 152 checks unchanged.
 - **`qsys_stub.lua` split into its own `Developer/host-emulator/` module
   (2026-07-29, explicit user request).** Previously lived in
   `Developer/tests/`, alongside `harness.lua` and the `test_*.lua` files

@@ -60,6 +60,7 @@ for _, model in ipairs(h.MODELS) do
 	h.section(model .. " runtime pass")
 	local env = qsys.install({
 		controls = qsys.CPSERIES_CONTROLS,
+		trigger_controls = { "Refresh" },  -- ButtonType="Trigger" (see controls.lua)
 		selectors = (model == "CP 750") and 7 or 8,
 		properties = qsys.cpseries_properties(model),
 		emulating = true,          -- no address set, so take the emulation branch
