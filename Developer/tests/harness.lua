@@ -18,16 +18,16 @@ M.DIST = {
 	flipflop = M.repo .. "/MultiFlip-Flop.qplug",
 }
 
--- Developer-side plugin definition files. flipflop's is the exception:
+-- Developer-side plugin definition files. flipflop/sweep are exceptions:
 -- restructured onto QSC's PLUGCC.exe build convention (2026-07-29, see
--- CLAUDE.md), so its source is a plugin.lua with #include markers, not a
--- directly loadfile()-able single file like the other three -- not used
--- by test_plugin_defs.lua for that reason, kept here only as a path
+-- CLAUDE.md), so their source is a plugin.lua with #include markers, not
+-- directly loadfile()-able like the other two -- not used by
+-- test_plugin_defs.lua for that reason, kept here only as a path
 -- reference.
 M.DEV = {
 	cpseries = M.plugins .. "/Dolby CPSeries Control V4.0.qplug",
 	fader    = M.plugins .. "/DolbyFader V2.0.qplug",
-	sweep    = M.plugins .. "/Dolby Sweep V2.0.qplug",
+	sweep    = M.plugins .. "/Dolby Sweep/plugin.lua",
 	flipflop = M.plugins .. "/MultiFlip-Flop/plugin.lua",
 }
 

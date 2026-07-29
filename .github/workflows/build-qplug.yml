@@ -5,8 +5,8 @@ name: Build .qplug (PLUGCC)
 # (vendor/qsys-plugins/ExamplePlugin/PluginCompile/PLUGCC.exe), a Windows
 # binary -- hence windows-latest, same reasoning as build-qplugx.yml.
 # Replaces Developer/tools/build_distributable.sh for any plugin that has
-# been migrated onto this file-split convention (currently: MultiFlip-Flop
-# only). Confirmed PLUGCC.exe resolves a relative #include path outside a
+# been migrated onto this file-split convention (currently: MultiFlip-Flop,
+# Dolby Sweep). Confirmed PLUGCC.exe resolves a relative #include path outside a
 # file's own folder (see CLAUDE.md continuity notes), so a plugin that
 # shares Developer/Modules/*.lua-style code can #include it from a shared
 # folder without duplicating it per plugin.
@@ -28,6 +28,7 @@ on:
         type: choice
         options:
           - MultiFlip-Flop
+          - Dolby Sweep
 
 jobs:
   build:
@@ -78,8 +79,13 @@ jobs:
           Get-Content $outPath | Write-Host
           Write-Host "----- END $name.qplug -----"
 
+      - name: Sanitize artifact name (some plugin names have spaces)
+        id: safe_name
+        shell: bash
+        run: echo "name=qplug-build-$(echo "${{ inputs.plugin }}" | tr ' ' '-')" >> "$GITHUB_OUTPUT"
+
       - uses: actions/upload-artifact@v4
         with:
-          name: qplug-build-${{ inputs.plugin }}
+          name: ${{ steps.safe_name.outputs.name }}
           path: Developer/plugins/${{ inputs.plugin }}/${{ inputs.plugin }}.qplug
           if-no-files-found: error
