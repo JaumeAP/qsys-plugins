@@ -7,7 +7,6 @@ local M = { failures = 0, checks = 0 }
 local here = arg and arg[0] and arg[0]:match("^(.*)[/\\][^/\\]*$") or "."
 M.tests_dir = here
 M.repo = here .. "/../.."
-M.modules = M.repo .. "/Developer/Modules"
 M.plugins = M.repo .. "/Developer/plugins"
 
 -- Root distributables, by plugin.
@@ -33,11 +32,6 @@ end
 
 function M.section(name)
 	print("-- " .. name)
-end
-
--- Make Developer/Modules importable by the module-level tests.
-function M.add_module_path()
-	package.path = M.modules .. "/?.lua;" .. package.path
 end
 
 function M.report()

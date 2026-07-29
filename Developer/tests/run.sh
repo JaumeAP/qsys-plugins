@@ -31,7 +31,6 @@ while IFS= read -r -d '' f; do
 		"$LUAC" -p "$f" 2>&1 | sed 's/^/       /'
 	fi
 done < <(
-	find "$repo/Developer/Modules" -name '*.lua' -print0
 	find "$repo/Developer/shared" -name '*.lua' -print0
 	find "$repo/Developer/plugins" -maxdepth 1 -name '*.qplug' -print0
 	find "$repo/Developer/plugins" -mindepth 2 -name '*.lua' -print0

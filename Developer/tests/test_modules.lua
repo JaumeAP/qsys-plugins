@@ -1,15 +1,14 @@
--- CPSeries class, driven directly from Developer/Modules -- no plugin file,
--- no distributable. Covers the protocol surface per model: the query framing
--- Start() emits, the readiness handshake, fader scaling, the two format-list
--- dialects, and the guards that keep bad wire data from crashing the class.
+-- CPSeries class, driven directly from Developer/plugins/Dolby CPSeries
+-- Control/{models,protocol,commlib}.lua -- no plugin.lua, no distributable.
+-- Covers the protocol surface per model: the query framing Start() emits,
+-- the readiness handshake, fader scaling, the two format-list dialects, and
+-- the guards that keep bad wire data from crashing the class.
 
 -- Resolve the sibling modules whatever the working directory is.
 package.path = (arg[0]:match("^(.*)[/\\]") or ".") .. "/?.lua;" .. package.path
 
 local h = require("harness")
 local qsys = require("qsys_stub")
-
-h.add_module_path()
 
 -- install() clears the plugin globals, Model among them, so the table has to
 -- be built after it rather than before.
@@ -29,7 +28,16 @@ for i, m in ipairs({
 	Model[m.key] = m
 end
 
-require("cpseries_commlib")
+-- These are plain #include'd files, not require()-based modules (see
+-- CLAUDE.md's PLUGCC.exe restructuring notes): load them in the same order
+-- plugin.lua does, since commlib.lua expects CPModels/CPProtocol already
+-- defined as globals.
+do
+	local dir = h.plugins .. "/Dolby CPSeries Control"
+	assert(loadfile(dir .. "/models.lua"))()
+	assert(loadfile(dir .. "/protocol.lua"))()
+	assert(loadfile(dir .. "/commlib.lua"))()
+end
 
 -- A socket the test feeds by hand, independent of the stub's own.
 local function fake_sock()
