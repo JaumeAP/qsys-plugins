@@ -148,8 +148,8 @@ cp .claude/recommended-skills.txt "$skill_dir/references/"
 # is deliberately excluded from this array further down).
 bundled_hooks=(check-reply-format.sh config-ingest-reminder.sh
   init-submodules.sh no-commit-on-main.sh precompact-hygiene-flag.sh
-  rule-check-reminder.sh skill-creation-reminder.sh
-  submodule-clone-fixup.sh)
+  reply-format-preflight.sh rule-check-reminder.sh
+  skill-creation-reminder.sh submodule-clone-fixup.sh)
 
 # settings.json is NOT a blind copy: it can carry two kinds of
 # project-specific leakage that would otherwise ship into every target

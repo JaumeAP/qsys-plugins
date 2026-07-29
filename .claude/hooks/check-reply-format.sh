@@ -82,9 +82,11 @@ first_block="$(echo "$turn_blocks_json" | jq -r '.[0]')"
 all_text="$(echo "$turn_blocks_json" | jq -r 'join("\n")')"
 
 problems=()
+missing_rebut=0
 first_line="$(printf '%s\n' "$first_block" | head -1)"
 if ! printf '%s' "$first_line" | grep -q '^Rebut:'; then
   problems+=("no comenca per 'Rebut:'")
+  missing_rebut=1
 fi
 if printf '%s' "$all_text" | grep -qE '\*\*|—|…|\.\.\.|^#{1,6}[[:space:]]|\|.+\|.+\|'; then
   problems+=("format prohibit (negreta/guio llarg/el.lipsis/taula/capcalera)")
@@ -102,7 +104,21 @@ fi
 
 if [ ${#problems[@]} -gt 0 ]; then
   joined="$(IFS='; '; echo "${problems[*]}")"
-  reason="La teva resposta anterior incompleix regles de CLAUDE.md: ${joined}. Torna a escriure-la corregint-ho."
+  # The retry instruction is per-problem, not one-size-fits-all. The old
+  # blanket "torna a escriure-la corregint-ho" caused the very thing these
+  # rules exist to prevent: on a missing-Rebut-only block, the reply's own
+  # content was already correct and already on screen, so "rewrite it" got
+  # read as "resend all of it", and the user read the same closing summary
+  # twice. Measured on this session's transcript before the fix: every
+  # missing-Rebut block produced a near-verbatim duplicate. Blocking is
+  # still right -- the rule holds -- but the repair has to be scoped to
+  # what actually broke.
+  if [ "$missing_rebut" -eq 1 ] && [ ${#problems[@]} -eq 1 ]; then
+    fix="El contingut que ja has escrit es correcte i l'usuari JA l'ha llegit: l'unic que falta es la linia inicial. Escriu NOMES 'Rebut: <ordre resumida en angles>' i prou. NO reenviïs el resum anterior ni cap fragment seu -- repetir-lo es pitjor que la infraccio que estas corregint."
+  else
+    fix="Reescriu NOMES el fragment assenyalat, no tot el torn: l'usuari ja ha llegit la resta i repetir-la es un defecte per si mateix. Comenca per 'Rebut: <ordre resumida en angles>'."
+  fi
+  reason="La teva resposta anterior incompleix regles de CLAUDE.md: ${joined}. ${fix}"
   jq -n --arg reason "$reason" '{decision: "block", reason: $reason}'
 else
   echo '{}'

@@ -52,7 +52,13 @@ First line of every reply to an order/instruction: confirm receipt with the
 order summary itself in English, e.g. "Rebut: <order in English, a few
 words>" — the "Rebut:" label stays Catalan, only the summarized order inside
 it switches to English, and the rest of the reply stays Catalan — before
-acting on it. Applies the same way when the order arrives through an
+acting on it. "First" is literal and beats the step-label rule above it:
+the "Rebut:" line is the turn's first emitted text, ahead of any step
+label, any narration, and any tool call. Step labels come after it, never
+instead of it — a turn that opens with "Ara faig X." or "Commit." has
+already broken this rule, and the Stop hook that enforces it will block,
+forcing a rewrite the user reads as a duplicated answer. Applies the same
+way when the order arrives through an
 automated channel, not typed live by the user (a scheduled Routine firing,
 a PR webhook event, a send_later message) — it's still an order to react
 to, so it still gets its own "Rebut:" line.
