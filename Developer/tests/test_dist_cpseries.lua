@@ -21,6 +21,38 @@ do
 	h.check(ok, "definition pass loads (" .. tostring(err) .. ")")
 	h.check(type(GetControls) == "function", "GetControls is defined")
 	h.check(#GetProperties()[1].Choices == 5, "five models offered")
+	h.check(pcall(GetPrettyName, nil), "GetPrettyName(nil) does not throw")
+	h.check(pcall(GetControls, nil), "GetControls(nil) does not throw")
+	h.check(pcall(GetControlLayout, nil), "GetControlLayout(nil) does not throw")
+	h.check(pcall(RectifyProperties, nil), "RectifyProperties(nil) does not throw")
+
+	local hidden = { ["TCP Log"] = { IsHidden = false }, plugin_show_debug = { Value = 0 } }
+	RectifyProperties(hidden)
+	h.check(hidden["TCP Log"].IsHidden == true, "TCP Log is hidden when debug is off")
+
+	local shown = { ["TCP Log"] = { IsHidden = true }, plugin_show_debug = { Value = 1 } }
+	RectifyProperties(shown)
+	h.check(shown["TCP Log"].IsHidden == false, "TCP Log is shown when debug is on")
+end
+
+h.section("per model definition")
+for _, model in ipairs(h.MODELS) do
+	local props = { Model = { Value = model } }
+	local expected = (model == "CP 750") and 7 or 8
+
+	local ok, ctrls = pcall(GetControls, props)
+	h.check(ok, model .. ": GetControls does not throw")
+	local count
+	for _, c in ipairs(ctrls) do if c.Name == "Selector" then count = c.Count end end
+	h.check(count == expected, model .. ": " .. expected .. " selector buttons (got " .. tostring(count) .. ")")
+
+	local ok2, layout = pcall(GetControlLayout, props)
+	h.check(ok2, model .. ": GetControlLayout does not throw (" .. tostring(layout) .. ")")
+	if ok2 then
+		local laid = 0
+		for k in pairs(layout) do if k:match("^Selector ") then laid = laid + 1 end end
+		h.check(laid == expected, model .. ": " .. expected .. " selector entries laid out (got " .. laid .. ")")
+	end
 end
 
 for _, model in ipairs(h.MODELS) do
