@@ -85,12 +85,22 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.5 - commlib.lua's isEqual() compared a stored value against an
+--        incoming one with plain '==', so a value stored as a Lua boolean
+--        (Actions.reset's `value or true`, Mute's .Boolean writes) never
+--        matched the same value arriving off the wire as a number (no
+--        boolean/number coercion in Lua) -- the "already equal, skip"
+--        check silently missed, redundantly re-firing the EventHandler on
+--        every wire echo of an already-known value. Not a crash, just a
+--        needless re-fire; found while double-checking the Mute .Boolean
+--        switch against Q-SYS Help's docs. Now normalizes booleans to 0/1
+--        before comparing.
 
 PluginInfo =
 {
 	Name = "Dolby~CP Series Control",
 	Version = "4.0",
-	BuildVersion = "4.0.0.4",
+	BuildVersion = "4.0.0.5",
 	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
 	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
 	Manufacturer = "Dolby",
@@ -761,11 +771,22 @@ if Controls then
 			getState = function(self,action) return privates[self].value[action.index]["state"] end
 			setState = function(self,action,state)  privates[self].value[action.index]["state"] = state end
 	
+			-- A stored value can be a Lua boolean (Actions.reset's `value or true`,
+			-- Mute's Controls.Mute.Boolean) or a number (everything arriving off
+			-- the wire, via tonumber() in received() below) for the exact same
+			-- logical action -- `false == 0` is never true in Lua (no boolean/
+			-- number coercion), so without this, an incoming wire echo of a value
+			-- just set locally as a boolean failed the "already equal" check and
+			-- re-fired the EventHandler redundantly. Normalize booleans to 0/1
+			-- before comparing so both representations of the same value compare
+			-- equal.
+			local function normalize(v) if type(v) == 'boolean' then return v and 1 or 0 end return v end
+	
 			local function isEqual(a,b)
 	 			if type(a)=='table' and type(b) == "table" then
 					return comparetables( a, b)
 				elseif type(a)~='table' and type(b) ~= "table" then
-					return a == b end return false
+					return normalize(a) == normalize(b) end return false
 			end
 	
 		 	Print = function(show,...)     --    show=false      show=true     show=nil

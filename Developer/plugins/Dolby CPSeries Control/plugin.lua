@@ -85,6 +85,16 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.5 - commlib.lua's isEqual() compared a stored value against an
+--        incoming one with plain '==', so a value stored as a Lua boolean
+--        (Actions.reset's `value or true`, Mute's .Boolean writes) never
+--        matched the same value arriving off the wire as a number (no
+--        boolean/number coercion in Lua) -- the "already equal, skip"
+--        check silently missed, redundantly re-firing the EventHandler on
+--        every wire echo of an already-known value. Not a crash, just a
+--        needless re-fire; found while double-checking the Mute .Boolean
+--        switch against Q-SYS Help's docs. Now normalizes booleans to 0/1
+--        before comparing.
 
 --[[ #include "info.lua" ]]
 
