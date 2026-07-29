@@ -403,7 +403,8 @@
 					end result = tmp
 				else   -- macro list (CP850/CP950/CP950A)
 					private.tmplist = {}
-					readData(self,true)
+					readData(self) -- FIX: was readData(self,true) -- readData only takes
+					               -- self, the second argument was silently ignored
 					result = private.tmplist
 			end	end
     		if  action == Actions.format then

@@ -912,11 +912,19 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   by a new regression test in `test_dist_flipflop.lua` (`Toggle_3` twice,
   checking `State_3`/`Out_3`/`Not_3` both directions). `BuildVersion`
   bumped to `2.0.0.1`. This was one of the two "unactioned review findings"
-  logged below on 2026-07-27; item (2) there is still open.
-- **One remaining unactioned review finding (2026-07-27):**
-  `cpseries_commlib.lua:406`'s `readData(self,true)` call passes an
-  argument `readData` (only takes `self`) always ignores — harmless, just
-  misleading. Not fixed.
+  logged below on 2026-07-27; item (2) there was the
+  `cpseries_commlib.lua:406` finding just below, also now resolved.
+- **`cpseries_commlib.lua:406`'s stray `readData(self,true)` argument,
+  fixed (2026-07-29):** `readData` only takes `self` (line 291); the extra
+  `true` was silently discarded by Lua on every call, always. Confirmed
+  genuinely harmless before touching it — `test_modules.lua`'s "CP 850:
+  macro list drains the n:name lines" case already exercises this exact
+  call path (the CP850/CP950/CP950A macro-list branch of the `formlist`
+  handler) and was already green — this was dead/misleading code, not a
+  disguised functional bug. Dropped the stray argument, rebuilt the
+  CPSeries root distributable, `BuildVersion` bumped to `4.0.0.2`. Both
+  items from the 2026-07-27 "two unactioned review findings" note are now
+  resolved.
 - **`qsc-q-sys` submodule blocked, not added (2026-07-28):** the user
   asked to add their own `qsc-q-sys` repo (referenced in "Plugin
   structure/naming convention" above as the source of the original,
