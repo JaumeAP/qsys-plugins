@@ -760,11 +760,15 @@ these markers pointing at `properties.lua`/`controls.lua`/`layout.lua`/
 cannot inline this repo's `Developer/Modules/*.lua` layout as-is; adopting
 it would mean rewriting the `Developer/plugins/*.qplug` head files to use
 `#include` markers instead of `require`, a structural change, not a
-drop-in swap for `build_distributable.sh`. It is also a Windows .NET
-Framework 4.8 binary (`PLUGCC.exe.config` pins `v4.8`) with no `mono`/
-`wine` available in this dev container, so it cannot be run here even to
-test the idea. Not adopted; `build_distributable.sh` stays the build
-path for all four plugins.
+drop-in swap for `build_distributable.sh`. It is a Windows .NET
+Framework 4.8 binary (`PLUGCC.exe.config` pins `v4.8`), unrunnable in this
+Linux dev container (no `mono`/`wine`) — but that is not a hard blocker on
+its own: `.github/workflows/build-qplugx.yml` already proves a
+`windows-latest` GitHub Actions runner executes this repo's other Windows
+binary (`plugin_tool_release.exe`), so `PLUGCC.exe` could in principle run
+the same way (untested). The actual blocker is the `#include`/`require`
+mismatch above, not where the binary can execute. Not adopted;
+`build_distributable.sh` stays the build path for all four plugins.
 
 ### Conventions when editing
 
