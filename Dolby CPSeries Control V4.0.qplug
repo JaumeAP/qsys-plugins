@@ -47,12 +47,22 @@
 --        tonumber() call, crashing the next arithmetic on it. Found by a
 --        stress test feeding malformed numeric payloads; now bails out like
 --        the first non-numeric check already does.
+-- v4.0.0.2 - the one-time init block (fader=7.0, Mute=0, Selector[1]=1) never
+--        ran on first compile: it was gated on 'Controls.Start.Value == false',
+--        and .Value is always numeric (confirmed via vendor/qsc-q-sys's
+--        Component.GetControls docs), so a number can never equal the Lua
+--        literal false. Now compares against 0/1 (Start has no declared
+--        ControlType, so .Boolean isn't confirmed safe on it, unlike
+--        DolbySweep/MultiFlip-Flop's own explicitly-Button 'Start'). Also:
+--        the Selector radio-button reads (ctl.Value == 1) now use ctl.Boolean
+--        instead -- not a bug fix, Selector IS ControlType="Button", just the
+--        clearer accessor now that the type is confirmed.
 
 PluginInfo =
 {
 	Name = "Dolby~CP Series Control",
 	Version = "4.0",
-	BuildVersion = "4.0.0.1",
+	BuildVersion = "4.0.0.2",
 	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
 	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
 	Manufacturer = "Dolby",
@@ -206,13 +216,6 @@ function GetComponents(props)
 	}
 end
 
-if not Controls and Reflect then return end
-
--- ============================================================
--- Inlined modules (single-file build, no require / no package.path).
--- Generated from Developer/plugins/ + Developer/Modules/ -- edit there,
--- not here, then rebuild this file (Developer/tools/build_distributable.sh).
--- ============================================================
 
 do  -- cpseries_models
 
@@ -305,6 +308,13 @@ do  -- cpseries_protocol
 
 	end
 end
+if not Controls and Reflect then return end
+
+-- ============================================================
+-- Inlined modules (single-file build, no require / no package.path).
+-- Generated from Developer/plugins/ + Developer/Modules/ -- edit there,
+-- not here, then rebuild this file (Developer/tools/build_distributable.sh).
+-- ============================================================
 
 do  -- qknob
 
@@ -981,7 +991,7 @@ do  -- dolbyfader
 		end
 
 		Controls.Ref.EventHandler = function(ctrl)
-			if Controls.Ref.Value == 1 then
+			if Controls.Ref.Boolean then
 				DKNob.Value = 7.0
 				DKNob.EventHandler(Controls.Ref)
 			end
@@ -1170,14 +1180,14 @@ do  -- cpseries
 
 		for numBtn, ctl in ipairs(Controls.Selector) do
 			ctl.EventHandler = function(ctrl)
-				if ctl.Value == 1 then
+				if ctl.Boolean then
 					for _, ctrl in ipairs(Controls.Selector) do
 						if ctrl ~= ctl then ctrl.Value = 0 end
 					end
 					if ctrl ~= DolbyCP then DolbyCP:Action("format", numBtn) end
 				else
 					for _, ctl in ipairs(Controls.Selector) do
-						if ctl.Value == 1 then return end
+						if ctl.Boolean then return end
 					end
 					DolbyCP:Action("reset")
 				end
@@ -1186,8 +1196,18 @@ do  -- cpseries
 
 		-- Init
 
-		if Controls.Start.Value == false then
-			Controls.Start.Value = true
+		-- 'Start' has no declared ControlType (GetControls just says
+		-- { Name = "Start" }), so .Boolean isn't confirmed safe on it --
+		-- unlike DolbySweep/MultiFlip-Flop's own 'Start', which are both
+		-- explicit ControlType="Button". .Value is always numeric
+		-- regardless of ControlType (confirmed via vendor/qsc-q-sys's
+		-- Component.GetControls docs), so this compares/assigns numerically
+		-- rather than risking .Boolean on an unconfirmed control. Previously
+		-- compared against the Lua literal `false`, which a number can never
+		-- equal -- this block never ran, so the one-time init below never
+		-- fired on first compile.
+		if Controls.Start.Value == 0 then
+			Controls.Start.Value = 1
 			DKNob.Value = 7.0
 			DKNob.EventHandler(DolbyCP)
 			Controls.Mute.Value = 0

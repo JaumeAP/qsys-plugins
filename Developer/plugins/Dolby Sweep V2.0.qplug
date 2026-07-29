@@ -21,12 +21,23 @@
 -- Dev-only, no version bump: wired in strict.lua (Developer/Modules/
 -- strict.lua) right after the runtime guard, dropped automatically from the
 -- production build (see CLAUDE.md).
+-- v2.0.0.1 - the prior 'start.Value == false' one-time-init fix (see v2.0
+--        note above) was itself still wrong: .Value is always numeric
+--        (confirmed via vendor/qsc-q-sys's Component.GetControls docs), so
+--        comparing it against a Lua boolean literal can never match -- the
+--        init block still never ran. Now uses start.Boolean (Start IS
+--        ControlType="Button" here). Also fixed a second instance of the
+--        same confusion in the other direction: mute.EventHandler assigned
+--        the Lua boolean result of 'mute.Value == 1 or not running' into
+--        Sine.mute.Value, a numeric-only field -- now Sine.mute.Boolean on
+--        both sides. enable/mute reads elsewhere converted to .Boolean too
+--        for consistency, though those were not actually broken.
 
 PluginInfo =
 {
 	Name = "Dolby~Dolby Sweep",
 	Version = "2.0",
-	BuildVersion = "2.0.0.0",
+	BuildVersion = "2.0.0.1",
 	Id = "0e5ea38f-6c26-469b-aa3b-00503f1f263a",
 	Description = "Dolby Sweep Generator",
 	Manufacturer = "Dolby",

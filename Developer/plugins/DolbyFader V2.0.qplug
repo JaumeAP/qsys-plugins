@@ -18,11 +18,16 @@
 -- Dev-only, no version bump: wired in strict.lua (Developer/Modules/
 -- strict.lua) right after the runtime guard, dropped automatically from the
 -- production build (see CLAUDE.md).
+-- v2.0.0.1 - Controls.Ref.Value == 1 (a Momentary Button) compared a numeric
+--        .Value the same way it already worked, but is now .Ref.Boolean --
+--        confirmed via vendor/qsc-q-sys's Component.GetControls docs that
+--        .Value is always numeric and .Boolean is the canonical boolean
+--        accessor for a Button control.
 
 PluginInfo = {
 	Name = "Dolby~Dolby Fader",
 	Version = "2.0",
-	BuildVersion = "2.0.0.0",
+	BuildVersion = "2.0.0.1",
 	Id = "a07f3b34-09af-4c25-af2d-be47d00bb4e9",
 	Author = "(c) Jaume Puig, Barcelona",
 	Description = "Dolby Fader Component Plugin",

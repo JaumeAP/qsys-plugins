@@ -42,23 +42,29 @@
 
     local function Start()
       timer:Start(period.Value / numloops)
-      Sine.mute.Value = 0
+      Sine.mute.Boolean = false
       running = true
     end
 
     local function Stop()
       timer:Stop()
-      Sine.mute.Value = 1
+      Sine.mute.Boolean = true
       Sine.level.Position = 0
       running = false
     end
 
     local function initplugin()
-      -- FIX: was 'start.Value == 0' / 'start.Value = 1' -- a Button
-      -- control's Value is boolean (Q-SYS defaults it to false), so that
-      -- comparison was never true and this one-time init never ran.
-      if start.Value == false then
-        start.Value = true
+      -- FIX: a control's .Value is always numeric, never a Lua boolean
+      -- (confirmed via vendor/qsc-q-sys's Component.GetControls docs --
+      -- the boolean accessor is the separate .Boolean property). The prior
+      -- 'start.Value == false' / '= true' form here compared a number
+      -- against a Lua boolean literal, which can never be equal -- this
+      -- one-time init never ran, on top of the still-earlier 'Value == 0'
+      -- form it had replaced (also broken, but for the opposite reason:
+      -- 0 is truthy in Lua). 'Start' IS declared ControlType="Button" here
+      -- (unlike CPSeries's own bare 'Start'), so .Boolean is safe.
+      if not start.Boolean then
+        start.Boolean = true
         level.Value = -40
         period.Value = 4
         frequency.Value = 20
@@ -77,14 +83,14 @@
       step = step + 1
       if freq == 22000 then
         step = 0
-        if enable.Value == 0 then
+        if not enable.Boolean then
           Stop()
         end
       end
     end
 
     enable.EventHandler = function(ctrl)
-      if enable.Value == 0 then
+      if not enable.Boolean then
         Stop()
       else
         trigger.EventHandler(enable)
@@ -99,19 +105,23 @@
         Sine.frequency.Value = 10
       end
       Timer.CallAfter(Start, 0.1)
-      Sine.mute.Value = mute.Value
+      Sine.mute.Boolean = mute.Boolean
     end
 
     period.EventHandler = function(ctrl)
       if running then
         Stop()
         Timer.CallAfter(Start, 0.1)
-        Sine.mute.Value = mute.Value
+        Sine.mute.Boolean = mute.Boolean
       end
     end
 
+    -- FIX: this used to assign a Lua boolean (the result of
+    -- 'mute.Value == 1 or not running') into .Value, which is always
+    -- numeric -- the mirror-image of the initplugin() bug above. .Boolean
+    -- on both sides fixes it.
     mute.EventHandler = function(ctrl)
-      Sine.mute.Value = mute.Value == 1 or not running
+      Sine.mute.Boolean = mute.Boolean or not running
     end
 
     -- Init

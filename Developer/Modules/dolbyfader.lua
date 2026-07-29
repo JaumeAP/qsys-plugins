@@ -50,7 +50,7 @@
 		end
 
 		Controls.Ref.EventHandler = function(ctrl)
-			if Controls.Ref.Value == 1 then
+			if Controls.Ref.Boolean then
 				DKNob.Value = 7.0
 				DKNob.EventHandler(Controls.Ref)
 			end

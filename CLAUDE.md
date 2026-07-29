@@ -826,22 +826,43 @@ Typical loop:
 separate file isn't auto-loaded at session start the way CLAUDE.md is, so
 it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
 
-- **Button control `.Value` type, unresolved (2026-07-27):** unclear if a
-  Button's `.Value` is boolean or numeric during a live EventHandler read,
-  vs. only defaulting to `false` untouched. 8+ numeric-comparison sites
-  across `dolbyfader.lua`/`cpseries.lua`/`dolbysweep.lua`/`MultiFlip-Flop
-  V2.0.qplug` were audited and left unchanged (QSC's own Roku/ShureAxient
-  plugins didn't settle it either way; fixing without proof risked a
-  regression). Resolves with one check, `type(Controls.SomeButton.Value)`
-  from a live EventHandler on real Designer or a CP Emulator bench — neither
-  available so far.
-- **Two unactioned review findings (2026-07-27):** (1)
-  `MultiFlip-Flop V2.0.qplug`'s `Toggle_N` handler writes a boolean to
-  `State_N.Value` then reads it back numeric (`== 1`) in the same
-  synchronous call, no host round-trip — a more fragile instance of the
-  item above. (2) `cpseries_commlib.lua:406`'s `readData(self,true)` call
-  passes an argument `readData` (only takes `self`) always ignores —
-  harmless, just misleading. Neither fixed.
+- **Button control `.Value` type, resolved (2026-07-29):** confirmed via
+  the newly-vendored `vendor/qsc-q-sys` submodule's reverse-engineered docs
+  (`components_emulator/docs/qsys-plugins.md`, cross-checked against its own
+  official-QRC-sourced `Component.GetControls` section) — `.Value` is
+  **always numeric**, on every control type including Button; the boolean
+  accessor is the separate `.Boolean` property, reading `Value~=0` and
+  writing `Value=1/0`. This means every prior `.Value == 1`/`== 0`
+  comparison in this repo was already correct; the real bugs were the
+  handful of sites comparing `.Value` against the *Lua literals* `true`/
+  `false` (never equal, wrong type) or assigning a Lua boolean expression
+  into `.Value` (a numeric-only field) — both fixed 2026-07-29:
+  `cpseries.lua`'s and `dolbysweep.lua`'s one-time-init guards (previously
+  `Value == false`, silently dead code on every first compile) and
+  `dolbysweep.lua`'s `mute.EventHandler`/`MultiFlip-Flop`'s `Toggle_N`
+  handler (previously assigning a boolean into `.Value`). Every other
+  Button/Toggle read across `dolbyfader.lua`/`cpseries.lua`/
+  `dolbysweep.lua`/`MultiFlip-Flop V2.0.qplug` was also converted to
+  `.Boolean` for the clearer, now-confirmed idiom, even where the old
+  `== 1`/`== 0` form wasn't actually broken. `cpseries.lua`'s own `Start`
+  control has no declared `ControlType` (unlike DolbySweep/MultiFlip-Flop's
+  explicitly-`Button` `Start`), so its fix stayed numeric (`Value == 0`/
+  `= 1`) rather than risking unconfirmed `.Boolean` support — worth
+  revisiting if that omission itself turns out to be a dropped field from
+  the v4.0 rewrite. `Developer/tests/qsys_stub.lua`'s control mock was
+  extended with a metatable syncing `.Value`/`.Boolean` onto the same
+  underlying number, matching this confirmed behavior (it previously stored
+  `.Value` as a literal Lua boolean for `Start`, encoding the same wrong
+  assumption). BuildVersion bumped on all four plugins
+  (DolbyFader 2.0.0.1, CP Series Control 4.0.0.2, Dolby Sweep 2.0.0.1,
+  MultiFlip-Flop 2.0.0.1); all four root `.qplug` distributables rebuilt;
+  `Developer/tests/run.sh` passes (ALL OK, all suites). The four root
+  `.qplugx` files are now stale relative to their `.qplug` — regenerate via
+  `.github/workflows/build-qplugx.yml` (`all`) once this lands.
+- **One review finding still unactioned:** `cpseries_commlib.lua:406`'s
+  `readData(self,true)` call passes an argument `readData` (only takes
+  `self`) always ignores — harmless, just misleading. Not fixed (out of
+  scope of the `.Value`/`.Boolean` pass above).
 - **`qsc-q-sys` submodule blocked, not added (2026-07-28):** the user
   asked to add their own `qsc-q-sys` repo (referenced in "Plugin
   structure/naming convention" above as the source of the original,

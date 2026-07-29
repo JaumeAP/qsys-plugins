@@ -166,14 +166,14 @@
 
 		for numBtn, ctl in ipairs(Controls.Selector) do
 			ctl.EventHandler = function(ctrl)
-				if ctl.Value == 1 then
+				if ctl.Boolean then
 					for _, ctrl in ipairs(Controls.Selector) do
 						if ctrl ~= ctl then ctrl.Value = 0 end
 					end
 					if ctrl ~= DolbyCP then DolbyCP:Action("format", numBtn) end
 				else
 					for _, ctl in ipairs(Controls.Selector) do
-						if ctl.Value == 1 then return end
+						if ctl.Boolean then return end
 					end
 					DolbyCP:Action("reset")
 				end
@@ -182,8 +182,18 @@
 
 		-- Init
 
-		if Controls.Start.Value == false then
-			Controls.Start.Value = true
+		-- 'Start' has no declared ControlType (GetControls just says
+		-- { Name = "Start" }), so .Boolean isn't confirmed safe on it --
+		-- unlike DolbySweep/MultiFlip-Flop's own 'Start', which are both
+		-- explicit ControlType="Button". .Value is always numeric
+		-- regardless of ControlType (confirmed via vendor/qsc-q-sys's
+		-- Component.GetControls docs), so this compares/assigns numerically
+		-- rather than risking .Boolean on an unconfirmed control. Previously
+		-- compared against the Lua literal `false`, which a number can never
+		-- equal -- this block never ran, so the one-time init below never
+		-- fired on first compile.
+		if Controls.Start.Value == 0 then
+			Controls.Start.Value = 1
 			DKNob.Value = 7.0
 			DKNob.EventHandler(DolbyCP)
 			Controls.Mute.Value = 0

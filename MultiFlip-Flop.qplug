@@ -18,11 +18,18 @@
 -- was never a declared value anywhere in the file (an undeclared global, so
 -- the whole assignment was `VTextAlign = nil`) -- vertical centering on
 -- these labels was silently never applied; now VTextAlign = "Center".
+-- v2.0.0.1 - Toggle_N's handler wrote the Lua boolean result of a
+--        '.Value == 0' comparison directly into State_N.Value, a
+--        numeric-only field (confirmed via vendor/qsc-q-sys's
+--        Component.GetControls docs: .Value is always numeric, .Boolean is
+--        the separate boolean accessor) -- now State_N.Boolean on both
+--        sides. Every other State_N/Exclusive read converted to .Boolean
+--        too for consistency, though those were not actually broken.
 
 PluginInfo = {
 	Name = "Dolby~Multi Flip-Flop",
 	Version = "2.0",
-	BuildVersion = "2.0.0.0",
+	BuildVersion = "2.0.0.1",
 	Id = "8d8af033-fa93-4962-805a-96d57b435859",
 	Author = "Jaume Puig",
 	Description = "Advanced Multi Flip-Flop Component Plugin",
@@ -220,12 +227,22 @@ end
 -- Inline runtime (the one plugin in this repo without a separate Modules/ file).
 if Controls then
 
+	-- FIX: State_N/Exclusive are ControlType="Button" (Toggle) above --
+	-- .Value on any control is always numeric, the boolean accessor is the
+	-- separate .Boolean property (confirmed via vendor/qsc-q-sys's
+	-- Component.GetControls docs). Every State_N/Exclusive read below now
+	-- uses .Boolean instead of a '== 1'/'== 0' numeric comparison (those
+	-- were not actually wrong, since .Value really is numeric, but .Boolean
+	-- is the clearer, canonical idiom now that the type is confirmed).
+	-- Toggle_N's handler had a real bug from the same confusion: it wrote
+	-- the Lua boolean result of a '== 0' comparison directly into .Value
+	-- (a numeric field) -- .Boolean on both sides of that toggle fixes it.
 	local function reset(t)
-		if Controls.Exclusive.Value == 0 then return end
+		if not Controls.Exclusive.Boolean then return end
 		for v = 1, Properties["InputCount"].Value do
 			if v ~= t then
 				Controls["Reset_" .. v]:Trigger()
-				Controls["State_" .. v].Value = 0
+				Controls["State_" .. v].Boolean = false
 				Controls['Out_' .. v].Value = 0
 				Controls['Not_' .. v].Value = 1
 			end
@@ -236,11 +253,11 @@ if Controls then
 		local first = false
 		for t = 1, Properties["InputCount"].Value do
 			if first then
-				Controls["State_" .. t].Value = 0
+				Controls["State_" .. t].Boolean = false
 				Controls["Reset_" .. t]:Trigger()
 				Controls['Out_' .. t].Value = 0
 				Controls['Not_' .. t].Value = 1
-			elseif Controls["State_" .. t].Value == 1 then
+			elseif Controls["State_" .. t].Boolean then
 				first = true
 			end
 		end
@@ -250,7 +267,7 @@ if Controls then
 
 		Controls["State_" .. t].EventHandler = function(ctrl)
 			reset(t)
-			if Controls["State_" .. t].Value == 1 then
+			if Controls["State_" .. t].Boolean then
 				Controls["Set_" .. t]:Trigger()
 				Controls['Out_' .. t].Value = 1
 				Controls['Not_' .. t].Value = 0
@@ -263,26 +280,26 @@ if Controls then
 
 		Controls["Set_" .. t].EventHandler = function(ctrl)
 			reset(t)
-			Controls["State_" .. t].Value = 1
+			Controls["State_" .. t].Boolean = true
 			Controls['Out_' .. t].Value = 1
 			Controls['Not_' .. t].Value = 0
 		end
 
 		Controls["Reset_" .. t].EventHandler = function(ctrl)
-			Controls["State_" .. t].Value = 0
+			Controls["State_" .. t].Boolean = false
 			Controls['Out_' .. t].Value = 0
 			Controls['Not_' .. t].Value = 1
 		end
 
 		Controls["Toggle_" .. t].EventHandler = function(ctrl)
-			Controls["State_" .. t].Value = Controls["State_" .. t].Value == 0
+			Controls["State_" .. t].Boolean = not Controls["State_" .. t].Boolean
 			Controls["State_" .. t].EventHandler()
 		end
 
 	end
 
 	for t = 1, Properties["InputCount"].Value do
-		if Controls["State_" .. t].Value == 1 then
+		if Controls["State_" .. t].Boolean then
 			Controls["Set_" .. t]:Trigger()
 			Controls['Out_' .. t].Value = 1
 			Controls['Not_' .. t].Value = 0
