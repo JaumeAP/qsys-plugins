@@ -77,12 +77,20 @@
 --        call as the other three restructurings, since it never shipped to
 --        production and PLUGCC.exe has no equivalent stripping step
 --        build_distributable.sh had.
+-- v4.0.0.4 - commlib.lua's readData(self,true) call passed a second argument
+--        readData() doesn't take (it only takes self), silently ignored by
+--        Lua -- dead/misleading, not a functional bug; dropped. Also: Mute
+--        (ControlType="Button", ButtonType="Toggle") was the one Button
+--        control in this plugin still read/written via .Value instead of
+--        .Boolean -- not a bug (.Value is always numeric and valid on any
+--        control type), just inconsistent with the .Boolean idiom the rest
+--        of this codebase already settled on; switched for consistency.
 
 PluginInfo =
 {
 	Name = "Dolby~CP Series Control",
 	Version = "4.0",
-	BuildVersion = "4.0.0.3",
+	BuildVersion = "4.0.0.4",
 	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
 	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
 	Manufacturer = "Dolby",
@@ -1141,7 +1149,7 @@ if Controls then
 					["ready"] = function() Print(true, 'found "Dolby ' .. result .. '"') SetStatus(0) end,
 					["formlist"] = function() Controls.Select.Choices = result end,
 					["formname"] = function() Controls.Select.String = result end,
-					["mute"] = function() Controls.Mute.Value = result end,
+					["mute"] = function() Controls.Mute.Boolean = (result ~= 0) end,
 					["fader"] = function()
 						DKNob.Value = result
 						DKNob.EventHandler(DolbyCP)
@@ -1167,7 +1175,7 @@ if Controls then
 			end
 	
 			Controls.Mute.EventHandler = function(ctrl)
-				DolbyCP:Action("mute", Controls.Mute.Value)
+				DolbyCP:Action("mute", Controls.Mute.Boolean)
 			end
 	
 			Controls.Select.EventHandler = function(ctrl)
@@ -1206,7 +1214,7 @@ if Controls then
 				Controls.Start.Value = 1
 				DKNob.Value = 7.0
 				DKNob.EventHandler(DolbyCP)
-				Controls.Mute.Value = 0
+				Controls.Mute.Boolean = false
 				Controls.Selector[1].Value = 1
 				Controls.Selector[1].EventHandler(DolbyCP)
 			end

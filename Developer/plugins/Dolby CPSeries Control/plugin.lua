@@ -77,6 +77,14 @@
 --        call as the other three restructurings, since it never shipped to
 --        production and PLUGCC.exe has no equivalent stripping step
 --        build_distributable.sh had.
+-- v4.0.0.4 - commlib.lua's readData(self,true) call passed a second argument
+--        readData() doesn't take (it only takes self), silently ignored by
+--        Lua -- dead/misleading, not a functional bug; dropped. Also: Mute
+--        (ControlType="Button", ButtonType="Toggle") was the one Button
+--        control in this plugin still read/written via .Value instead of
+--        .Boolean -- not a bug (.Value is always numeric and valid on any
+--        control type), just inconsistent with the .Boolean idiom the rest
+--        of this codebase already settled on; switched for consistency.
 
 --[[ #include "info.lua" ]]
 
