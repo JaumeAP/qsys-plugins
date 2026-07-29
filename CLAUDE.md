@@ -390,6 +390,11 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
         ├── test_dist_sweep.lua       Root Dolby Sweep distributable, both host passes
         ├── test_dist_flipflop.lua    Root MultiFlip-Flop distributable, both host passes
         ├── test_dist_subharmonic.lua Root SubharmonicSynth distributable, both host passes
+        ├── test_stress.lua           Stress/fuzz over all five plugins: asserts invariants
+        │                             (nothing throws, nothing publishes nil, every written
+        │                             value stays in range) rather than exact values. Fixed
+        │                             math.randomseed so a failure reproduces; carries its
+        │                             own anti-vacuity checks (see its README section)
         └── wire_trace.lua            Diffs two builds by the bytes they put on the wire
 ```
 
@@ -970,6 +975,41 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   `period`/`timer` and `Dolby CPSeries Control`'s `DolbyCP`/`sock` globals
   were never in the list, so `M.clear()` never reset them between test
   runs.
+- **Stress/fuzz suite added, covering all five plugins (2026-07-29,
+  explicit user request).** `Developer/tests/test_stress.lua`, registered
+  in `run.sh`, 49 checks, runs in well under a second. Deliberately a
+  different kind of test from the rest of the suite: the `test_dist_*`
+  files assert exact values for known-good inputs, this one asserts only
+  the invariants that must survive abuse — nothing throws, nothing
+  publishes a nil, and every value a plugin writes stays inside its
+  declared range. Sections: CP Series wire fuzzing across all five models
+  (267 junk lines per model, three passes, one-at-a-time and bulk-drained
+  through `readData`), sustained polling driven 9000 ticks to cross the
+  `npoll % 0x2000` wraparound, the no-data watchdog's own close path,
+  Dolby Fader driven well past both ends of its dB range plus junk typed
+  into the `Level` text control and out-of-band stepper positions, Dolby
+  Sweep run 3000 ticks with mid-sweep control chatter, SubharmonicSynth
+  given 1500 rounds of out-of-range parameters, and MultiFlip-Flop at
+  InputCount=8 under 4000 random operations. Two design points worth
+  keeping if it's ever extended: `math.randomseed` is a fixed constant, so
+  a failure reproduces instead of vanishing on the next run; and several
+  sections carry an explicit anti-vacuity check. That second one is not
+  theoretical — the first working version of the corpus passed every CP
+  650 and CP 750 invariant while those two models silently rejected every
+  line before it reached their own fader/format handlers (their dialects
+  are `fader_level=` and `cp750.sys.*`, and the corpus was all `sys.*`).
+  Measured with a throwaway probe, then fixed by adding per-dialect
+  parseable-but-extreme lines and a permanent "the corpus actually reached
+  the parser" check per model. The same reasoning added "the storm did run
+  while bypassed" (SubharmonicSynth) and "multiple simultaneous instances
+  are reachable with Exclusive off" (MultiFlip-Flop) — without the latter,
+  the interlock invariant would also hold for a component that simply
+  never lets two instances be set at all. No plugin bug was found by any
+  of this; the guards in `commlib.lua` (documented in its own v3.0 header)
+  already cover what the fuzzing throws at them. `Developer/tests/README.md`
+  gained a "Stress and fuzz" section, and its Layout table was corrected
+  at the same time — it still listed the retired `test_plugin_defs.lua`
+  and pointed `test_modules.lua` at the deleted `Developer/Modules`.
 - **SubharmonicSynth incorporated as a 5th plugin (2026-07-29, explicit
   user request, uploaded as `SubharmonicSynth_v0_6.qplug`):** a bass
   enhancement / subharmonic-style boost for LFE/Sub channels, restructured
