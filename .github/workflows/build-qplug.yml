@@ -6,7 +6,7 @@ name: Build .qplug (PLUGCC)
 # binary -- hence windows-latest, same reasoning as build-qplugx.yml.
 # Replaces Developer/tools/build_distributable.sh for any plugin that has
 # been migrated onto this file-split convention (currently: MultiFlip-Flop,
-# Dolby Sweep). Confirmed PLUGCC.exe resolves a relative #include path outside a
+# Dolby Sweep, DolbyFader). Confirmed PLUGCC.exe resolves a relative #include path outside a
 # file's own folder (see CLAUDE.md continuity notes), so a plugin that
 # shares Developer/Modules/*.lua-style code can #include it from a shared
 # folder without duplicating it per plugin.
@@ -29,6 +29,7 @@ on:
         options:
           - MultiFlip-Flop
           - Dolby Sweep
+          - DolbyFader
 
 jobs:
   build:

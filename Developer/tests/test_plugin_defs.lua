@@ -59,14 +59,10 @@ local shown = { ["TCP Log"] = { IsHidden = true }, plugin_show_debug = { Value =
 RectifyProperties(shown)
 h.check(shown["TCP Log"].IsHidden == false, "TCP Log is shown when debug is on")
 
-h.section("Dolby Fader")
-load_definition(h.DEV.fader)
-h.check(GetPrettyName() == "Dolby Fader ", "GetPrettyName")
-local by_name = {}
-for _, c in ipairs(GetControls()) do by_name[c.Name] = c end
-h.check(by_name.Level and by_name.Level.ControlType == "Text",
-	"Level is a Text control, which QKnob requires")
-h.check(by_name.Gain and by_name.Gain.Min == -100 and by_name.Gain.Max == 20,
-	"Gain knob spans -100..20 dB")
+-- DolbyFader's own definition-side checks moved to test_dist_fader.lua's
+-- "definition pass" section (2026-07-29): DolbyFader was restructured onto
+-- QSC's PLUGCC.exe build convention, so its Developer source is a
+-- plugin.lua with #include markers, not directly loadfile()-able the way
+-- this file's load_definition() needs -- see CLAUDE.md continuity notes.
 
 h.report()
