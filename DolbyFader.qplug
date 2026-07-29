@@ -15,19 +15,44 @@
 -- Signal chain: a Text control ('Level') mirrors the Dolby 0.0-10.0 scale,
 -- kept in sync with the 'Gain' Knob (dB) and an embedded stepper component
 -- via qknob.lua/dolbyfader.lua. No network I/O in this plugin.
--- Dev-only, no version bump: wired in strict.lua (Developer/Modules/
--- strict.lua) right after the runtime guard, dropped automatically from the
--- production build (see CLAUDE.md).
--- v2.0.0.1 - Controls.Ref.Value == 1 (a Momentary Button) compared a numeric
---        .Value the same way it already worked, but is now .Ref.Boolean --
---        confirmed via vendor/qsc-q-sys's Component.GetControls docs that
---        .Value is always numeric and .Boolean is the canonical boolean
---        accessor for a Button control.
+-- v2.0.0.1: Controls.Ref.Value == 1 (a Momentary Button) compared a numeric
+-- .Value the same way it already worked, but is now .Ref.Boolean --
+-- confirmed via vendor/qsc-q-sys's Component.GetControls docs that
+-- .Value is always numeric and .Boolean is the canonical boolean
+-- accessor for a Button control.
+-- v2.0.0.2: restructured onto QSC's official PLUGCC.exe build convention
+-- (vendor/qsys-plugins/BasePlugin/PluginCompile, PLUGCC.exe) instead of
+-- this repo's own build_distributable.sh -- split into this file plus
+-- info.lua/controls.lua/layout.lua. No separate runtime.lua: this file's
+-- own `if Controls then` block #include's Developer/shared/dolbyfader.lua
+-- (also used by CPSeries, moved there rather than duplicated) directly,
+-- which in turn #include's Developer/shared/qknob.lua (also used by
+-- Dolby Sweep). Confirmed by trial (2026-07-29), two rules together:
+-- (1) a #include path always resolves relative to the ORIGINAL
+-- plugin.lua's own directory (the process cwd PLUGCC.exe is invoked
+-- from), never relative to whichever file textually contains the
+-- directive -- so shared/dolbyfader.lua's own internal include of
+-- qknob.lua is written as the path seen from Developer/plugins/DolbyFader/
+-- ("../../shared/qknob.lua"), the exact same string this file uses to
+-- reach shared/dolbyfader.lua itself, not the path seen from
+-- shared/dolbyfader.lua's own folder ("qknob.lua"). (2) a NESTED
+-- #include (one inside a file that itself got #include'd, as opposed to
+-- one written directly in plugin.lua) is only picked up if it is the
+-- FIRST LINE of that file -- a nesting-depth theory was tried and
+-- disproved first, and an all-paths-correct-but-not-first-line attempt
+-- also silently failed, before this was isolated by comparing against
+-- Dolby Sweep's own working runtime.lua -> qknob.lua chain (its
+-- #include is line 1 there too). See CLAUDE.md continuity notes. No
+-- functional change from v2.0.0.1; the dev-only 'strict'
+-- globals guard is dropped rather than carried over, same call as
+-- MultiFlip-Flop/Dolby Sweep's own restructuring, since it never shipped
+-- to production and PLUGCC.exe has no equivalent stripping step
+-- build_distributable.sh had.
 
 PluginInfo = {
 	Name = "Dolby~Dolby Fader",
 	Version = "2.0",
-	BuildVersion = "2.0.0.1",
+	BuildVersion = "2.0.0.2",
 	Id = "a07f3b34-09af-4c25-af2d-be47d00bb4e9",
 	Author = "(c) Jaume Puig, Barcelona",
 	Description = "Dolby Fader Component Plugin",
@@ -52,20 +77,19 @@ end
 
 function GetControls(props)
 	local ctrls = {}
-
 	table.insert(ctrls, {
 		Name = "Ref",
 		ControlType = "Button",
 		ButtonType = "Momentary",
 	})
-
+	
 	table.insert(ctrls, {
 		Name = "Level",
 		ControlType = "Text",
 		UserPin = true,
 		PinStyle = "Both",
 	})
-
+	
 	table.insert(ctrls, {
 		Name = "Gain",
 		ControlType = "Knob",
@@ -74,7 +98,7 @@ function GetControls(props)
 		Max = 20,
 		PinStyle = "Both",
 	})
-
+	
 	table.insert(ctrls, {
 		Name = "Increase",
 		ControlType = "Button",
@@ -83,7 +107,7 @@ function GetControls(props)
 		Icon = "Plus",
 		IconColor = { 0, 0, 0 },
 	})
-
+	
 	table.insert(ctrls, {
 		Name = "Decrease",
 		ControlType = "Button",
@@ -92,7 +116,6 @@ function GetControls(props)
 		Icon = "Minus",
 		IconColor = { 0, 0, 0 },
 	})
-
 	return ctrls
 end
 
@@ -101,7 +124,7 @@ function GetControlLayout(props)
 	local graphics = {}
 	local left = -4
 	local top = -4
-
+	
 	layout['Ref'] = {
 		PrettyName = "Ref Level",
 		Style = "Button",
@@ -139,43 +162,44 @@ function GetControlLayout(props)
 		Position = { left + 214, top + 28 },
 		Size = { 36, 36 },
 	}
-
-	graphics = {
-		{
-			Type = "GroupBox",
-			Text = "Knob",
-			HTextAlign = "Left",
-			StrokeWidth = 1,
-			CornerRadius = 8,
-			Position = { left + 8, top + 8 },
-			Size = { 265, 100 },
-		},
-		{
-			Type = "Label",
-			Text = "Reference",
-			Position = { left + 12, top + 72 },
-			Size = { 64, 16 },
-		},
-		{
-			Type = "Label",
-			Text = "Dolby\nLevel",
-			Position = { left + 76, top + 72 },
-			Size = { 64, 32 },
-		},
-		{
-			Type = "Label",
-			Text = "Inc/Dec",
-			Position = { left + 140, top + 72 },
-			Size = { 64, 16 },
-		},
-		{
-			Type = "Label",
-			Text = "RMS Level (dBFS)",
-			Position = { left + 202, top + 72 },
-			Size = { 64, 32 },
-		},
-	}
-
+	
+	table.insert(graphics, {
+		Type = "GroupBox",
+		Text = "Knob",
+		HTextAlign = "Left",
+		StrokeWidth = 1,
+		CornerRadius = 8,
+		Position = { left + 8, top + 8 },
+		Size = { 265, 100 },
+	})
+	
+	table.insert(graphics, {
+		Type = "Label",
+		Text = "Reference",
+		Position = { left + 12, top + 72 },
+		Size = { 64, 16 },
+	})
+	
+	table.insert(graphics, {
+		Type = "Label",
+		Text = "Dolby\nLevel",
+		Position = { left + 76, top + 72 },
+		Size = { 64, 32 },
+	})
+	
+	table.insert(graphics, {
+		Type = "Label",
+		Text = "Inc/Dec",
+		Position = { left + 140, top + 72 },
+		Size = { 64, 16 },
+	})
+	
+	table.insert(graphics, {
+		Type = "Label",
+		Text = "RMS Level (dBFS)",
+		Position = { left + 202, top + 72 },
+		Size = { 64, 32 },
+	})
 	return layout, graphics
 end
 
@@ -192,273 +216,262 @@ function GetComponents(props)
 	return comps
 end
 
-if not Controls and Reflect then return end
-
--- ============================================================
--- Inlined modules (single-file build, no require / no package.path).
--- Generated from Developer/plugins/ + Developer/Modules/ -- edit there,
--- not here, then rebuild this file (Developer/tools/build_distributable.sh).
--- ============================================================
-
-do  -- qknob
-
-	--///////////////////////  QKNob Class //////////////////////////////
-
-  do
-
-    -- declare local variables & functions
-    local setposition,getposition,formatstr,formatval,todigits,compare
-    local privates = setmetatable({}, {__mode = "k"})
-    local propvalues = setmetatable({}, {__mode = "k"})
-    local properties = {}
-
-    QKnob = {}
-
-    -- declare a computed property: {value=default, get=function(self,raw), set=function(self,newVal,oldVal)}
-    function QKnob:set(name, def)
-      properties[name] = def
-    end
-
-    QKnob.__index = function(self, key)
-      local def = properties[key]
-      if def then return def.get(self, propvalues[self][key]) end
-      return QKnob[key]
-    end
-
-    QKnob.__newindex = function(self, key, value)
-      local def = properties[key]
-      if def then
-        local raw = propvalues[self]
-        value = def.set(self, value, raw[key])
-        raw[key] = value
-      else
-        rawset(self, key, value)
-      end
-    end
-
-    function QKnob:new(...)
-      local obj = setmetatable({}, QKnob)
-      local raw = {}
-      for name, def in pairs(properties) do
-        raw[name] = def.value
-      end
-      propvalues[obj] = raw
-      if obj.init then obj:init(...) end
-      return obj
-    end
-
-    QKnob:set("Value",{
-        value = 0,
-        get = function(self,value) return value end,
-        set = function(self, newVal,oldVal)
-          newVal = formatval(self,newVal)
-          privates[self].ctrl.Value = newVal
-          if not privates[self].nested then
-          	privates[self].nested = true
-          	self.Position = setposition(self,newVal)
-          	self.String = newVal
-          	privates[self].nested = false
-          end
-          return newVal
-        end,
-        } )
-
-    QKnob:set("String",{
-        value = "",
-        get = function(self,value) return value end,
-        set = function(self, newVal,oldVal)
-          newVal = formatstr(self,newVal)
-          privates[self].ctrl.String = newVal
-          if not privates[self].nested then
-          	privates[self].nested = true
-          	self.Value = newVal
-          	self.Position = setposition(self,self.Value)
-          	privates[self].nested = false
-          end
-          return newVal
-        end,
-      })
-
-    QKnob:set("Position",{
-        value = 0,
-        get = function(self,value) return value end,
-        set = function(self, newVal,oldVal)
-          local val = getposition(self,newVal)
-          newVal = setposition(self,val)
-          privates[self].ctrl.Position = newVal
-          if not privates[self].nested then
-          	privates[self].nested = true
-          	self.Value = getposition(self,newVal)
-          	self.String = self.Value
-          	privates[self].nested = false
-          end
-          return newVal
-        end,
-        } )
-
-
-    function QKnob:SetString(val)
-      return val
-    end
-
-    function QKnob:init(ctlName, Min, Max, numDecs )
-      local ctrldef = nil
-      for _,def in ipairs(GetControls(Properties)) do
-        if def.Name == ctlName then	 ctrldef = def break end
-      end
-      assert(ctrldef,"GetComponents: "..ctlName.." not found")
-      assert(ctrldef.ControlType=="Text","GetComponents: "..ctlName..".Type is not 'Text'")
-      privates[self] = { ctrl = Controls[ctlName], nested = false, min=Min, max=Max,
-        numdecs = numDecs, tm = Timer.New() }
-      self.EventHandler = nil
-      privates[self].ctrl.EventHandler = function()
-         local newVal = formatstr(self,privates[self].ctrl.String)
-		 if self.String ~=newVal then
-        	self.String =  newVal
-    		if self.EventHandler then
-            	self.EventHandler(privates[self].ctrl)
-        	end
-        end
-      end
-      self.String = privates[self].ctrl.String
-      privates[self].tm.EventHandler = function()
-        compare(self)
-      end
-      privates[self].tm:Start(1/1000)
-    end
-
-    todigits = function (a)
-      local _
-      a = tostring(a) or ""
-      a,_ = a:gsub("[^%d.-]", "")
-      return tonumber(a) or 0
-    end
-
-    setposition = function(self,value)
-      local p = (value-privates[self].min)/(privates[self].max-privates[self].min)
-      return p<0 and 1+p or p
-    end
-
-    getposition = function(self,value)
-      value = value * ( privates[self].max-privates[self].min ) + privates[self].min
-      return value
-    end
-
-    compare = function(self)
-      if math.abs(privates[self].ctrl.Position - self.Position)>=1e-3 and not privates[self].nested then
-        self.Position = privates[self].ctrl.Position
-    	if self.EventHandler then
-            self.EventHandler(privates[self].ctrl)
-        end
-      end
-    end
-
-    formatval = function(self,val)
-      val = todigits(val)
-      val = val < privates[self].min and privates[self].min or val
-      val = val > privates[self].max and privates[self].max or val
-      if privates[self].numdecs then
-        val = tonumber(string.format("%."..privates[self].numdecs.."f",val))
-      end
-      return val
-    end
-
-    formatstr = function(self,val)
-      val = todigits(val)
-      val = val < privates[self].min and privates[self].min or val
-      val = val > privates[self].max and privates[self].max or val
-      local neg = val<0 and true or false
-      val = math.abs(val)
-      local num = 0
-      num = val<100 and 1 or num
-      num = val<10  and 2 or num
-      num = val< 1  and 3 or num
-      if privates[self].numdecs then
-        num = num>privates[self].numdecs and privates[self].numdecs or num
-      end
-      val = string.format("%."..num.."f",val)
-      if not privates[self].numdecs then
-        val = tonumber(val)<1 and val:sub(2) or val
-        val = tonumber(val)==0 and 0 or val
-      end
-      if neg then val = '-'.. val end
-      val = self:SetString(tostring(val))
-      return tostring(val)
-    end
-
-  end
-end
-
-do  -- dolbyfader
-   -- ##############################################################
-   --			Dolby Fader
-   -- ##############################################################
-
-	do
-
-
-		-- Objects
-		-- QKnob wraps the 'Level' Text control; must stay global (never
-		-- local) -- Timer/socket-holding objects are killed by the GC once
-		-- nothing else references them, and DKNob is that anchor for the
-		-- Timer QKnob:init() creates internally.
-		DKNob = QKnob:new('Level', 0, 10, 1)
-
-		-- Custom functions
-
-		local function convertToDb(val)
-			if val <= 4 then return val * 20 - 90
-			else return (val - 7) * 10 / 3 end
-		end
-
-		local function convertToDolby(dB)
-			if dB <= -10 then return (dB + 90) / 20
-			else return (dB * 3 / 10) + 7 end
-		end
-
-		-- Event handlers
-
-		-- Step: embedded stepper component (GetComponents); Q-SYS exposes
-		-- it as the global 'Step', which is what _G["Step"] would return.
-		Step.value.EventHandler = function(ctrl)
-			DKNob.Position = Step.value.Value / 100
-			DKNob.EventHandler(Step)
-		end
-
-		DKNob.EventHandler = function(ctrl)
-			if ctrl ~= Controls.Gain then
-				Controls.Gain.Value = convertToDb(DKNob.Value)
+if Controls then
+		
+			--///////////////////////  QKNob Class //////////////////////////////
+		
+		  do
+		
+		    -- declare local variables & functions
+		    local setposition,getposition,formatstr,formatval,todigits,compare
+		    local privates = setmetatable({}, {__mode = "k"})
+		    local propvalues = setmetatable({}, {__mode = "k"})
+		    local properties = {}
+		
+		    QKnob = {}
+		
+		    -- declare a computed property: {value=default, get=function(self,raw), set=function(self,newVal,oldVal)}
+		    function QKnob:set(name, def)
+		      properties[name] = def
+		    end
+		
+		    QKnob.__index = function(self, key)
+		      local def = properties[key]
+		      if def then return def.get(self, propvalues[self][key]) end
+		      return QKnob[key]
+		    end
+		
+		    QKnob.__newindex = function(self, key, value)
+		      local def = properties[key]
+		      if def then
+		        local raw = propvalues[self]
+		        value = def.set(self, value, raw[key])
+		        raw[key] = value
+		      else
+		        rawset(self, key, value)
+		      end
+		    end
+		
+		    function QKnob:new(...)
+		      local obj = setmetatable({}, QKnob)
+		      local raw = {}
+		      for name, def in pairs(properties) do
+		        raw[name] = def.value
+		      end
+		      propvalues[obj] = raw
+		      if obj.init then obj:init(...) end
+		      return obj
+		    end
+		
+		    QKnob:set("Value",{
+		        value = 0,
+		        get = function(self,value) return value end,
+		        set = function(self, newVal,oldVal)
+		          newVal = formatval(self,newVal)
+		          privates[self].ctrl.Value = newVal
+		          if not privates[self].nested then
+		          	privates[self].nested = true
+		          	self.Position = setposition(self,newVal)
+		          	self.String = newVal
+		          	privates[self].nested = false
+		          end
+		          return newVal
+		        end,
+		        } )
+		
+		    QKnob:set("String",{
+		        value = "",
+		        get = function(self,value) return value end,
+		        set = function(self, newVal,oldVal)
+		          newVal = formatstr(self,newVal)
+		          privates[self].ctrl.String = newVal
+		          if not privates[self].nested then
+		          	privates[self].nested = true
+		          	self.Value = newVal
+		          	self.Position = setposition(self,self.Value)
+		          	privates[self].nested = false
+		          end
+		          return newVal
+		        end,
+		      })
+		
+		    QKnob:set("Position",{
+		        value = 0,
+		        get = function(self,value) return value end,
+		        set = function(self, newVal,oldVal)
+		          local val = getposition(self,newVal)
+		          newVal = setposition(self,val)
+		          privates[self].ctrl.Position = newVal
+		          if not privates[self].nested then
+		          	privates[self].nested = true
+		          	self.Value = getposition(self,newVal)
+		          	self.String = self.Value
+		          	privates[self].nested = false
+		          end
+		          return newVal
+		        end,
+		        } )
+		
+		
+		    function QKnob:SetString(val)
+		      return val
+		    end
+		
+		    function QKnob:init(ctlName, Min, Max, numDecs )
+		      local ctrldef = nil
+		      for _,def in ipairs(GetControls(Properties)) do
+		        if def.Name == ctlName then	 ctrldef = def break end
+		      end
+		      assert(ctrldef,"GetComponents: "..ctlName.." not found")
+		      assert(ctrldef.ControlType=="Text","GetComponents: "..ctlName..".Type is not 'Text'")
+		      privates[self] = { ctrl = Controls[ctlName], nested = false, min=Min, max=Max,
+		        numdecs = numDecs, tm = Timer.New() }
+		      self.EventHandler = nil
+		      privates[self].ctrl.EventHandler = function()
+		         local newVal = formatstr(self,privates[self].ctrl.String)
+				 if self.String ~=newVal then
+		        	self.String =  newVal
+		    		if self.EventHandler then
+		            	self.EventHandler(privates[self].ctrl)
+		        	end
+		        end
+		      end
+		      self.String = privates[self].ctrl.String
+		      privates[self].tm.EventHandler = function()
+		        compare(self)
+		      end
+		      privates[self].tm:Start(1/1000)
+		    end
+		
+		    todigits = function (a)
+		      local _
+		      a = tostring(a) or ""
+		      a,_ = a:gsub("[^%d.-]", "")
+		      return tonumber(a) or 0
+		    end
+		
+		    setposition = function(self,value)
+		      local p = (value-privates[self].min)/(privates[self].max-privates[self].min)
+		      return p<0 and 1+p or p
+		    end
+		
+		    getposition = function(self,value)
+		      value = value * ( privates[self].max-privates[self].min ) + privates[self].min
+		      return value
+		    end
+		
+		    compare = function(self)
+		      if math.abs(privates[self].ctrl.Position - self.Position)>=1e-3 and not privates[self].nested then
+		        self.Position = privates[self].ctrl.Position
+		    	if self.EventHandler then
+		            self.EventHandler(privates[self].ctrl)
+		        end
+		      end
+		    end
+		
+		    formatval = function(self,val)
+		      val = todigits(val)
+		      val = val < privates[self].min and privates[self].min or val
+		      val = val > privates[self].max and privates[self].max or val
+		      if privates[self].numdecs then
+		        val = tonumber(string.format("%."..privates[self].numdecs.."f",val))
+		      end
+		      return val
+		    end
+		
+		    formatstr = function(self,val)
+		      val = todigits(val)
+		      val = val < privates[self].min and privates[self].min or val
+		      val = val > privates[self].max and privates[self].max or val
+		      local neg = val<0 and true or false
+		      val = math.abs(val)
+		      local num = 0
+		      num = val<100 and 1 or num
+		      num = val<10  and 2 or num
+		      num = val< 1  and 3 or num
+		      if privates[self].numdecs then
+		        num = num>privates[self].numdecs and privates[self].numdecs or num
+		      end
+		      val = string.format("%."..num.."f",val)
+		      if not privates[self].numdecs then
+		        val = tonumber(val)<1 and val:sub(2) or val
+		        val = tonumber(val)==0 and 0 or val
+		      end
+		      if neg then val = '-'.. val end
+		      val = self:SetString(tostring(val))
+		      return tostring(val)
+		    end
+		
+		  end
+	
+	   -- ##############################################################
+	   --			Dolby Fader
+	   -- ##############################################################
+	
+		do
+	
+			-- Objects
+			-- QKnob wraps the 'Level' Text control; must stay global (never
+			-- local) -- Timer/socket-holding objects are killed by the GC once
+			-- nothing else references them, and DKNob is that anchor for the
+			-- Timer QKnob:init() creates internally.
+			DKNob = QKnob:new('Level', 0, 10, 1)
+	
+			-- Custom functions
+	
+			local function convertToDb(val)
+				if val <= 4 then return val * 20 - 90
+				else return (val - 7) * 10 / 3 end
 			end
-			Step.value.Value = DKNob.Position * 100
-			if DolbyFaderEventHandler then
-				DolbyFaderEventHandler(ctrl)
+	
+			local function convertToDolby(dB)
+				if dB <= -10 then return (dB + 90) / 20
+				else return (dB * 3 / 10) + 7 end
 			end
-		end
-
-		Controls.Gain.EventHandler = function(ctrl)
-			DKNob.Value = convertToDolby(Controls.Gain.Value)
-			DKNob.EventHandler(Controls.Gain)
-		end
-
-		Controls.Ref.EventHandler = function(ctrl)
-			if Controls.Ref.Boolean then
-				DKNob.Value = 7.0
-				DKNob.EventHandler(Controls.Ref)
+	
+			-- Event handlers
+	
+			-- Step: embedded stepper component (GetComponents); Q-SYS exposes
+			-- it as the global 'Step', which is what _G["Step"] would return.
+			Step.value.EventHandler = function(ctrl)
+				DKNob.Position = Step.value.Value / 100
+				DKNob.EventHandler(Step)
 			end
+	
+			DKNob.EventHandler = function(ctrl)
+				if ctrl ~= Controls.Gain then
+					Controls.Gain.Value = convertToDb(DKNob.Value)
+				end
+				Step.value.Value = DKNob.Position * 100
+				if DolbyFaderEventHandler then
+					DolbyFaderEventHandler(ctrl)
+				end
+			end
+	
+			Controls.Gain.EventHandler = function(ctrl)
+				DKNob.Value = convertToDolby(Controls.Gain.Value)
+				DKNob.EventHandler(Controls.Gain)
+			end
+	
+			Controls.Ref.EventHandler = function(ctrl)
+				if Controls.Ref.Boolean then
+					DKNob.Value = 7.0
+					DKNob.EventHandler(Controls.Ref)
+				end
+			end
+	
+			Controls.Increase.EventHandler = function()
+				Step.increase.Value = Controls.Increase.Value
+			end
+	
+			Controls.Decrease.EventHandler = function()
+				Step.decrease.Value = Controls.Decrease.Value
+			end
+	
+			-- Init
+	
+			Controls.Gain.EventHandler()
+			DolbyFaderEventHandler = nil
+	
 		end
-
-		Controls.Increase.EventHandler = function()
-			Step.increase.Value = Controls.Increase.Value
-		end
-
-		Controls.Decrease.EventHandler = function()
-			Step.decrease.Value = Controls.Decrease.Value
-		end
-
-		-- Init
-
-		Controls.Gain.EventHandler()
-		DolbyFaderEventHandler = nil
-
-	end
 end

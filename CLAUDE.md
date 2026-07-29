@@ -892,3 +892,62 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   retry `add_repo` first in case it was fixed out-of-band; if not,
   this needs investigating outside the chat entirely (Anthropic/Claude
   Code Remote side), not more retries here.
+  **Update (2026-07-29): resolved.** A later-session retry of `add_repo`
+  for `JaumeAP/qsc-q-sys` succeeded with no code change on this side --
+  whatever blocked it was fixed out-of-band. Added as
+  `vendor/qsc-q-sys` (PR #41). Its reverse-engineered docs are what
+  resolved the `.Value`/`.Boolean` question above.
+- **PLUGCC.exe rebuild of all four plugins, in progress (2026-07-29,
+  explicit user request, repeatedly confirmed):** replacing this repo's
+  own `Developer/tools/build_distributable.sh` with QSC's official
+  `PLUGCC.exe` (`vendor/qsys-plugins/{BasePlugin,ExamplePlugin}/
+  PluginCompile/PLUGCC.exe`), run via a new manual-dispatch
+  `.github/workflows/build-qplug.yml` (`windows-latest`, same pattern as
+  `build-qplugx.yml`). Each plugin's `Developer/plugins/<Name>.qplug` is
+  split into `Developer/plugins/<Name>/{plugin,info,properties,controls,
+  layout,runtime}.lua`, `plugin.lua` being the PLUGCC entry point,
+  `--[[ #include "file.lua" ]]` Lua-comment directives pulling the rest
+  in. Code shared by more than one plugin (`qknob.lua`, `dolbyfader.lua`)
+  moved to a new `Developer/shared/` (parallel to the old
+  `Developer/Modules/`, which stays in place for CPSeries only, see
+  below). Done and verified byte-for-byte against CI output, each with
+  a full local `Developer/tests/run.sh` pass afterward: MultiFlip-Flop
+  (BuildVersion 2.0.0.2, no shared-file dependency, simplest case),
+  Dolby Sweep (2.0.0.2, one level of shared indirection via its own
+  `runtime.lua`), DolbyFader (2.0.0.2, reuses `shared/dolbyfader.lua` +
+  `shared/qknob.lua`, hit the `#include` resolution puzzle below before
+  landing). **Not yet started:** Dolby CPSeries Control V4.0 -- the
+  hardest case, needs `cpseries_models.lua`/`cpseries_protocol.lua`/
+  `cpseries_commlib.lua` (private to CPSeries) alongside
+  `shared/dolbyfader.lua`/`shared/qknob.lua` (shared); add it to
+  `build-qplug.yml`'s `plugin` choice input once restructured. Once
+  CPSeries no longer needs `Developer/Modules/*.lua` /
+  `build_distributable.sh`, both become fully obsolete -- ask before
+  deleting them, not decided yet. All four root `.qplugx` files are
+  stale relative to their rebuilt `.qplug`s; regenerate via
+  `.github/workflows/build-qplugx.yml` once CPSeries lands too (that
+  workflow also still has its own separate known issue: `submodules:
+  recursive` fails on `vendor/qsc-q-sys` being private -- same fix as
+  `build-qplug.yml` already applies, a scoped submodule init instead of
+  `recursive`, just not yet ported over).
+  **`#include` resolution rules, confirmed by trial (2026-07-29):**
+  (1) a relative `#include` path always resolves against the *original*
+  `plugin.lua`'s own directory (the process cwd `PLUGCC.exe` is invoked
+  from via `Push-Location`), never against whichever file's own text
+  contains the directive -- so a shared file's own internal `#include`
+  has to be written as the path seen from the *including plugin's*
+  folder, not from the shared file's own folder. (2) A NESTED
+  `#include` -- one inside a file that itself got pulled in by another
+  `#include`, as opposed to one written directly in `plugin.lua` -- is
+  only recognized if it is that file's first line; the same directive
+  placed a few lines down (even just past a header comment) is left as
+  a literal, unexpanded comment, no error, no log line, silently
+  dropping whatever it was supposed to pull in. Both rules were only
+  isolated after two wrong turns: a nesting-depth theory (only 2 levels
+  of `#include` ever expand) looked right on the first failure but was
+  disproved by a second attempt at the same depth; a paths-only fix
+  (correct path, still not line 1) also silently failed before the
+  line-position rule was spotted by diffing against Dolby Sweep's own
+  already-working `runtime.lua` (its `#include` of `shared/qknob.lua`
+  sits on line 1 there too, which is what made it work by accident, not
+  by design, before this was understood).

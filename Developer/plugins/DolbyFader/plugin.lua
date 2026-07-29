@@ -27,17 +27,23 @@
 -- own `if Controls then` block #include's Developer/shared/dolbyfader.lua
 -- (also used by CPSeries, moved there rather than duplicated) directly,
 -- which in turn #include's Developer/shared/qknob.lua (also used by
--- Dolby Sweep). Confirmed by trial (2026-07-29): PLUGCC.exe always
--- resolves a #include path relative to the ORIGINAL plugin.lua's own
--- directory (the process cwd PLUGCC.exe is invoked from), never relative
--- to whichever file textually contains the directive -- a nesting-depth
--- theory was tried first and disproved. So shared/dolbyfader.lua's own
--- internal include of qknob.lua has to be written as the path seen from
--- Developer/plugins/DolbyFader/ ("../../shared/qknob.lua"), the exact
--- same string plugin.lua itself uses to reach shared/dolbyfader.lua, not
--- as the path seen from shared/dolbyfader.lua's own folder ("qknob.lua").
--- See CLAUDE.md continuity notes. No functional change from v2.0.0.1;
--- the dev-only 'strict'
+-- Dolby Sweep). Confirmed by trial (2026-07-29), two rules together:
+-- (1) a #include path always resolves relative to the ORIGINAL
+-- plugin.lua's own directory (the process cwd PLUGCC.exe is invoked
+-- from), never relative to whichever file textually contains the
+-- directive -- so shared/dolbyfader.lua's own internal include of
+-- qknob.lua is written as the path seen from Developer/plugins/DolbyFader/
+-- ("../../shared/qknob.lua"), the exact same string this file uses to
+-- reach shared/dolbyfader.lua itself, not the path seen from
+-- shared/dolbyfader.lua's own folder ("qknob.lua"). (2) a NESTED
+-- #include (one inside a file that itself got #include'd, as opposed to
+-- one written directly in plugin.lua) is only picked up if it is the
+-- FIRST LINE of that file -- a nesting-depth theory was tried and
+-- disproved first, and an all-paths-correct-but-not-first-line attempt
+-- also silently failed, before this was isolated by comparing against
+-- Dolby Sweep's own working runtime.lua -> qknob.lua chain (its
+-- #include is line 1 there too). See CLAUDE.md continuity notes. No
+-- functional change from v2.0.0.1; the dev-only 'strict'
 -- globals guard is dropped rather than carried over, same call as
 -- MultiFlip-Flop/Dolby Sweep's own restructuring, since it never shipped
 -- to production and PLUGCC.exe has no equivalent stripping step
