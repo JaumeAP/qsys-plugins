@@ -1,0 +1,15 @@
+local numButtons = ModelValue(props) == Model.CP750.value and 7 or 8
+
+table.insert(ctrls, { Name = "Start" })
+table.insert(ctrls, { Name = "Ref", ControlType = "Button", ButtonType = "Momentary" })
+table.insert(ctrls, { Name = "Level", ControlType = "Text", UserPin = true, PinStyle = "Both" })
+table.insert(ctrls, { Name = "Gain", ControlType = "Knob", ControlUnit = "dB", Min = -100, Max = 20, UserPin = true, PinStyle = "Both" })
+table.insert(ctrls, { Name = "Increase", ControlType = "Button", ButtonType = "Momentary", IconType = "Icon", Icon = "Plus", IconColor = { 0, 0, 0 } })
+table.insert(ctrls, { Name = "Decrease", ControlType = "Button", ButtonType = "Momentary", IconType = "Icon", Icon = "Minus", IconColor = { 0, 0, 0 } })
+table.insert(ctrls, { Name = "Address", ControlType = "Text", Count = 1, UserPin = false })
+table.insert(ctrls, { Name = "Status", ControlType = "Indicator", IndicatorType = "Status", UserPin = true, PinStyle = "Output" })
+table.insert(ctrls, { Name = "Status.Led", ControlType = "Indicator", IndicatorType = "Status" })
+table.insert(ctrls, { Name = "Refresh", ControlType = "Button", ButtonType = "Trigger", Icon = 'Refresh' })
+table.insert(ctrls, { Name = "Select", ControlType = "Text", UserPin = true, PinStyle = "Both" })
+table.insert(ctrls, { Name = "Selector", ControlType = "Button", ButtonType = "Toggle", Count = numButtons, UserPin = true, PinStyle = "Both" })
+table.insert(ctrls, { Name = "Mute", ControlType = "Button", ButtonType = "Toggle", Icon = 'Volume Strike', UserPin = true, PinStyle = "Both" })
