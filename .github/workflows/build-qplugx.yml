@@ -67,6 +67,14 @@ jobs:
             if ($LASTEXITCODE -ne 0) {
               throw "plugin_tool_release.exe failed on $name (exit $LASTEXITCODE)"
             }
+            # Also echoed to the job log (not just uploaded as an artifact):
+            # the artifact's blob-storage download URL isn't reachable
+            # through this session's egress proxy, but job logs are (GitHub
+            # API) -- same workaround as build-qplug.yml. .qplugx is a JSON
+            # envelope (text), safe to print.
+            Write-Host "----- BEGIN $outName -----"
+            Get-Content $outPath | Write-Host
+            Write-Host "----- END $outName -----"
           }
 
       - uses: actions/upload-artifact@v4
