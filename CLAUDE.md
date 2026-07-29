@@ -1189,3 +1189,35 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   GitHub UI (PR page's "Delete branch" button, or Settings > Branches),
   or investigating the proxy/connector side directly, not more retries
   from inside a session.
+- **`check-reply-format.sh`'s block reason made block-scoped, not just
+  Rebut-scoped (2026-07-29, explicit user request, root-caused after a
+  real recurrence in this exact session).** The 2026-07-28 fix above
+  scoped the repair message for a missing-Rebut-only violation, but a
+  language or formatting violation still got the old generic "reescriu
+  NOMES el fragment assenyalat" wording, WITHOUT ever saying which
+  fragment -- the retry had to guess. It guessed wrong this session: the
+  actual English text was a one-line narration ("All tests pass ...
+  Now committing."), but the retry instead re-sent the already-correct
+  closing summary verbatim, producing exactly the duplicate-looking reply
+  the rule exists to prevent. Two real bugs, both fixed: (1) the language
+  heuristic ran on the WHOLE joined turn text, including the mandatory-
+  English "Rebut: <order in English>" line -- scoring that line as English
+  is correct by design, but it also meant the Rebut line's own English
+  words could push a short, otherwise-compliant turn over the old
+  `en_count>=3` threshold; the language check now runs against every block
+  EXCEPT the first (Rebut) one. (2) once an offending block search was
+  added (score each block by en-stopword-count minus ca-stopword-count,
+  quote any block that scores net-English), the jq `--arg` regex variables
+  were built with a doubled backslash (`'(?i)\\b(...)\\b'`) on the mistaken
+  assumption they needed the same escaping as a regex written inline in jq
+  program source -- `--arg` passes the literal bytes straight through with
+  no re-escaping, so the pattern oniguruma actually saw was "match a
+  literal backslash then the letter b", which silently matched nothing,
+  ever. Fixed to a single backslash. Both fixes verified against synthetic
+  transcripts built by hand (no real session data touched): a genuine
+  English narration block is now quoted verbatim in the block reason and
+  the Rebut line is excluded from scoring either way; an all-Catalan turn
+  with a normal English Rebut summary no longer risks a false block; the
+  existing missing-Rebut-only scoped message is unchanged. Format/list
+  violations were extended the same way -- the offending line (with its
+  line number in the joined turn text) is now quoted too, not just named.
