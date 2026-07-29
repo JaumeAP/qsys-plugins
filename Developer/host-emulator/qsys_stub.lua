@@ -6,6 +6,19 @@
 -- Timers here never fire on their own -- there is no event loop. Tests drive
 -- them by hand with env:tick(), which is what makes the poll loop testable a
 -- step at a time.
+--
+-- Known gap, checked against Q-SYS Help 2026-07-29, not fixed because
+-- nothing here needs it yet: M.control() always exposes .Value/.String/
+-- .Position/.Values regardless of the real control's ControlType/ButtonType,
+-- but Q-SYS itself does not -- a Trigger-type Button has no .Value/.String/
+-- .Position at all (confirmed via Q-SYS Help's Controls IO page), and a
+-- Meter-type Indicator uses a separate .Values (plural) array property this
+-- stub does not implement. None of the four plugins here read .Value/
+-- .Boolean on a Trigger control or use a Meter/2D-Panner/RTA/Responsalyzer
+-- control (the only ones documented to use .Values), so this stays a
+-- documented blind spot rather than a live bug -- but a future plugin that
+-- reads .Value on its own Trigger button, or .Values on a Meter, would get
+-- a silently wrong pass here instead of the error/nil Q-SYS would give.
 
 local M = {}
 
