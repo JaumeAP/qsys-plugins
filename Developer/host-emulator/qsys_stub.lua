@@ -118,7 +118,14 @@ function M.install(opts)
 			env.timers[#env.timers + 1] = t
 			return t
 		end,
-		CallAfter = function(fn) pcall(fn) end,
+		-- Runs fn immediately (no fake clock here, same simplification as
+		-- Timer objects needing env.tick() by hand) -- but unlike a bare
+		-- pcall(fn), a real Q-SYS host doesn't silently eat an exception
+		-- thrown inside a scheduled callback either, so this doesn't hide
+		-- one from the test: any error inside fn propagates straight out
+		-- of CallAfter, same as calling fn() directly would. The delay
+		-- argument is accepted for signature compatibility but ignored.
+		CallAfter = function(fn) fn() end,
 	}
 
 	local sock

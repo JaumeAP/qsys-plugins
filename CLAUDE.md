@@ -884,6 +884,22 @@ Typical loop:
 separate file isn't auto-loaded at session start the way CLAUDE.md is, so
 it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
 
+- **`qsys_stub.lua`'s `Timer.CallAfter` silently swallowed errors, fixed
+  (2026-07-29):** was `function(fn) pcall(fn) end` with the `pcall` result
+  never checked, so any exception thrown inside a callback scheduled via
+  `Timer.CallAfter` (real usage: CPSeries's `connect`/`refreshCNX` retry
+  chain, Dolby Sweep's `Start`) vanished silently instead of failing the
+  test that triggered it. Now `function(fn) fn() end` -- errors propagate
+  like a direct call would, same as a real host wouldn't eat a plugin's
+  exception either. No test currently throws through this path, so nothing
+  newly failed; `Developer/tests/run.sh` stays green, 152 checks unchanged.
+  Separately noted, not fixed (a test-coverage gap, not a stub-modeling
+  one -- the stub already supports it structurally): `sock.Closed`/
+  `.Timeout`/`.Error`/`.Reconnect` are real socket lifecycle handlers
+  `Dolby CPSeries Control/runtime.lua` wires up, but no test file ever
+  calls them (only `wire_trace.lua` calls `sock.Connected()`) -- a test
+  could invoke any of them today the same way, nothing in the stub blocks
+  it, they just aren't exercised yet.
 - **`qsys_stub.lua`'s Trigger/Meter control-type gap, fixed (2026-07-29,
   explicit user request — implemented, not just documented).** `M.control`
   now takes an optional `kind` ("trigger", "meter", or the default): a
