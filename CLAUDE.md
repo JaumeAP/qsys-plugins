@@ -1242,6 +1242,17 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   whatever blocked it was fixed out-of-band. Added as
   `vendor/qsc-q-sys` (PR #41). Its reverse-engineered docs are what
   resolved the `.Value`/`.Boolean` question above.
+  **Update (2026-07-29, same day, explicit user request): removed
+  again.** A later session in the same day found `vendor/qsc-q-sys`
+  present in `.gitmodules` but still uninitialized on its own branch
+  (private-repo access not in scope for that session either), and
+  `add_repo` for `JaumeAP/qsc-q-sys` was offered again -- the user
+  denied it and asked for the pending submodule addition to be deleted
+  outright, with a standing instruction not to attempt or ask again.
+  Deregistered: `git rm` on `vendor/qsc-q-sys` plus its section removed
+  from `.gitmodules`. Standing rule from here on: do not call `add_repo`
+  for `qsc-q-sys` and do not ask about it, in this or any future
+  session, unless the user brings it up first.
 - **PLUGCC.exe rebuild of all four plugins, complete (started 2026-07-29,
   explicit user request, repeatedly confirmed; finished same day).**
   Replaced this repo's own `Developer/tools/build_distributable.sh` with
@@ -1312,6 +1323,22 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   and `Dolby Sweep/runtime.lua` both now lead with their `#include` line
   for exactly this reason; `Dolby CPSeries Control/plugin.lua` avoids the
   question by never nesting an `#include` at all.
+- **Repo audit cleanup (2026-07-29, explicit user request).** Removed
+  four unnecessary items found by a full-repo sweep: (1)
+  `.plugcc-include-test/` and `.github/workflows/probe-plugcc-include.yml`
+  -- the throwaway probe from the `#include` resolution investigation
+  right above; its own header comment said to delete both once the
+  question was answered, and it now is. (2) `.claude/skills-lock.json`
+  -- orphaned metadata left over from when `find-skills` was a bundled
+  skill; its local copy was deleted 2026-07-29 (see "Portable skills"
+  above) but this lock file wasn't cleaned up with it, and
+  `config-export-import.md` already documented it as no longer part of
+  the export. (3) `.agents/skills/karpathy-guidelines/` and the
+  root-level `skills-lock.json` -- an exact duplicate of
+  `.claude/skills/karpathy-guidelines/`, installed via a separate,
+  undocumented mechanism (PR #48) that doesn't match this repo's own
+  `.claude/skills/` convention; the `.claude/` copy was kept. No other
+  file referenced any of the four removed paths.
 - **Remote branch deletion blocked, cleanup left half-done (2026-07-29):**
   18 stale `origin/claude/*` branches were audited against their PRs;
   17 were confirmed safe to delete (PR merged, PR closed-without-merge,
