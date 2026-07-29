@@ -607,4 +607,3 @@ if Controls then
 	
 	initplugin()
 end
-

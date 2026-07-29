@@ -74,16 +74,19 @@ like any other unbundled recommendation, fetched live via
 `npx skills add vercel-labs/skills -s find-skills` by whoever wants it —
 a state it had already passed through once before this same day,
 reverted at the time, now the settled choice (see the history note
-below). This repo itself still
-keeps a local copy of `find-skills` on disk, disabled via
-`skillOverrides: {"find-skills": "off"}`
-in `.claude/settings.local.json` (gitignored). That local copy no
-longer has any bearing on what ships in the export either way, now that
-`find-skills` isn't bundled as a file regardless of what's installed
-locally — unlike `changelog-rules`' and `find-skills`' own earlier
-delete-vs-disable episode further below, back when `find-skills` was
-still a bundled file and deleting it locally would have dropped it from
-the next export too. Pointers
+below). This repo's own local copy of `find-skills` was deleted
+outright 2026-07-29 (explicit user request) — `.claude/skills/
+find-skills/` removed from disk, repo-local only, deliberately NOT
+added to `.claude/removed-files.txt` (that would mechanize pruning it
+from every other repo importing this bundle in the future, which
+wasn't asked for and isn't warranted here — `find-skills` already
+isn't shipped as a bundled file per the paragraph above, so there's
+nothing export-side this deletion needed to affect). It had been meant
+to stay on disk but disabled via a `skillOverrides: {"find-skills":
+"off"}` entry in `.claude/settings.local.json` (gitignored) — but that
+settings file was never actually present in this checkout, so the
+local copy was live (not disabled) the whole time until this deletion.
+Pointers
 only, not summaries — same
 drift-safety reason as above; each skill is the authority on its own topic,
 invoke it when the task calls for it:
@@ -124,8 +127,10 @@ same day, also explicit user request: moved to optional (still a
 bundled file at that point) instead. Superseded once more, also
 2026-07-28, also explicit user request: moved off the bundled-file path
 entirely, back to fetch-on-demand-only via `recommended-skills.txt` —
-its final resting state, at least so far, ending up back where its
-first fetch-on-demand attempt left off, this time for good.)
+ending up back where its first fetch-on-demand attempt left off. Its
+local copy went one step further 2026-07-29, also explicit user
+request: deleted outright rather than kept disk-side and disabled, see
+above.)
 
 **Find Skills**: `find-skills`, imported from `vercel-labs/skills`
 (`skills/find-skills/SKILL.md`) — discovers and installs third-party
@@ -899,10 +904,49 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   `Developer/tests/run.sh` passes (ALL OK, all suites). The four root
   `.qplugx` files are now stale relative to their `.qplug` — regenerate via
   `.github/workflows/build-qplugx.yml` (`all`) once this lands.
-- **One review finding still unactioned:** `cpseries_commlib.lua:406`'s
-  `readData(self,true)` call passes an argument `readData` (only takes
-  `self`) always ignores — harmless, just misleading. Not fixed (out of
-  scope of the `.Value`/`.Boolean` pass above).
+- **`cpseries_commlib.lua`'s (now `Developer/plugins/Dolby CPSeries
+  Control/commlib.lua`) stray `readData(self,true)` argument, fixed
+  (2026-07-29, reconciling this note with the `.Value`/`.Boolean` pass
+  above):** `readData` only takes `self` (line ~288); the extra `true` was
+  silently discarded by Lua on every call, always. Confirmed genuinely
+  harmless before touching it — `test_modules.lua`'s "CP 850: macro list
+  drains the n:name lines" case already exercises this exact call path (the
+  CP850/CP950/CP950A macro-list branch of the `formlist` handler) and was
+  already green — this was dead/misleading code, not a disguised functional
+  bug. Dropped the stray argument, rebuilt the CPSeries root distributable
+  via PLUGCC.exe.
+- **Two parallel sessions independently restructured onto PLUGCC.exe,
+  reconciled by merge (2026-07-29):** this branch (`claude/test-umx9nt`)
+  took a non-invasive approach — `Developer/plugins/*.qplug` and
+  `Developer/Modules/*.lua` left untouched, still using plain `require`, an
+  auto-generated `#include` form produced only in a throwaway temp dir at
+  build time (`build_distributable_plugcc.sh`), specifically to keep
+  `Developer/plugins/*.qplug` directly loadable in Designer via the
+  `package.path` prelude. A separate session (`claude/next-vawkbf`,
+  PR #50, merged first) took the more thorough route reflected above: a
+  real physical split into `plugin.lua` + `info.lua`/`controls.lua`/
+  `layout.lua`/`runtime.lua` per plugin, with genuine `#include` markers
+  written directly in the source, shared code under `Developer/shared/`,
+  and `Developer/Modules/`/`build_distributable.sh` deleted outright. That
+  session also independently found and definitively resolved the Button
+  `.Value`/`.Boolean` ambiguity (the entry above) — a real research result
+  this branch's own equivalent fix (assigning explicit `1`/`0` instead of a
+  Lua boolean into `MultiFlip-Flop`'s `Toggle_N`) never had. Reconciling:
+  the `claude/next-vawkbf` restructuring and its `.Value`/`.Boolean` fix
+  were kept as-is (confirmed superior — resolves the ambiguity for every
+  call site, not just `Toggle_N`); this branch's own PLUGCC-specific work
+  (`build_distributable_plugcc.sh`, `.github/workflows/
+  build-qplug-plugcc.yml`, the auto-`#include`-generation approach, the
+  `Developer/plugins/*.qplug` direct-Designer-load tradeoff) was dropped as
+  superseded; this branch's one genuinely independent fix (`readData`,
+  above) was carried over via `git merge`'s rename detection, which matched
+  `Developer/Modules/cpseries_commlib.lua` against its new home at
+  `Developer/plugins/Dolby CPSeries Control/commlib.lua` and applied the
+  diff cleanly. All four root `.qplug` files were rebuilt from the merged
+  tree via `mono` + the vendored `PLUGCC.exe` (mirroring
+  `build-qplug.yml`'s own invocation) to fold the `readData` fix into the
+  CPSeries distributable; `Developer/tests/run.sh` passes in full
+  afterward.
 - **`qsc-q-sys` submodule blocked, not added (2026-07-28):** the user
   asked to add their own `qsc-q-sys` repo (referenced in "Plugin
   structure/naming convention" above as the source of the original,

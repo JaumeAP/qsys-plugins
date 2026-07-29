@@ -71,4 +71,21 @@ env.controls.State_1.EventHandler()
 h.check(env.controls.State_2.Value == 0, "Exclusive clears State_2 when State_1 is set")
 h.check(env.controls.Out_2.Value == 0 and env.controls.Not_2.Value == 1, "Exclusive clears Out_2/sets Not_2 for the deselected instance")
 
+h.section("Toggle_N")
+-- Regression: Toggle_N used to assign `Controls[...].Value == 0` directly,
+-- a Lua boolean, then read it back with `== 1` inside State_N's own
+-- EventHandler in the same synchronous call -- always false in Lua, so
+-- Toggle_N corrupted State_N.Value to true/false without ever flipping
+-- Out_N/Not_N.
+env.controls.Exclusive.Value = 0
+env.controls.State_3.Value = 0
+env.controls.Out_3.Value = 0
+env.controls.Not_3.Value = 1
+env.controls.Toggle_3.EventHandler()
+h.check(env.controls.State_3.Value == 1, "Toggle_3 flips State_3 to 1 (got " .. tostring(env.controls.State_3.Value) .. ")")
+h.check(env.controls.Out_3.Value == 1 and env.controls.Not_3.Value == 0, "Toggle_3 (0->1) sets Out_3/clears Not_3")
+env.controls.Toggle_3.EventHandler()
+h.check(env.controls.State_3.Value == 0, "Toggle_3 flips State_3 back to 0 (got " .. tostring(env.controls.State_3.Value) .. ")")
+h.check(env.controls.Out_3.Value == 0 and env.controls.Not_3.Value == 1, "Toggle_3 (1->0) clears Out_3/sets Not_3")
+
 h.report()
