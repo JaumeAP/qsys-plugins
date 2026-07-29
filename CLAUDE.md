@@ -337,9 +337,17 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     ├── shared/                       Code #include'd by more than one plugin
     │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua
     │   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
+    ├── host-emulator/                The Q-SYS Designer host stub, its own module
+    │   │                             (added 2026-07-29, split out of Developer/tests/)
+    │   │                             so it reads as a standalone unit distinct from
+    │   │                             `Dolby CP Emulator/` (that one emulates the Dolby
+    │   │                             processors, this one emulates the Q-SYS Lua host)
+    │   └── qsys_stub.lua             Stand-in for the Q-SYS host globals (Controls,
+    │                                 Timer, TcpSocket, Properties, System); every
+    │                                 test file adds this directory to its own
+    │                                 package.path alongside Developer/tests/ itself
     └── tests/                        Lua 5.3 test suite, no framework (see its README)
         ├── run.sh                    Syntax pass over every source, then every test
-        ├── qsys_stub.lua             Stand-in for the Q-SYS host globals
         ├── harness.lua               Path resolution + check counter
         ├── test_modules.lua          CPSeries class, loaded straight from
         │                             Developer/plugins/Dolby CPSeries Control/
@@ -876,6 +884,24 @@ Typical loop:
 separate file isn't auto-loaded at session start the way CLAUDE.md is, so
 it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
 
+- **`qsys_stub.lua` split into its own `Developer/host-emulator/` module
+  (2026-07-29, explicit user request).** Previously lived in
+  `Developer/tests/`, alongside `harness.lua` and the `test_*.lua` files
+  that use it. Moved out on its own so it reads as a standalone unit — the
+  Q-SYS Designer host stub — distinct from `Dolby CP Emulator/`, which
+  emulates the Dolby processors themselves, a different target entirely.
+  `harness.lua` stayed in `Developer/tests/`: it's test-runner plumbing
+  (path resolution, the check counter), not part of the emulator. Every
+  `test_*.lua`/`wire_trace.lua` file's `package.path` line now adds
+  `Developer/host-emulator/` alongside its own directory
+  (`test_dir .. "/?.lua;" .. test_dir .. "/../host-emulator/?.lua;"`) so
+  `require("qsys_stub")` still resolves; `require("harness")` is
+  unaffected, it never moved. `Developer/tests/README.md` updated to
+  match. `PLUGIN_GLOBALS` inside `qsys_stub.lua` was also fixed the same
+  session (see git history) — a real, pre-existing gap: `Dolby Sweep`'s
+  `period`/`timer` and `Dolby CPSeries Control`'s `DolbyCP`/`sock` globals
+  were never in the list, so `M.clear()` never reset them between test
+  runs.
 - **Button control `.Value` type, resolved (2026-07-29):** confirmed via
   the newly-vendored `vendor/qsc-q-sys` submodule's reverse-engineered docs
   (`components_emulator/docs/qsys-plugins.md`, cross-checked against its own

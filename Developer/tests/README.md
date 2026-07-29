@@ -20,9 +20,11 @@ instead, or the binaries are named differently.
 Plugins normally only run inside Q-SYS Designer, against a real processor or
 one of the emulators in `Dolby CP Emulator/`. That makes the ordinary edit
 loop slow and manual, and it means nothing catches a regression before it
-reaches hardware. `qsys_stub.lua` stands in for the host globals Q-SYS
-provides (`Controls`, `Timer`, `TcpSocket`, `Properties`, `System`) so the
-same code can be driven from a terminal.
+reaches hardware. `Developer/host-emulator/qsys_stub.lua` stands in for the
+host globals Q-SYS provides (`Controls`, `Timer`, `TcpSocket`, `Properties`,
+`System`) so the same code can be driven from a terminal -- a different
+target than `Dolby CP Emulator/`, which emulates the Dolby processors
+themselves, not the Q-SYS Designer host.
 
 This is not a substitute for testing in Designer. The stub models what the
 plugins use, not what Q-SYS does, so it can only catch the class of bug that
@@ -33,7 +35,7 @@ timing, or the actual Designer UI still has to be checked on the bench.
 
 | File | What it covers |
 |---|---|
-| `qsys_stub.lua` | The fake Q-SYS host. Timers never fire on their own; tests advance them with `env.tick(n)`, so the poll loop can be stepped one iteration at a time. |
+| `../host-emulator/qsys_stub.lua` | The fake Q-SYS host. Timers never fire on their own; tests advance them with `env.tick(n)`, so the poll loop can be stepped one iteration at a time. |
 | `harness.lua` | Path resolution and the check counter. |
 | `test_modules.lua` | The CPSeries class straight from `Developer/Modules`: query framing per model, the readiness handshake, fader scaling, both format-list dialects, and the guards against bad wire data. |
 | `test_plugin_defs.lua` | The `Get*` callbacks in `Developer/plugins`, including the nil-props case Q-SYS triggers during plugin registration. |
@@ -72,7 +74,8 @@ Each file starts with the same three lines, then builds an environment and
 drives it:
 
 ```lua
-package.path = (arg[0]:match("^(.*)[/\\]") or ".") .. "/?.lua;" .. package.path
+local test_dir = (arg[0]:match("^(.*)[/\\]") or ".")
+package.path = test_dir .. "/?.lua;" .. test_dir .. "/../host-emulator/?.lua;" .. package.path
 local h = require("harness")
 local qsys = require("qsys_stub")
 
