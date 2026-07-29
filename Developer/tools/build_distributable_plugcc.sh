@@ -33,6 +33,22 @@
 # to the empty string on native Windows (e.g. a windows-latest GitHub
 # Actions runner using `shell: bash`) to invoke PLUGCC.exe directly instead.
 # Override the binary path with PLUGCC_EXE.
+#
+# Known limitations (none hit by the four plugins here today, 2026-07-29):
+#   * every require() in the head, wherever it sits, is treated as
+#     post-guard -- unlike build_distributable.sh, this script has no
+#     concept of the pre-guard module group (a module a design-time
+#     Get*/GetControlLayout function needs, not just the runtime). A future
+#     plugin needing that would get silently wrong load-order behaviour,
+#     not an error.
+#   * require() only ever means "a Developer/Modules/*.lua file" here -- a
+#     require of a genuine Q-SYS host library extension (require("json"),
+#     require("rapidjson"), require("lpeg"), ...) fails the build loudly
+#     (no file under Developer/Modules/ matches), it is not passed through.
+#   * only the head's own `require "strict"` + `Global(...)` lines are
+#     stripped; a `Global(...)` call inside a Developer/Modules/*.lua file
+#     itself would ship as-is and fail at runtime (`Global` is undefined
+#     outside of strict.lua). No module currently has one.
 set -euo pipefail
 
 if [ "$#" -ne 2 ]; then
@@ -73,14 +89,31 @@ for mod in "$mods"/*.lua; do
 	mod_real_name["${real,,}"]="$real"
 done
 
+# Every caller of resolve_module runs inside a `< <(...)` process
+# substitution subshell (list_requires, below); `exit 1` there only kills
+# that subshell, never the parent script (confirmed 2026-07-29 -- a
+# require() of a name with no matching Modules/ file, e.g. a typo, or a
+# perfectly legitimate host-library require like require("json"), was
+# silently swallowed: the ERROR line printed, but the build carried on and
+# wrote out a truncated .qplug with exit code 0). An error sentinel file is
+# the fix: written here, checked by the caller once it's back in the main
+# shell.
+errfile="$workdir/ERROR"
 resolve_module() {
 	local name="$1" src="$2"
 	local real="${mod_real_name[${name,,}]:-}"
 	if [ -z "$real" ]; then
-		echo "ERROR: require \"$name\" in '$src' matches no file under '$mods'" >&2
+		echo "ERROR: require \"$name\" in '$src' matches no file under '$mods'" >> "$errfile"
 		exit 1
 	fi
 	printf '%s' "$real"
+}
+
+check_errfile() {
+	if [ -s "$errfile" ]; then
+		cat "$errfile" >&2
+		exit 1
+	fi
 }
 
 # Every non-strict module name a file require()s, in order, real-cased.
@@ -117,6 +150,9 @@ visit() {
 while IFS= read -r root; do
 	[ -n "$root" ] && visit "$root"
 done < <(list_requires "$head_src")
+check_errfile   # see resolve_module's comment -- a failure in the traversal
+                # above only killed a subshell, this is what actually stops
+                # the build on an unresolved require()
 
 # Head: strip the dev-only strict/Global block and every require line
 # (each module require in the head now moot -- covered by the flattened

@@ -42,6 +42,12 @@ jobs:
         shell: bash
         env:
           PLUGCC_RUNNER: ""
+          # Passed via env rather than interpolated straight into the script
+          # below (`${{ inputs.plugin }}` inline in `run:`) -- the `choice`
+          # input type already constrains this to the fixed option list, so
+          # there's no live injection risk today, but reading it back out of
+          # an env var costs nothing and avoids the anti-pattern regardless.
+          PLUGIN_INPUT: ${{ inputs.plugin }}
         run: |
           set -euo pipefail
           declare -A heads=(
@@ -55,7 +61,7 @@ jobs:
             ["Dolby CPSeries Control"]="Dolby CPSeries Control V4.0.qplug"
           )
 
-          selected="${{ inputs.plugin }}"
+          selected="$PLUGIN_INPUT"
           mkdir -p out
           if [ "$selected" = "all" ]; then
             names=("DolbyFader" "Dolby Sweep" "Dolby CPSeries Control")
