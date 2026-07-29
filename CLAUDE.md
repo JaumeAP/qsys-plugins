@@ -179,7 +179,11 @@ status` (not `--short`) -- it reports the current branch and the
 clean/dirty state together, so a separate `git branch --show-current`
 call adds nothing -- then `git log --oneline -1` for the last commit;
 one line is enough to confirm it, not a longer history. Say plainly
-what's left uncommitted/unpushed if anything is. If there's an open
+what's left uncommitted/unpushed if anything is -- and before signaling
+closed, also check whether the current branch has an open PR sitting at
+`mergeable_state: clean`; if so, merge it as part of this same close
+routine per `github-rules`' merge-automation default, don't leave it for
+the user to ask separately. If there's an open
 question or unfinished work worth a future session picking up, save a
 note of it in this file's Project-specific rules section first (as its
 own dated entry) so the next session doesn't have to re-derive it from
