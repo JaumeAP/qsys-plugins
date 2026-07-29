@@ -157,4 +157,43 @@ do
 	cp:Stop()
 end
 
+h.section("format token bounds-check (CP 750)")
+do
+	-- CP750 resolves a wire format token by key lookup (CP750 array), unlike
+	-- the macro models' numeric parsing already covered above. A garbage
+	-- token used to be indexed straight into that lookup; getButtonNum's
+	-- nil return is what the reset/format bounds-check in the v3.0 header
+	-- comment refers to for this model.
+	local cp, sock, events = started("CP 750")
+	sock.lines = { "cp750.sysinfo.version 1.0" } sock.Data()
+
+	events = {}
+	cp.EventHandler = function(s, r) events[#events + 1] = { service = s, result = r } end
+	sock.lines = { "cp750.sys.input_mode not_a_real_input" }
+	local ok = pcall(sock.Data)
+	h.check(ok, "CP 750: an unrecognized format token does not throw")
+	h.check(saw(events, "format") == nil, "CP 750: an unrecognized format token fires no event")
+
+	cp:Stop()
+end
+
+h.section("macro-list accumulator cap")
+do
+	local cp, sock, events = started("CP 850")
+	sock.lines = { "sys.fader 42" } sock.Data()
+
+	events = {}
+	cp.EventHandler = function(s, r) events[#events + 1] = { service = s, result = r } end
+	local lines = { "sys.macros 600" }
+	for i = 1, 600 do lines[#lines + 1] = i .. ":Preset " .. i end
+	sock.lines = lines
+	local ok = pcall(sock.Data)
+	h.check(ok, "CP 850: 600 macro-list lines do not throw")
+	local list = saw(events, "formlist")
+	h.check(list and #list == 512,
+		"CP 850: macro-list accumulator caps at 512 entries (got " .. tostring(list and #list) .. ")")
+
+	cp:Stop()
+end
+
 h.report()
