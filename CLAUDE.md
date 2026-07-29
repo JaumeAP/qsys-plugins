@@ -100,10 +100,21 @@ invoke it when the task calls for it:
 1. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
    PR conventions (workflow shape, reading `pull_request_read` results,
    merge mechanics); generalized 2026-07-27 from an earlier repo-specific
-   skill of the same name. Must never encode a standing auto-merge policy —
-   a portable file installs into every repo it's imported into, so a rule
-   like that written here would silently apply everywhere, not just where
-   someone actually agreed to it.
+   skill of the same name. Originally: must never encode a standing
+   auto-merge policy, since a portable file installs into every repo it's
+   imported into, so a rule like that written here would silently apply
+   everywhere, not just where someone actually agreed to it. Relaxed
+   2026-07-29, explicit user request, after being shown that exact
+   consequence and choosing it anyway: the skill now carries a dated,
+   attributed standing authorization to open a PR at session close when
+   the branch has unmerged commits and none exists, then merge it once
+   clean. The reasoning behind the original prohibition is unchanged and
+   still applies to anything BEYOND that one authorization — a policy
+   written there without a named source and date, or one covering more
+   than the routine open/merge cycle, is still the thing to refuse. What
+   made this case different is that the authorization is recorded rather
+   than self-granted, which is also what lets it satisfy (not bypass) a
+   calling environment's own PR-creation gate.
 
 (`git-rules` removed from the portable bundle 2026-07-25, explicit user
 request — deleted from `.claude/skills/`, its `skillOverrides` entry
