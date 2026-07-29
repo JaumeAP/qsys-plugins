@@ -871,3 +871,27 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   registered via `register_repo_root`, then added as
   `vendor/qsc-q-sys` (see "Repository layout" above) the same way the
   other five submodules were vendored.
+- **`TcpSocket:NewTls()` colon vs. dot, unresolved (2026-07-29):** the
+  vendored `vendor/qsc-q-sys` doc (`QSC Q-Sys/components_emulator/docs/
+  qsys-plugins.md`, lines 365 and 391) documents `TcpSocket:NewTls()`
+  with a colon as a deliberate exception to the dot-constructor rule.
+  This contradicts the "Full Q-SYS Lua extension API" table above,
+  which lists `TcpSocket.New()`, `.NewTls()` (dot for both) — that
+  table's own 2026-07-27 confirmation only re-verified `TcpSocket.New()`
+  against the official TCPSocket Code Example page, never `NewTls()`
+  specifically. Attempted to settle it 2026-07-29: `WebFetch` against
+  every plausible official source (`help.qsys.com`, `q-syshelp.qsc.com`
+  at several paths including a versioned 9.7 mirror, `developers.qsc.com`,
+  `software.qsc.com`'s release-notes PDF) returned 403 on every single
+  attempt — a systemic block this session, not a one-off page issue
+  (contradicts CLAUDE.md's own earlier claim that `help.qsys.com` fetches
+  succeeded on 2026-07-27; that may have been a different session/
+  environment). `firecrawl` (bundled with the `vendor/qsc-q-sys` skill
+  set) isn't installed in this environment either. Only lead: a
+  `WebSearch` summary mentions "TcpSocket:NewTls() API now supports TLS
+  certificate validation" (Q-SYS 10.2 release), consistently using colon
+  notation — suggestive, matches qsc-q-sys's claim, but a search-engine
+  summary, not a primary source actually read, so it doesn't meet this
+  file's own confirmation bar. Resolves with either a working `WebFetch`/
+  `firecrawl` against an official Q-SYS Help/release-notes page, or a
+  live Designer/emulator check of both syntaxes.
