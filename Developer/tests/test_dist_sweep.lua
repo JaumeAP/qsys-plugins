@@ -36,9 +36,10 @@ do
 end
 
 h.section("one-time init")
--- Regression: Start.Value is boolean (Q-SYS defaults Button controls to
--- false); comparing it against the number 0 meant this block never ran.
-h.check(env.controls.Start.Value == true, "Start latches to true")
+-- Regression: .Value is always numeric, never a Lua boolean (confirmed via
+-- vendor/qsc-q-sys's Component.GetControls docs); comparing it against the
+-- Lua literal false meant this block never ran.
+h.check(env.controls.Start.Boolean == true, "Start latches to true")
 h.check(env.controls.Level.Value == -40, "Level initializes to -40 dB (got " .. tostring(env.controls.Level.Value) .. ")")
 h.check(env.controls.Period.Value == 4, "Period initializes to 4 (got " .. tostring(env.controls.Period.Value) .. ")")
 h.check(env.controls.Frequency.Value == 20, "Frequency initializes to 20 Hz (got " .. tostring(env.controls.Frequency.Value) .. ")")

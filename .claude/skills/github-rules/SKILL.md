@@ -138,6 +138,21 @@ early in the session, and treat it as standing for the rest of the
 session -- rather than silently falling back to asking before every
 single PR without ever surfacing that the gate exists at all.
 
+Ending a session is a trigger point for this default too, not just an
+explicit "merge this" in the moment. A calling environment's own close/end
+routine (e.g. a repo's "tanca" convention) commonly checks the current
+branch's git state before signaling closed -- that check is exactly the
+moment to also look at whether the branch has an open, non-draft PR sitting
+at `mergeable_state: clean`, and merge it then, rather than reporting it as
+open and leaving the user to come back and ask for the merge separately.
+Found as a real gap, not a hypothetical: a session closed with a cleanly
+mergeable PR left untouched, and the user had to return and explicitly say
+"merge" -- exactly the per-step confirmation this default exists to remove.
+The same exclusions apply here as everywhere else in this default: a draft
+PR, a PR that isn't clean, or a PR-creation gate the calling environment has
+layered on top (see above) all still mean leaving it alone, not merging on
+autopilot regardless of state.
+
 This default covers only the routine cycle -- committing, pushing, opening
 a PR, merging a clean one. It does NOT extend to destructive or
 hard-to-reverse git operations: force-push, `git reset --hard`,

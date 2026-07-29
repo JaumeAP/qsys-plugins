@@ -7,7 +7,6 @@ local M = { failures = 0, checks = 0 }
 local here = arg and arg[0] and arg[0]:match("^(.*)[/\\][^/\\]*$") or "."
 M.tests_dir = here
 M.repo = here .. "/../.."
-M.modules = M.repo .. "/Developer/Modules"
 M.plugins = M.repo .. "/Developer/plugins"
 
 -- Root distributables, by plugin.
@@ -16,14 +15,6 @@ M.DIST = {
 	fader    = M.repo .. "/DolbyFader.qplug",
 	sweep    = M.repo .. "/Dolby Sweep V2.0.qplug",
 	flipflop = M.repo .. "/MultiFlip-Flop.qplug",
-}
-
--- Developer-side plugin definition files.
-M.DEV = {
-	cpseries = M.plugins .. "/Dolby CPSeries Control V4.0.qplug",
-	fader    = M.plugins .. "/DolbyFader V2.0.qplug",
-	sweep    = M.plugins .. "/Dolby Sweep V2.0.qplug",
-	flipflop = M.plugins .. "/MultiFlip-Flop V2.0.qplug",
 }
 
 M.MODELS = { "CP 650", "CP 750", "CP 850", "CP 950", "CP 950A" }
@@ -41,11 +32,6 @@ end
 
 function M.section(name)
 	print("-- " .. name)
-end
-
--- Make Developer/Modules importable by the module-level tests.
-function M.add_module_path()
-	package.path = M.modules .. "/?.lua;" .. package.path
 end
 
 function M.report()

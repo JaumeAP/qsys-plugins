@@ -4,10 +4,7 @@
 -- v2.0: rebuilt to the plugin structure/naming convention confirmed against
 -- QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin} templates and the
 -- community vendor/q-sys-community/q-sys-plugin-guide (2026-07-27): mandatory
--- section order, PascalCase Controls/fns/globals, camelCase locals. Runtime
--- logic stays inline in this file (the one exception in this repo -- see
--- CLAUDE.md), guarded by `if Controls then`, which already matched the real
--- templates' own guard style before this rewrite.
+-- section order, PascalCase Controls/fns/globals, camelCase locals.
 -- Breaking: Controls renamed to PascalCase (Start/Exclusive/Set_N/Reset_N/
 -- Toggle_N/State_N/Led_N/Out_N/Not_N, were lowercase) and the "Input Count"
 -- property renamed to "InputCount" (property names may not contain spaces
@@ -18,15 +15,28 @@
 -- was never a declared value anywhere in the file (an undeclared global, so
 -- the whole assignment was `VTextAlign = nil`) -- vertical centering on
 -- these labels was silently never applied; now VTextAlign = "Center".
--- v2.0.0.1: Toggle_N wrote a Lua boolean to State_N.Value (`... == 0`) then
--- read it back with `== 1` in the same synchronous call -- always false in
--- Lua, so Toggle_N corrupted State_N.Value to true/false without ever
--- actually flipping Out_N/Not_N. Fixed to assign an explicit 1/0.
+-- v2.0.0.1: State_N/Exclusive reads converted from '== 1'/'== 0' numeric
+-- comparisons to .Boolean (the confirmed canonical accessor for a Button's
+-- state); Toggle_N's handler fixed a real bug where it assigned a Lua
+-- boolean into .Value (always numeric) instead of using .Boolean. See
+-- CLAUDE.md continuity notes.
+-- v2.0.0.2: restructured onto QSC's official PLUGCC.exe build convention
+-- (vendor/qsys-plugins/BasePlugin/PluginCompile, PLUGCC.exe) instead of
+-- this repo's own build_distributable.sh -- split into this file plus
+-- info.lua/properties.lua/controls.lua/layout.lua/runtime.lua, built by
+-- PLUGCC.exe on Windows CI (.github/workflows/build-qplug.yml). No
+-- functional change from v2.0.0.1; the runtime logic (runtime.lua) is
+-- byte-for-byte the same as the old inline `if Controls then ... end`
+-- block. This is the pilot plugin for the restructuring -- picked because
+-- it has no Developer/Modules/ dependency, so it needed no cross-folder
+-- #include (confirmed working separately, see CLAUDE.md continuity notes,
+-- before committing to the restructuring for the other three plugins,
+-- which do share modules).
 
 PluginInfo = {
 	Name = "Dolby~Multi Flip-Flop",
 	Version = "2.0",
-	BuildVersion = "2.0.0.1",
+	BuildVersion = "2.0.0.2",
 	Id = "8d8af033-fa93-4962-805a-96d57b435859",
 	Author = "Jaume Puig",
 	Description = "Advanced Multi Flip-Flop Component Plugin",
@@ -59,19 +69,18 @@ end
 
 function GetControls(props)
 	local ctrls = {}
-
 	table.insert(ctrls, {
 		Name = "Start",
 		ControlType = "Button",
 		ButtonType = "Toggle",
 	})
-
+	
 	table.insert(ctrls, {
 		Name = "Exclusive",
 		ControlType = "Button",
 		ButtonType = "Toggle",
 	})
-
+	
 	for t = 1, props["InputCount"].Value do
 		table.insert(ctrls, {
 			Name = "Set_" .. t,
@@ -80,7 +89,7 @@ function GetControls(props)
 			UserPin = true,
 			PinStyle = "Both",
 		})
-
+	
 		table.insert(ctrls, {
 			Name = "Reset_" .. t,
 			ControlType = "Button",
@@ -88,7 +97,7 @@ function GetControls(props)
 			UserPin = true,
 			PinStyle = "Both",
 		})
-
+	
 		table.insert(ctrls, {
 			Name = "Toggle_" .. t,
 			ControlType = "Button",
@@ -96,7 +105,7 @@ function GetControls(props)
 			UserPin = true,
 			PinStyle = "Both",
 		})
-
+	
 		table.insert(ctrls, {
 			Name = "State_" .. t,
 			ControlType = "Button",
@@ -104,7 +113,7 @@ function GetControls(props)
 			UserPin = true,
 			PinStyle = "Both",
 		})
-
+	
 		table.insert(ctrls, {
 			Name = "Led_" .. t,
 			ControlType = "Indicator",
@@ -113,7 +122,7 @@ function GetControls(props)
 			UserPin = true,
 			PinStyle = "Both",
 		})
-
+	
 		table.insert(ctrls, {
 			Name = "Out_" .. t,
 			ControlType = "Indicator",
@@ -121,7 +130,7 @@ function GetControls(props)
 			UserPin = true,
 			PinStyle = "Output",
 		})
-
+	
 		table.insert(ctrls, {
 			Name = "Not_" .. t,
 			ControlType = "Indicator",
@@ -137,7 +146,7 @@ function GetControlLayout(props)
 	local layout = {}
 	local graphics = {}
 	local top = 20
-
+	
 	table.insert(graphics, {
 		Type = "Label",
 		Text = "Exclusive",
@@ -146,7 +155,7 @@ function GetControlLayout(props)
 		Position = { 144, 0 },
 		Size = { 64, 16 },
 	})
-
+	
 	table.insert(graphics, {
 		Type = "Label",
 		Text = "Set",
@@ -155,7 +164,7 @@ function GetControlLayout(props)
 		Position = { 36 * 1, top },
 		Size = { 36, 32 },
 	})
-
+	
 	table.insert(graphics, {
 		Type = "Label",
 		Text = "Reset",
@@ -164,7 +173,7 @@ function GetControlLayout(props)
 		Position = { 36 * 2, top },
 		Size = { 36, 32 },
 	})
-
+	
 	table.insert(graphics, {
 		Type = "Label",
 		Text = "Toggle",
@@ -173,7 +182,7 @@ function GetControlLayout(props)
 		Position = { 36 * 3, top },
 		Size = { 36, 32 },
 	})
-
+	
 	table.insert(graphics, {
 		Type = "Label",
 		Text = "State",
@@ -182,7 +191,7 @@ function GetControlLayout(props)
 		Position = { 36 * 4, top },
 		Size = { 36, 32 },
 	})
-
+	
 	table.insert(graphics, {
 		Type = "Label",
 		Text = "Out",
@@ -191,7 +200,7 @@ function GetControlLayout(props)
 		Position = { 36 * 5 + 4, top },
 		Size = { 36, 32 },
 	})
-
+	
 	table.insert(graphics, {
 		Type = "Label",
 		Text = "Not Out",
@@ -200,7 +209,7 @@ function GetControlLayout(props)
 		Position = { 36 * 6 + 8, top },
 		Size = { 36, 32 },
 	})
-
+	
 	for t = 1, props["InputCount"].Value do
 		table.insert(graphics, {
 			Type = "Label",
@@ -209,7 +218,7 @@ function GetControlLayout(props)
 			Position = { 0, top + (t + 1) * 16 },
 			Size = { 32, 16 },
 		})
-
+	
 		layout['Exclusive'] = { PrettyName = "Exclusive", Position = { 210, 0 } }
 		layout['Set_' .. t] = { PrettyName = tostring(t) .. "~Set", Position = { 36 * 1, top + (t + 1) * 16 } }
 		layout['Reset_' .. t] = { PrettyName = tostring(t) .. "~Reset", Position = { 36 * 2, top + (t + 1) * 16 } }
@@ -221,40 +230,38 @@ function GetControlLayout(props)
 	return layout, graphics
 end
 
--- Inline runtime (the one plugin in this repo without a separate Modules/ file).
 if Controls then
-
 	local function reset(t)
-		if Controls.Exclusive.Value == 0 then return end
+		if not Controls.Exclusive.Boolean then return end
 		for v = 1, Properties["InputCount"].Value do
 			if v ~= t then
 				Controls["Reset_" .. v]:Trigger()
-				Controls["State_" .. v].Value = 0
+				Controls["State_" .. v].Boolean = false
 				Controls['Out_' .. v].Value = 0
 				Controls['Not_' .. v].Value = 1
 			end
 		end
 	end
-
+	
 	Controls.Exclusive.EventHandler = function(ctrl)
 		local first = false
 		for t = 1, Properties["InputCount"].Value do
 			if first then
-				Controls["State_" .. t].Value = 0
+				Controls["State_" .. t].Boolean = false
 				Controls["Reset_" .. t]:Trigger()
 				Controls['Out_' .. t].Value = 0
 				Controls['Not_' .. t].Value = 1
-			elseif Controls["State_" .. t].Value == 1 then
+			elseif Controls["State_" .. t].Boolean then
 				first = true
 			end
 		end
 	end
-
+	
 	for t = 1, Properties["InputCount"].Value do
-
+	
 		Controls["State_" .. t].EventHandler = function(ctrl)
 			reset(t)
-			if Controls["State_" .. t].Value == 1 then
+			if Controls["State_" .. t].Boolean then
 				Controls["Set_" .. t]:Trigger()
 				Controls['Out_' .. t].Value = 1
 				Controls['Not_' .. t].Value = 0
@@ -264,38 +271,29 @@ if Controls then
 				Controls['Not_' .. t].Value = 1
 			end
 		end
-
+	
 		Controls["Set_" .. t].EventHandler = function(ctrl)
 			reset(t)
-			Controls["State_" .. t].Value = 1
+			Controls["State_" .. t].Boolean = true
 			Controls['Out_' .. t].Value = 1
 			Controls['Not_' .. t].Value = 0
 		end
-
+	
 		Controls["Reset_" .. t].EventHandler = function(ctrl)
-			Controls["State_" .. t].Value = 0
+			Controls["State_" .. t].Boolean = false
 			Controls['Out_' .. t].Value = 0
 			Controls['Not_' .. t].Value = 1
 		end
-
+	
 		Controls["Toggle_" .. t].EventHandler = function(ctrl)
-			-- FIX: was `Controls[...].Value = Controls[...].Value == 0`, a
-			-- Lua boolean, then read back with `== 1` inside State_N's own
-			-- EventHandler below -- `true == 1` is always false in Lua (no
-			-- boolean/number coercion), so Toggle_N never actually toggled
-			-- Out_N/Not_N, only corrupted State_N.Value to true/false.
-			if Controls["State_" .. t].Value == 0 then
-				Controls["State_" .. t].Value = 1
-			else
-				Controls["State_" .. t].Value = 0
-			end
+			Controls["State_" .. t].Boolean = not Controls["State_" .. t].Boolean
 			Controls["State_" .. t].EventHandler()
 		end
-
+	
 	end
-
+	
 	for t = 1, Properties["InputCount"].Value do
-		if Controls["State_" .. t].Value == 1 then
+		if Controls["State_" .. t].Boolean then
 			Controls["Set_" .. t]:Trigger()
 			Controls['Out_' .. t].Value = 1
 			Controls['Not_' .. t].Value = 0

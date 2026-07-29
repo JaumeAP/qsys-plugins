@@ -11,8 +11,6 @@
 
 	do
 
-		require("cpseries_models")
-
 		CPProtocol = {}
 
 		local function fmtvalue(v)

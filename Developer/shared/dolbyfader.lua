@@ -1,10 +1,10 @@
+--[[ #include "../../shared/qknob.lua" ]]
+
    -- ##############################################################
    --			Dolby Fader
    -- ##############################################################
 
 	do
-
-		require("qknob")
 
 		-- Objects
 		-- QKnob wraps the 'Level' Text control; must stay global (never
@@ -50,7 +50,7 @@
 		end
 
 		Controls.Ref.EventHandler = function(ctrl)
-			if Controls.Ref.Value == 1 then
+			if Controls.Ref.Boolean then
 				DKNob.Value = 7.0
 				DKNob.EventHandler(Controls.Ref)
 			end
