@@ -850,10 +850,9 @@ Typical loop:
   portable `github-rules` skill's own "Merging: the default is full
   automation" section instead, which every repo importing the bundle gets.
   This repo follows that shared default; nothing repo-specific left to
-  state here beyond: destructive/hard-to-reverse operations (force-push,
-  `reset --hard`, `branch -D`, rewriting published history) are still
-  excluded from the default and get confirmed first, same as the skill
-  says.
+  state here (the skill's own exclusions -- force-push, `reset --hard`,
+  `branch -D`, rewriting published history -- already cover what would
+  otherwise be restated).
 - **PR creation can still be gated per-session despite the above
   (2026-07-28, explicit user request, moved same day).** Observed
   directly this session: PR #28 wasn't opened until the user said
