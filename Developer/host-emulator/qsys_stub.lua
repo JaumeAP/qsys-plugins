@@ -20,6 +20,33 @@
 
 local M = {}
 
+-- This file's own directory, resolved via debug info rather than arg[0] or
+-- package.path (qsys_stub.lua is always require()'d, never the top-level
+-- chunk, so it has no arg[0] of its own -- and computing this from
+-- package.path would force every caller to extend their own path just to
+-- reach components/, even the ones that never call check_wiring). Real Lua
+-- 5.3, no dependency beyond the standard debug library.
+local STUB_DIR = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "."
+
+-- Per-Type audio pin definitions for GetComponents-declared embedded
+-- components, one file per Type under components/ (e.g. components/
+-- mixer.lua). Loaded lazily and cached so a test that never calls
+-- check_wiring never pays for it. An unregistered Type (no matching file)
+-- returns nil, not an error -- see M.check_wiring below for what that means
+-- for validation strictness. This is the same "extend the stub via Q-SYS
+-- Help, don't guess" convention as the rest of this file, just organized as
+-- one file per component instead of one big table, per the folder split
+-- requested when this was added (2026-07-29).
+local COMPONENT_DEFS = {}
+local function component_pins(comp_type, props)
+	if COMPONENT_DEFS[comp_type] == nil then
+		local chunk = loadfile(STUB_DIR .. "/components/" .. comp_type .. ".lua")
+		COMPONENT_DEFS[comp_type] = chunk and chunk() or false
+	end
+	local def = COMPONENT_DEFS[comp_type]
+	return def and def(props) or nil
+end
+
 -- A single Q-SYS control. kind selects which properties actually exist,
 -- checked against Q-SYS Help's Controls IO page (2026-07-29): a Trigger-type
 -- Button has no .Value/.String/.Position/.Boolean at all, only :Trigger()
@@ -214,9 +241,15 @@ end
 --
 -- A wiring endpoint is either a plugin pin's own name (declared via
 -- GetPins) or "<ComponentName> <PinName>" for a component GetComponents
--- declared -- Q-SYS's own convention, confirmed against a real GetWiring
--- example ("main_mixer Input 1"/"main_mixer Output 1", gdyr/qsys-plugin-docs)
--- since Q-SYS Help itself 403'd both mirrors the session this was added.
+-- declared. When that component's Type has a registered definition under
+-- components/ (see component_pins above), the exact pin name is checked
+-- against what that Type actually exposes for its own Properties -- so
+-- "Mix Output 2" is caught as wrong for a 1-output mixer, not just accepted
+-- because "Mix" exists. An unregistered Type falls back to only checking
+-- that the component itself exists, the same permissive check this
+-- function shipped with originally -- an unmodeled Type is a gap to fill
+-- in components/, not a reason to fail every plugin that uses it.
+--
 -- A table literal with a typo'd or stale component/pin name still returns
 -- successfully from all three functions on its own -- nothing here throws
 -- without this check, which is exactly the gap it closes: a component
@@ -229,10 +262,17 @@ end
 -- check in the suite does.
 function M.check_wiring(comps, pins, wiring)
 	local comp_names = {}
+	local comp_pins = {} -- component Name -> set of "Name PinX" strings, or nil if Type is unregistered
 	for _, c in ipairs(comps or {}) do
 		assert(c.Name, "a GetComponents entry is missing Name")
 		assert(c.Type, "component '" .. tostring(c.Name) .. "' is missing Type")
 		comp_names[c.Name] = true
+		local pin_list = component_pins(c.Type, c.Properties)
+		if pin_list then
+			local set = {}
+			for _, p in ipairs(pin_list) do set[c.Name .. " " .. p] = true end
+			comp_pins[c.Name] = set
+		end
 	end
 	local pin_names = {}
 	for _, p in ipairs(pins or {}) do
@@ -244,7 +284,9 @@ function M.check_wiring(comps, pins, wiring)
 	local function resolves(endpoint)
 		if pin_names[endpoint] then return true end
 		local comp = endpoint:match("^(.-)%s")
-		return comp ~= nil and comp_names[comp] == true
+		if comp == nil or not comp_names[comp] then return false end
+		if comp_pins[comp] then return comp_pins[comp][endpoint] == true end
+		return true
 	end
 	for _, w in ipairs(wiring or {}) do
 		assert(type(w) == "table" and #w == 2,
@@ -252,7 +294,7 @@ function M.check_wiring(comps, pins, wiring)
 		for _, endpoint in ipairs(w) do
 			assert(resolves(endpoint),
 				"wiring endpoint '" .. tostring(endpoint) ..
-				"' does not resolve to a declared plugin pin or component pin")
+				"' does not resolve to a declared plugin pin or a valid component pin")
 		end
 	end
 	return true

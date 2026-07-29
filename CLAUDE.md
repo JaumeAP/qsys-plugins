@@ -369,10 +369,17 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   │                             so it reads as a standalone unit distinct from
     │   │                             `Dolby CP Emulator/` (that one emulates the Dolby
     │   │                             processors, this one emulates the Q-SYS Lua host)
-    │   └── qsys_stub.lua             Stand-in for the Q-SYS host globals (Controls,
-    │                                 Timer, TcpSocket, Properties, System); every
-    │                                 test file adds this directory to its own
-    │                                 package.path alongside Developer/tests/ itself.
+    │   ├── qsys_stub.lua             Stand-in for the Q-SYS host globals (Controls,
+    │   │                             Timer, TcpSocket, Properties, System); every
+    │   │                             test file adds this directory to its own
+    │   │                             package.path alongside Developer/tests/ itself.
+    │   └── components/                One file per Q-SYS embedded component Type
+    │                                 (mixer.lua, sine.lua, gain.lua, filter_lowpass.lua,
+    │                                 equalizer_parametric.lua, stepper.lua), each
+    │                                 returning that Type's exact audio pin names for
+    │                                 GetWiring validation (qsys_stub.lua's
+    │                                 check_wiring); loaded lazily via this file's own
+    │                                 directory (debug.getinfo), not package.path
     │                                 Standing convention: a new plugin needing a host
     │                                 feature this stub doesn't model yet gets that
     │                                 feature looked up in Q-SYS Help first (see the
@@ -1031,6 +1038,41 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   and `test_dist_subharmonic.lua` updated from `h.check_wiring` to
   `qsys.check_wiring`. No behavior change -- `Developer/tests/run.sh`
   stays at 245 checks, all green.
+- **`Developer/host-emulator/components/` added: one file per Q-SYS
+  component Type, exact pin lists instead of prefix matching (2026-07-29,
+  explicit user request, same day as the relocation above).** Before this,
+  `check_wiring` only checked that a wiring endpoint's component-name
+  prefix matched a declared `GetComponents` entry -- `"Mix Output 2"`
+  passed even though `Mix` is declared `n_outputs = 1` and has no such
+  pin. New per-Type files (`mixer.lua`, `sine.lua`, `gain.lua`,
+  `filter_lowpass.lua`, `equalizer_parametric.lua`, `stepper.lua`), each
+  `return function(props) ... end` returning the exact pin-name list for
+  that Type given its own `Properties`. `qsys_stub.lua` resolves its own
+  directory via `debug.getinfo(1, "S").source` (not `arg[0]` -- this file
+  is always `require()`'d, never the top-level chunk -- and not
+  `package.path`, so callers that never touch wiring never need to extend
+  their own path for it) and `loadfile`s the matching component file
+  lazily, cached, the first time a `Type` is looked up. An unregistered
+  `Type` returns `nil` and `check_wiring` falls back to its original
+  prefix-only check for that component -- an unmodeled Type is a gap to
+  fill, not a reason to fail every plugin using it. Verified the
+  stricter check actually bites: took a copy of `SubharmonicSynth.qplug`,
+  changed its own `GetWiring`'s `"Mix Output 1"` to `"Mix Output 2"`
+  (invalid for a 1-output mixer), and confirmed the new per-Type check
+  fails with that exact endpoint named where the old prefix-only version
+  passed it -- then discarded the copy. Confirmation status carried
+  per file, not asserted uniformly: `mixer.lua` and `sine.lua` are
+  independently confirmed (see the relocation note above for `mixer`;
+  `sine.lua` from a Q-SYS Help search summary matching Dolby Sweep's own
+  pre-existing wiring); `gain.lua`/`filter_lowpass.lua`/
+  `equalizer_parametric.lua` are NOT independently confirmed (Q-SYS Help
+  403'd both mirrors this session) and say so in their own header comment
+  -- they mirror the numbered-pin convention and match what
+  SubharmonicSynth already ships, but are marked as the thing to
+  re-verify first if a real host ever disagrees, not settled fact.
+  `stepper.lua` returns no pins, confirmed by absence (DolbyFader/CPSeries
+  both use it with no `GetPins`/`GetWiring` at all). No behavior change to
+  the checks that were already exact-verifiable; `run.sh` stays at 245.
 - **Stress/fuzz suite added, covering all five plugins (2026-07-29,
   explicit user request).** `Developer/tests/test_stress.lua`, registered
   in `run.sh`, 49 checks, runs in well under a second. Deliberately a
