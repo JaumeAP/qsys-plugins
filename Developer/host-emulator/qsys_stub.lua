@@ -6,16 +6,75 @@
 -- Timers here never fire on their own -- there is no event loop. Tests drive
 -- them by hand with env:tick(), which is what makes the poll loop testable a
 -- step at a time.
+--
+-- Standing convention (2026-07-29): this file models real Q-SYS Lua host
+-- behavior, checked against Q-SYS Help (help.qsys.com / q-syshelp.qsc.com),
+-- not guessed. A new plugin that needs a host feature this stub doesn't
+-- have yet (a different embedded component, a Q-SYS Lua extension beyond
+-- Controls/Timer/TcpSocket/Properties/System, a control property this file
+-- doesn't model) should get that feature looked up in Q-SYS Help first, the
+-- same way the Trigger/Meter control-kind split and the Timer.CallAfter
+-- error-swallowing fix above were done, rather than guessed from how the
+-- plugin code merely happens to be written. Extend this file to add the
+-- capability, don't work around its absence in the plugin or the test.
 
 local M = {}
 
--- A single Q-SYS control. .Value and .Boolean are two accessors onto the
--- SAME underlying numeric storage, not independent fields -- confirmed via
--- vendor/qsc-q-sys's Component.GetControls docs: .Value is always a number,
--- .Boolean is a computed true/false view of it (reads as Value~=0, writes
--- as Value=1/0). A metatable keeps the two in sync so plugin code can read
--- or write either one interchangeably, matching real Q-SYS behavior.
-function M.control(v)
+-- This file's own directory, resolved via debug info rather than arg[0] or
+-- package.path (qsys_stub.lua is always require()'d, never the top-level
+-- chunk, so it has no arg[0] of its own -- and computing this from
+-- package.path would force every caller to extend their own path just to
+-- reach components/, even the ones that never call check_wiring). Real Lua
+-- 5.3, no dependency beyond the standard debug library.
+local STUB_DIR = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "."
+
+-- Per-Type audio pin definitions for GetComponents-declared embedded
+-- components, one file per Type under components/ (e.g. components/
+-- mixer.lua). Loaded lazily and cached so a test that never calls
+-- check_wiring never pays for it. An unregistered Type (no matching file)
+-- returns nil, not an error -- see M.check_wiring below for what that means
+-- for validation strictness. This is the same "extend the stub via Q-SYS
+-- Help, don't guess" convention as the rest of this file, just organized as
+-- one file per component instead of one big table, per the folder split
+-- requested when this was added (2026-07-29).
+local COMPONENT_DEFS = {}
+local function component_pins(comp_type, props)
+	if COMPONENT_DEFS[comp_type] == nil then
+		local chunk = loadfile(STUB_DIR .. "/components/" .. comp_type .. ".lua")
+		COMPONENT_DEFS[comp_type] = chunk and chunk() or false
+	end
+	local def = COMPONENT_DEFS[comp_type]
+	return def and def(props) or nil
+end
+
+-- A single Q-SYS control. kind selects which properties actually exist,
+-- checked against Q-SYS Help's Controls IO page (2026-07-29): a Trigger-type
+-- Button has no .Value/.String/.Position/.Boolean at all, only :Trigger()
+-- and .EventHandler -- omitted here entirely rather than defaulted to 0/"",
+-- so a future plugin that mistakenly reads .Value on its own Trigger button
+-- gets the same nil a missing field gives in real Lua, not a silently-passing
+-- 0. A Meter-type Indicator uses a separate .Values (plural) array property
+-- instead of .Value. Every other control type (Knob/Text/Toggle-or-Momentary
+-- Button/non-Meter Indicator) shares the normal kind: .Value and .Boolean
+-- are two accessors onto the SAME underlying numeric storage, not
+-- independent fields -- confirmed via vendor/qsc-q-sys's Component.GetControls
+-- docs: .Value is always a number, .Boolean is a computed true/false view of
+-- it (reads as Value~=0, writes as Value=1/0). A metatable keeps the two in
+-- sync so plugin code can read or write either one interchangeably, matching
+-- real Q-SYS behavior.
+function M.control(v, kind)
+	kind = kind or "normal"
+
+	if kind == "trigger" then
+		local c = { EventHandler = nil }
+		function c:Trigger() end
+		return c
+	end
+
+	if kind == "meter" then
+		return { Values = {}, EventHandler = nil }
+	end
+
 	if v == nil then v = 0 end
 	local c = { String = "", Position = 0, Color = "",
 	            Choices = {}, IsDisabled = false, EventHandler = nil }
@@ -41,6 +100,15 @@ local PLUGIN_GLOBALS = {
 	"DKNob", "Print", "DolbyFaderEventHandler", "Class", "class",
 	"GetColor", "GetPrettyName", "GetProperties", "RectifyProperties",
 	"GetComponents", "GetControls", "GetControlLayout",
+	-- GetPins/GetWiring/GetPages are optional (only Dolby Sweep and
+	-- SubharmonicSynth declare them) -- omitted here until 2026-07-29,
+	-- which meant a test loading two full distributables in one process
+	-- (test_stress.lua does, for its runtime checks) could see one
+	-- plugin's leftover GetPins/GetWiring still defined while testing a
+	-- later plugin that declares neither. Harmless while nothing called
+	-- them across that boundary, but the same latent gap PLUGIN_GLOBALS
+	-- exists to close for every other definition-pass function.
+	"GetPins", "GetWiring", "GetPages",
 	-- Dolby Sweep's own globals (see CLAUDE.md's strict.lua wiring notes)
 	"period", "timer",
 	-- Dolby CPSeries Control's own globals
@@ -51,11 +119,14 @@ function M.clear()
 	for _, g in ipairs(PLUGIN_GLOBALS) do _G[g] = nil end
 end
 
--- opts.controls   list of control names to create (plus opts.selectors toggles)
--- opts.selectors  how many `selector` buttons to create (0 = none)
--- opts.properties Properties table to expose
--- opts.emulating  System.IsEmulating
--- opts.definition true = definition pass (Controls nil, Reflect present)
+-- opts.controls         list of control names to create (plus opts.selectors toggles)
+-- opts.trigger_controls list of control names to create as ButtonType="Trigger"
+--                       (no .Value/.String/.Position/.Boolean, only :Trigger()
+--                       and .EventHandler -- see M.control's own comment)
+-- opts.selectors        how many `selector` buttons to create (0 = none)
+-- opts.properties       Properties table to expose
+-- opts.emulating        System.IsEmulating
+-- opts.definition       true = definition pass (Controls nil, Reflect present)
 --
 -- Returns an env handle: .controls, .step, .timers, .socket(), .tick(n)
 function M.install(opts)
@@ -71,9 +142,12 @@ function M.install(opts)
 
 	Reflect = nil
 
+	local is_trigger = {}
+	for _, name in ipairs(opts.trigger_controls or {}) do is_trigger[name] = true end
+
 	local controls = {}
 	for _, name in ipairs(opts.controls or {}) do
-		controls[name] = M.control(nil)
+		controls[name] = M.control(nil, is_trigger[name] and "trigger" or nil)
 	end
 	controls.Selector = {}
 	for i = 1, (opts.selectors or 0) do controls.Selector[i] = M.control(0) end
@@ -91,7 +165,14 @@ function M.install(opts)
 			env.timers[#env.timers + 1] = t
 			return t
 		end,
-		CallAfter = function(fn) pcall(fn) end,
+		-- Runs fn immediately (no fake clock here, same simplification as
+		-- Timer objects needing env.tick() by hand) -- but unlike a bare
+		-- pcall(fn), a real Q-SYS host doesn't silently eat an exception
+		-- thrown inside a scheduled callback either, so this doesn't hide
+		-- one from the test: any error inside fn propagates straight out
+		-- of CallAfter, same as calling fn() directly would. The delay
+		-- argument is accepted for signature compatibility but ignored.
+		CallAfter = function(fn) fn() end,
 	}
 
 	local sock
@@ -148,6 +229,75 @@ function M.cpseries_properties(model, debug_on)
 		["TCP Log"] = { Value = "Command" },
 		plugin_show_debug = { Value = debug_on and 1 or 0 },
 	}
+end
+
+-- Structural validation for GetComponents/GetPins/GetWiring, the audio-path
+-- half of a plugin's definition pass that nothing in this file modeled
+-- until 2026-07-29. Belongs here, not in Developer/tests/harness.lua (test-
+-- runner plumbing -- path resolution, the check counter, nothing about Q-SYS
+-- itself): what this function encodes is real Q-SYS platform behavior, the
+-- same category as the Trigger/Meter control-kind split and the .Value/
+-- .Boolean split above, not a property of how the test suite is organized.
+--
+-- A wiring endpoint is either a plugin pin's own name (declared via
+-- GetPins) or "<ComponentName> <PinName>" for a component GetComponents
+-- declared. When that component's Type has a registered definition under
+-- components/ (see component_pins above), the exact pin name is checked
+-- against what that Type actually exposes for its own Properties -- so
+-- "Mix Output 2" is caught as wrong for a 1-output mixer, not just accepted
+-- because "Mix" exists. An unregistered Type falls back to only checking
+-- that the component itself exists, the same permissive check this
+-- function shipped with originally -- an unmodeled Type is a gap to fill
+-- in components/, not a reason to fail every plugin that uses it.
+--
+-- A table literal with a typo'd or stale component/pin name still returns
+-- successfully from all three functions on its own -- nothing here throws
+-- without this check, which is exactly the gap it closes: a component
+-- rename in GetComponents that GetWiring's own strings were never updated
+-- to match used to compile fine and pass every test that existed before it.
+--
+-- Returns true, or raises with a descriptive message identifying exactly
+-- which component/pin/wire is wrong; callers wrap this in pcall and report
+-- through harness.lua's M.check the same way every other assertion-style
+-- check in the suite does.
+function M.check_wiring(comps, pins, wiring)
+	local comp_names = {}
+	local comp_pins = {} -- component Name -> set of "Name PinX" strings, or nil if Type is unregistered
+	for _, c in ipairs(comps or {}) do
+		assert(c.Name, "a GetComponents entry is missing Name")
+		assert(c.Type, "component '" .. tostring(c.Name) .. "' is missing Type")
+		comp_names[c.Name] = true
+		local pin_list = component_pins(c.Type, c.Properties)
+		if pin_list then
+			local set = {}
+			for _, p in ipairs(pin_list) do set[c.Name .. " " .. p] = true end
+			comp_pins[c.Name] = set
+		end
+	end
+	local pin_names = {}
+	for _, p in ipairs(pins or {}) do
+		assert(p.Name, "a GetPins entry is missing Name")
+		assert(p.Direction == "input" or p.Direction == "output",
+			"pin '" .. tostring(p.Name) .. "' has an invalid Direction (" .. tostring(p.Direction) .. ")")
+		pin_names[p.Name] = true
+	end
+	local function resolves(endpoint)
+		if pin_names[endpoint] then return true end
+		local comp = endpoint:match("^(.-)%s")
+		if comp == nil or not comp_names[comp] then return false end
+		if comp_pins[comp] then return comp_pins[comp][endpoint] == true end
+		return true
+	end
+	for _, w in ipairs(wiring or {}) do
+		assert(type(w) == "table" and #w == 2,
+			"a GetWiring entry is not a 2-element {source, dest} table")
+		for _, endpoint in ipairs(w) do
+			assert(resolves(endpoint),
+				"wiring endpoint '" .. tostring(endpoint) ..
+				"' does not resolve to a declared plugin pin or a valid component pin")
+		end
+	end
+	return true
 end
 
 return M

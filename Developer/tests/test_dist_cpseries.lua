@@ -34,6 +34,15 @@ do
 	local shown = { ["TCP Log"] = { IsHidden = true }, plugin_show_debug = { Value = 1 } }
 	RectifyProperties(shown)
 	h.check(shown["TCP Log"].IsHidden == false, "TCP Log is shown when debug is on")
+
+	local comps = GetComponents({})
+	h.check(#comps == 1 and comps[1].Name == "Step" and comps[1].Type == "stepper",
+		"GetComponents declares one 'Step' component of Type stepper")
+	-- No GetPins/GetWiring: CPSeries is a control-only plugin (TCP to the
+	-- processor, no audio path) -- same shape as DolbyFader, see its own
+	-- test for why that is the expected shape rather than an omission.
+	h.check(GetPins == nil and GetWiring == nil,
+		"no GetPins/GetWiring is declared (control-only plugin, no audio path)")
 end
 
 h.section("per model definition")
@@ -60,6 +69,7 @@ for _, model in ipairs(h.MODELS) do
 	h.section(model .. " runtime pass")
 	local env = qsys.install({
 		controls = qsys.CPSERIES_CONTROLS,
+		trigger_controls = { "Refresh" },  -- ButtonType="Trigger" (see controls.lua)
 		selectors = (model == "CP 750") and 7 or 8,
 		properties = qsys.cpseries_properties(model),
 		emulating = true,          -- no address set, so take the emulation branch

@@ -11,10 +11,11 @@ M.plugins = M.repo .. "/Developer/plugins"
 
 -- Root distributables, by plugin.
 M.DIST = {
-	cpseries = M.repo .. "/Dolby CPSeries Control V4.0.qplug",
-	fader    = M.repo .. "/DolbyFader.qplug",
-	sweep    = M.repo .. "/Dolby Sweep V2.0.qplug",
-	flipflop = M.repo .. "/MultiFlip-Flop.qplug",
+	cpseries     = M.repo .. "/Dolby CPSeries Control V4.0.qplug",
+	fader        = M.repo .. "/DolbyFader.qplug",
+	sweep        = M.repo .. "/Dolby Sweep V2.0.qplug",
+	flipflop     = M.repo .. "/MultiFlip-Flop.qplug",
+	subharmonic  = M.repo .. "/SubharmonicSynth.qplug",
 }
 
 M.MODELS = { "CP 650", "CP 750", "CP 850", "CP 950", "CP 950A" }

@@ -37,16 +37,39 @@ timing, or the actual Designer UI still has to be checked on the bench.
 |---|---|
 | `../host-emulator/qsys_stub.lua` | The fake Q-SYS host. Timers never fire on their own; tests advance them with `env.tick(n)`, so the poll loop can be stepped one iteration at a time. |
 | `harness.lua` | Path resolution and the check counter. |
-| `test_modules.lua` | The CPSeries class straight from `Developer/Modules`: query framing per model, the readiness handshake, fader scaling, both format-list dialects, and the guards against bad wire data. |
-| `test_plugin_defs.lua` | The `Get*` callbacks in `Developer/plugins`, including the nil-props case Q-SYS triggers during plugin registration. |
+| `test_modules.lua` | The CPSeries class straight from `Developer/plugins/Dolby CPSeries Control/{models,protocol,commlib}.lua`: query framing per model, the readiness handshake, fader scaling, both format-list dialects, and the guards against bad wire data. |
 | `test_dist_cpseries.lua` | The root CP Series distributable, both host passes. |
 | `test_dist_fader.lua` | The root Dolby Fader distributable, both host passes, plus the dB to Dolby-scale mapping. |
+| `test_dist_sweep.lua` | The root Dolby Sweep distributable, both host passes, the one-time init and a sweep tick. |
+| `test_dist_flipflop.lua` | The root MultiFlip-Flop distributable, both host passes, the Exclusive interlock and `Toggle_N`. |
+| `test_dist_subharmonic.lua` | The root SubharmonicSynth distributable, both host passes, the one-time init and the bypass routing. |
+| `test_stress.lua` | Stress and fuzz pass over all five plugins, see below. |
 | `wire_trace.lua` | Behavioural trace, see below. |
 
-The two `test_dist_*` files matter more than they look. A distributable is a
+The `test_dist_*` files matter more than they look. A distributable is a
 single-file build with the modules pasted inline, and a module inlined before
 something it depends on still *compiles* — `luac -p` cannot see it. Only
 running the file does, which is what these do.
+
+## Stress and fuzz
+
+`test_stress.lua` is the odd one out: where every other file pins down exact
+values for known-good inputs, it hammers each plugin with volume, boundary
+values and deliberate garbage, then asserts only what has to survive all of
+it — nothing throws, nothing publishes a nil, and every value a plugin writes
+stays inside the range it declares. The CP Series section is the important
+one, since the wire is the only place in this repo where bytes from a device
+nobody controls reach plugin code.
+
+Two things about it are worth preserving if you extend it. It seeds
+`math.random` with a fixed constant, so a failure is reproducible from the
+same seed instead of vanishing on the next run. And several sections carry an
+explicit anti-vacuity check — that the fuzz corpus actually reached the
+parser, that the storm really did spend rounds bypassed, that multiple
+flip-flop instances really are reachable with `Exclusive` off. Those exist
+because an invariant nothing ever exercises passes for the wrong reason: the
+corpus originally left CP 650 and CP 750 rejecting every line before it
+reached their fader and format handlers, and the checks all passed anyway.
 
 ## Comparing two builds
 

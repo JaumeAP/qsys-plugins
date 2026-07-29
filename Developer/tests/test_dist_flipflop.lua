@@ -44,15 +44,22 @@ end
 
 h.section("runtime pass, InputCount=" .. N)
 local controls_list = { "Start", "Exclusive" }
+local trigger_controls = {}
 for t = 1, N do
 	for _, prefix in ipairs({ "Set_", "Reset_", "Toggle_", "State_", "Led_", "Out_", "Not_" }) do
 		table.insert(controls_list, prefix .. t)
 	end
+	-- Set_N/Reset_N/Toggle_N are ButtonType="Trigger" (see controls.lua):
+	-- no .Value/.String/.Position, only :Trigger()/.EventHandler.
+	table.insert(trigger_controls, "Set_" .. t)
+	table.insert(trigger_controls, "Reset_" .. t)
+	table.insert(trigger_controls, "Toggle_" .. t)
 end
-local env = qsys.install({ controls = controls_list, properties = { InputCount = { Value = N } } })
--- Trigger buttons need a :Trigger() method, which qsys_stub's plain
--- control() doesn't provide -- add it.
-for _, c in pairs(env.controls) do c.Trigger = function() end end
+local env = qsys.install({
+	controls = controls_list,
+	trigger_controls = trigger_controls,
+	properties = { InputCount = { Value = N } },
+})
 
 local ok, err = pcall(assert(loadfile(DIST)))
 h.check(ok, "runtime pass executes end to end (" .. tostring(err) .. ")")

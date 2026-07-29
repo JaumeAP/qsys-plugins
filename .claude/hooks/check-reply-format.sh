@@ -39,6 +39,27 @@
 # stop_hook_active guards against infinite loops: if this hook already
 # forced one retry, it steps aside on the next Stop instead of blocking
 # again, even if still non-compliant.
+#
+# Fixed 2026-07-29 (found by actually hitting this in a real session, a
+# second time after the 2026-07-28 fix above): a blocked turn's generic
+# "reescriu NOMES el fragment assenyalat" reason never said WHICH fragment
+# -- it only reported that the turn AS A WHOLE scored English. The retry
+# had to guess, guessed wrong (picked the wrong block to touch), and ended
+# up re-sending an already-correct closing block verbatim instead of fixing
+# the one narration line that had actually slipped into English -- exactly
+# the duplicate-looking reply this rule exists to prevent. Now: the
+# language heuristic runs per block (scored by en-stopword-count minus
+# ca-stopword-count, not the old fixed word-count threshold, since a short
+# narration block like "Now committing." never reached the old >=15-word
+# minimum on its own) and any block that scores net-English is quoted
+# VERBATIM in the block reason, so the retry has a literal target instead
+# of a guess. The first block is always excluded from this scoring: it is
+# the "Rebut: <order in English>" acknowledgment, and CLAUDE.md requires
+# that specific line to contain an English summary by design -- scoring it
+# as a violation would tell a compliant reply to mistranslate its own
+# mandatory-English part. Excluding it also fixes a related false-positive
+# risk: on a short turn, the Rebut line's English words could dominate the
+# old whole-turn word count and flag an otherwise all-Catalan reply.
 set -euo pipefail
 
 input="$(cat)"
@@ -80,9 +101,21 @@ fi
 
 first_block="$(echo "$turn_blocks_json" | jq -r '.[0]')"
 all_text="$(echo "$turn_blocks_json" | jq -r 'join("\n")')"
+# Everything except the mandatory-English "Rebut:" acknowledgment -- see the
+# 2026-07-29 note above for why this block is excluded from the language
+# scoring, both for the pass/fail decision and for offender-quoting.
+rest_text="$(echo "$turn_blocks_json" | jq -r 'if length>1 then .[1:] | join("\n") else "" end')"
+
+EN_WORDS='\b(the|is|are|this|that|will|would|should|have|has|been|with|from|your|what|when|where|because|please|thanks|here|there|and|for|not|but|can)\b'
+CA_WORDS='\b(que|es|amb|per|els|les|una|del|dels|pero|tambe|mes|aquest|aquesta|com|quan|perque|si|ja|fet|vols|pots|puc|aqui|no|el|la|un|de|i|a)\b'
+EN_WORDS_JQ='(?i)\b(the|is|are|this|that|will|would|should|have|has|been|with|from|your|what|when|where|because|please|thanks|here|there|and|for|not|but|can)\b'
+CA_WORDS_JQ='(?i)\b(que|es|amb|per|els|les|una|del|dels|pero|tambe|mes|aquest|aquesta|com|quan|perque|si|ja|fet|vols|pots|puc|aqui|no|el|la|un|de|i|a)\b'
 
 problems=()
 missing_rebut=0
+lang_flag=0
+format_flag=0
+list_flag=0
 first_line="$(printf '%s\n' "$first_block" | head -1)"
 if ! printf '%s' "$first_line" | grep -q '^Rebut:'; then
   problems+=("no comenca per 'Rebut:'")
@@ -90,16 +123,19 @@ if ! printf '%s' "$first_line" | grep -q '^Rebut:'; then
 fi
 if printf '%s' "$all_text" | grep -qE '\*\*|—|…|\.\.\.|^#{1,6}[[:space:]]|\|.+\|.+\|'; then
   problems+=("format prohibit (negreta/guio llarg/el.lipsis/taula/capcalera)")
+  format_flag=1
 fi
 if printf '%s' "$all_text" | grep -qE '^[[:space:]]*[-*][[:space:]]'; then
   problems+=("llista amb pics/guionets en lloc de numeracio")
+  list_flag=1
 fi
 
-total_words=$(printf '%s' "$all_text" | wc -w)
-en_count=$(printf '%s' "$all_text" | grep -oiE '\b(the|is|are|this|that|will|would|should|have|has|been|with|from|your|what|when|where|because|please|thanks|here|there|and|for|not|but|can)\b' | wc -l || true)
-ca_count=$(printf '%s' "$all_text" | grep -oiE '\b(que|es|amb|per|els|les|una|del|dels|pero|tambe|mes|aquest|aquesta|com|quan|perque|si|ja|fet|vols|pots|puc|aqui|no|el|la|un|de|i|a)\b' | wc -l || true)
+total_words=$(printf '%s' "$rest_text" | wc -w)
+en_count=$(printf '%s' "$rest_text" | grep -oiE "$EN_WORDS" | wc -l || true)
+ca_count=$(printf '%s' "$rest_text" | grep -oiE "$CA_WORDS" | wc -l || true)
 if [ "$total_words" -ge 15 ] && [ "$en_count" -ge 3 ] && [ "$en_count" -gt "$ca_count" ]; then
   problems+=("sembla estar en angles, no en catala (heuristica de paraules)")
+  lang_flag=1
 fi
 
 if [ ${#problems[@]} -gt 0 ]; then
@@ -116,7 +152,43 @@ if [ ${#problems[@]} -gt 0 ]; then
   if [ "$missing_rebut" -eq 1 ] && [ ${#problems[@]} -eq 1 ]; then
     fix="El contingut que ja has escrit es correcte i l'usuari JA l'ha llegit: l'unic que falta es la linia inicial. Escriu NOMES 'Rebut: <ordre resumida en angles>' i prou. NO reenviïs el resum anterior ni cap fragment seu -- repetir-lo es pitjor que la infraccio que estas corregint."
   else
-    fix="Reescriu NOMES el fragment assenyalat, no tot el torn: l'usuari ja ha llegit la resta i repetir-la es un defecte per si mateix. Comenca per 'Rebut: <ordre resumida en angles>'."
+    # Quote the actual offending text so the retry has a literal target
+    # instead of a guess (2026-07-29 fix, see the note above this section).
+    quotes=""
+    if [ "$lang_flag" -eq 1 ]; then
+      lang_offenders="$(echo "$turn_blocks_json" | jq -r --arg en "$EN_WORDS_JQ" --arg ca "$CA_WORDS_JQ" '
+        .[1:][] | select(
+          (([scan($en)] | length) as $e | ([scan($ca)] | length) as $c | $e > $c)
+        )
+      ' 2>/dev/null || echo "")"
+      if [ -n "$lang_offenders" ]; then
+        quotes="${quotes}Bloc(s) en angles (tradueix NOMES aquests, al catala):
+$(printf '%s' "$lang_offenders" | sed 's/^/  > /')
+"
+      fi
+    fi
+    if [ "$format_flag" -eq 1 ]; then
+      format_offenders="$(printf '%s' "$all_text" | grep -nE '\*\*|—|…|\.\.\.|^#{1,6}[[:space:]]|\|.+\|.+\|' || true)"
+      if [ -n "$format_offenders" ]; then
+        quotes="${quotes}Linia(es) amb format prohibit (numero de linia dins el torn):
+$(printf '%s' "$format_offenders" | sed 's/^/  > /')
+"
+      fi
+    fi
+    if [ "$list_flag" -eq 1 ]; then
+      list_offenders="$(printf '%s' "$all_text" | grep -nE '^[[:space:]]*[-*][[:space:]]' || true)"
+      if [ -n "$list_offenders" ]; then
+        quotes="${quotes}Linia(es) amb llista de pics (numero de linia dins el torn):
+$(printf '%s' "$list_offenders" | sed 's/^/  > /')
+"
+      fi
+    fi
+    if [ -n "$quotes" ]; then
+      fix="Reescriu NOMES els fragments citats a sota -- mai la resta del torn, ja llegida i ja correcta:
+${quotes}Comenca igualment per 'Rebut: <ordre resumida en angles>' seguit NOMES de la traduccio/correccio d'aquests fragments concrets, res mes."
+    else
+      fix="Reescriu NOMES el fragment assenyalat, no tot el torn: l'usuari ja ha llegit la resta i repetir-la es un defecte per si mateix. Comenca per 'Rebut: <ordre resumida en angles>'."
+    fi
   fi
   reason="La teva resposta anterior incompleix regles de CLAUDE.md: ${joined}. ${fix}"
   jq -n --arg reason "$reason" '{decision: "block", reason: $reason}'

@@ -100,10 +100,21 @@ invoke it when the task calls for it:
 1. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
    PR conventions (workflow shape, reading `pull_request_read` results,
    merge mechanics); generalized 2026-07-27 from an earlier repo-specific
-   skill of the same name. Must never encode a standing auto-merge policy —
-   a portable file installs into every repo it's imported into, so a rule
-   like that written here would silently apply everywhere, not just where
-   someone actually agreed to it.
+   skill of the same name. Originally: must never encode a standing
+   auto-merge policy, since a portable file installs into every repo it's
+   imported into, so a rule like that written here would silently apply
+   everywhere, not just where someone actually agreed to it. Relaxed
+   2026-07-29, explicit user request, after being shown that exact
+   consequence and choosing it anyway: the skill now carries a dated,
+   attributed standing authorization to open a PR at session close when
+   the branch has unmerged commits and none exists, then merge it once
+   clean. The reasoning behind the original prohibition is unchanged and
+   still applies to anything BEYOND that one authorization — a policy
+   written there without a named source and date, or one covering more
+   than the routine open/merge cycle, is still the thing to refuse. What
+   made this case different is that the authorization is recorded rather
+   than self-granted, which is also what lets it satisfy (not bypass) a
+   calling environment's own PR-creation gate.
 
 (`git-rules` removed from the portable bundle 2026-07-25, explicit user
 request — deleted from `.claude/skills/`, its `skillOverrides` entry
@@ -249,16 +260,19 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 │   ├── MultiFlip-Flop.qplug          (v2.0)
 │   ├── MultiFlip-Flop.qplugx
 │   ├── Dolby CPSeries Control V4.0.qplug
-│   └── Dolby CPSeries Control V4.0.qplugx   Packaged/encrypted (JSON envelope);
-│                                     all four .qplugx built 2026-07-27 via
-│                                     .github/workflows/build-qplugx.yml
-│                                     (GitHub Actions, windows-latest),
-│                                     replacing the old stale
-│                                     "Dolby CPSeries Control V2.2.qplugx"
-│                                     (last hand-compiled at v2.2, now removed).
-│                                     Never hand-edited; regenerate via the
-│                                     workflow (or Designer's "Save as
-│                                     compiled plugin") after any .qplug rebuild.
+│   ├── Dolby CPSeries Control V4.0.qplugx   Packaged/encrypted (JSON envelope);
+│   │                                 all four .qplugx built 2026-07-27 via
+│   │                                 .github/workflows/build-qplugx.yml
+│   │                                 (GitHub Actions, windows-latest),
+│   │                                 replacing the old stale
+│   │                                 "Dolby CPSeries Control V2.2.qplugx"
+│   │                                 (last hand-compiled at v2.2, now removed).
+│   │                                 Never hand-edited; regenerate via the
+│   │                                 workflow (or Designer's "Save as
+│   │                                 compiled plugin") after any .qplug rebuild.
+│   └── SubharmonicSynth.qplug        (v0.6, added 2026-07-29) No .qplugx yet --
+│                                     not run through build-qplugx.yml/the
+│                                     encryption tool since being incorporated.
 │
 ├── Dolby CP Emulator/                Q-SYS User Components (.quc) that emulate
 │   ├── CP650 Emulator.quc            real Dolby processors for bench testing
@@ -319,21 +333,34 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   │   ├── controls.lua
     │   │   ├── layout.lua
     │   │   └── runtime.lua           No shared-file dependency (simplest case)
-    │   └── Dolby CPSeries Control/
-    │       ├── plugin.lua            #include order: shared/dolbyfader.lua, models.lua,
-    │       │                         protocol.lua, commlib.lua, runtime.lua (all direct,
-    │       │                         depth-1 includes -- see the #include rules below)
+    │   ├── Dolby CPSeries Control/
+    │   │   ├── plugin.lua            #include order: shared/dolbyfader.lua, models.lua,
+    │   │   │                         protocol.lua, commlib.lua, runtime.lua (all direct,
+    │   │   │                         depth-1 includes -- see the #include rules below)
+    │   │   ├── info.lua
+    │   │   ├── properties.lua
+    │   │   ├── controls.lua
+    │   │   ├── layout.lua
+    │   │   ├── models.lua            Per-model wire config (private to this plugin)
+    │   │   ├── protocol.lua          Per-model message formatting/GET framing (private)
+    │   │   ├── commlib.lua           CPSeries class, per-model protocol state machine
+    │   │   │                         (private to this plugin, formerly
+    │   │   │                         Developer/Modules/cpseries_commlib.lua)
+    │   │   └── runtime.lua           Application layer: TCP connection lifecycle,
+    │   │                             Controls wiring (formerly Developer/Modules/cpseries.lua)
+    │   └── SubharmonicSynth/         Bass enhancement / subharmonic-style boost for
+    │       ├── plugin.lua            LFE/Sub channels (incorporated 2026-07-29 from an
+    │       │                         external contribution, restructured onto this
+    │       │                         repo's own convention -- see the Continuity notes
+    │       │                         below for the full incorporation story)
     │       ├── info.lua
-    │       ├── properties.lua
-    │       ├── controls.lua
-    │       ├── layout.lua
-    │       ├── models.lua            Per-model wire config (private to this plugin)
-    │       ├── protocol.lua          Per-model message formatting/GET framing (private)
-    │       ├── commlib.lua           CPSeries class, per-model protocol state machine
-    │       │                         (private to this plugin, formerly
-    │       │                         Developer/Modules/cpseries_commlib.lua)
-    │       └── runtime.lua           Application layer: TCP connection lifecycle,
-    │                                 Controls wiring (formerly Developer/Modules/cpseries.lua)
+    │       ├── controls.lua          No properties.lua -- GetProperties() returns {}
+    │       ├── layout.lua            directly in plugin.lua, same as DolbyFader
+    │       └── runtime.lua           Sub-path LPF+PEQ+Gain / dry-path Gain / 2->1 Mix;
+    │                                 guarded one-time init sets SubGain/QFactor/Cutoff
+    │                                 defaults (the original's per-control `DefaultValue`
+    │                                 field isn't a real Q-SYS key, so those defaults
+    │                                 never actually applied pre-incorporation)
     ├── shared/                       Code #include'd by more than one plugin
     │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua
     │   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
@@ -342,10 +369,23 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   │                             so it reads as a standalone unit distinct from
     │   │                             `Dolby CP Emulator/` (that one emulates the Dolby
     │   │                             processors, this one emulates the Q-SYS Lua host)
-    │   └── qsys_stub.lua             Stand-in for the Q-SYS host globals (Controls,
-    │                                 Timer, TcpSocket, Properties, System); every
-    │                                 test file adds this directory to its own
-    │                                 package.path alongside Developer/tests/ itself
+    │   ├── qsys_stub.lua             Stand-in for the Q-SYS host globals (Controls,
+    │   │                             Timer, TcpSocket, Properties, System); every
+    │   │                             test file adds this directory to its own
+    │   │                             package.path alongside Developer/tests/ itself.
+    │   └── components/                One file per Q-SYS embedded component Type
+    │                                 (mixer.lua, sine.lua, gain.lua, filter_lowpass.lua,
+    │                                 equalizer_parametric.lua, stepper.lua), each
+    │                                 returning that Type's exact audio pin names for
+    │                                 GetWiring validation (qsys_stub.lua's
+    │                                 check_wiring); loaded lazily via this file's own
+    │                                 directory (debug.getinfo), not package.path
+    │                                 Standing convention: a new plugin needing a host
+    │                                 feature this stub doesn't model yet gets that
+    │                                 feature looked up in Q-SYS Help first (see the
+    │                                 file's own header comment), the stub extended to
+    │                                 add it -- never guessed, never worked around in
+    │                                 the plugin or the test instead
     └── tests/                        Lua 5.3 test suite, no framework (see its README)
         ├── run.sh                    Syntax pass over every source, then every test
         ├── harness.lua               Path resolution + check counter
@@ -356,6 +396,12 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
         ├── test_dist_fader.lua       Root Dolby Fader distributable, both host passes
         ├── test_dist_sweep.lua       Root Dolby Sweep distributable, both host passes
         ├── test_dist_flipflop.lua    Root MultiFlip-Flop distributable, both host passes
+        ├── test_dist_subharmonic.lua Root SubharmonicSynth distributable, both host passes
+        ├── test_stress.lua           Stress/fuzz over all five plugins: asserts invariants
+        │                             (nothing throws, nothing publishes nil, every written
+        │                             value stays in range) rather than exact values. Fixed
+        │                             math.randomseed so a failure reproduces; carries its
+        │                             own anti-vacuity checks (see its README section)
         └── wire_trace.lua            Diffs two builds by the bytes they put on the wire
 ```
 
@@ -884,6 +930,40 @@ Typical loop:
 separate file isn't auto-loaded at session start the way CLAUDE.md is, so
 it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
 
+- **`qsys_stub.lua`'s `Timer.CallAfter` silently swallowed errors, fixed
+  (2026-07-29):** was `function(fn) pcall(fn) end` with the `pcall` result
+  never checked, so any exception thrown inside a callback scheduled via
+  `Timer.CallAfter` (real usage: CPSeries's `connect`/`refreshCNX` retry
+  chain, Dolby Sweep's `Start`) vanished silently instead of failing the
+  test that triggered it. Now `function(fn) fn() end` -- errors propagate
+  like a direct call would, same as a real host wouldn't eat a plugin's
+  exception either. No test currently throws through this path, so nothing
+  newly failed; `Developer/tests/run.sh` stays green, 152 checks unchanged.
+  Separately noted, not fixed (a test-coverage gap, not a stub-modeling
+  one -- the stub already supports it structurally): `sock.Closed`/
+  `.Timeout`/`.Error`/`.Reconnect` are real socket lifecycle handlers
+  `Dolby CPSeries Control/runtime.lua` wires up, but no test file ever
+  calls them (only `wire_trace.lua` calls `sock.Connected()`) -- a test
+  could invoke any of them today the same way, nothing in the stub blocks
+  it, they just aren't exercised yet.
+- **`qsys_stub.lua`'s Trigger/Meter control-type gap, fixed (2026-07-29,
+  explicit user request — implemented, not just documented).** `M.control`
+  now takes an optional `kind` ("trigger", "meter", or the default): a
+  Trigger-type Button gets no `.Value`/`.String`/`.Position`/`.Boolean` at
+  all (only `:Trigger()`/`.EventHandler`), matching Q-SYS Help's Controls IO
+  page; a Meter-type Indicator gets `.Values` (plural) instead of `.Value`.
+  `M.install(opts)` grew `opts.trigger_controls` (a name list) to construct
+  the right controls as trigger-kind. Every genuine Trigger control across
+  the three affected test files is now marked: MultiFlip-Flop's
+  `Set_N`/`Reset_N`/`Toggle_N`, CPSeries's `Refresh`, Dolby Sweep's
+  `Trigger`. `test_dist_flipflop.lua`'s old blanket
+  `for _, c in pairs(env.controls) do c.Trigger = function() end end` (added
+  `:Trigger()` to every control regardless of type) is gone, replaced by the
+  properly-typed construction. Verified directly: `qsys.control(nil,
+  "trigger").Value` is now `nil`, `qsys.control(nil, "meter").Values` is a
+  table. No plugin currently reads `.Value`/`.Boolean` on a Trigger control
+  or uses `.Values`, so this changed no test outcomes — full
+  `Developer/tests/run.sh` still green, all 152 checks unchanged.
 - **`qsys_stub.lua` split into its own `Developer/host-emulator/` module
   (2026-07-29, explicit user request).** Previously lived in
   `Developer/tests/`, alongside `harness.lua` and the `test_*.lua` files
@@ -902,6 +982,165 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   `period`/`timer` and `Dolby CPSeries Control`'s `DolbyCP`/`sock` globals
   were never in the list, so `M.clear()` never reset them between test
   runs.
+- **GetComponents/GetPins/GetWiring gained test coverage, previously zero
+  (2026-07-29, explicit user request).** Before this, no test file in this
+  repo called any of the three definition-pass functions that build a
+  plugin's audio path -- a component rename in `GetComponents` that
+  `GetWiring`'s own string literals were never updated to match would
+  compile fine (`luac -p` sees a table literal, not a mismatch) and every
+  existing test would still pass, since none of them ever looked. Added
+  `M.check_wiring(comps, pins, wiring)` (moved to `qsys_stub.lua` the same
+  day -- see the follow-up note right after this one): validates that
+  every `GetComponents` entry has `Name`/`Type`, every `GetPins` entry has
+  a valid `Direction`, and every `GetWiring` endpoint resolves to either a
+  declared plugin pin or `"<ComponentName> <PinName>"` for a declared
+  component -- Q-SYS's own convention, confirmed against a real
+  `GetWiring` example (`"main_mixer Input 1"`/`"main_mixer Output 1"`,
+  gdyr/qsys-plugin-docs) since Q-SYS Help itself 403'd both mirrors this
+  session (transient, same as noted elsewhere in this file). Verified the
+  check actually catches a break, not just a vacuous pass: corrupted a
+  copy of the built `SubharmonicSynth.qplug`'s own wiring string and
+  confirmed the new check fails with the exact bad endpoint named, then
+  discarded the copy. Wired into the definition pass of every
+  `test_dist_*.lua` that has an audio path (`sweep`, `subharmonic`, each
+  across every dynamic pin-count case sweep's own `Type` property
+  produces) and, for the two control-only plugins (`fader`, `cpseries`),
+  an explicit assertion that `GetPins`/`GetWiring` are correctly absent
+  rather than silently unchecked. `MultiFlip-Flop` has none of the three
+  and needs no addition. Confirmed independently and specifically: the
+  Sine Generator component exposes a single unnumbered `"Output"` pin
+  (matches Dolby Sweep's pre-existing `"Sine Output"` wiring exactly);
+  `gain`/`filter_lowpass`/`equalizer_parametric` were not independently
+  re-confirmed against an official source this session (inherited
+  unverified from the external SubharmonicSynth contribution, consistent
+  with the mixer convention above but not separately proven) -- if this
+  ever needs settling, `vendor/qsc-q-sys` likely has it, but that
+  submodule is still uninitialized in this session (see its own item
+  below) and wasn't added for this, since the user didn't ask for that
+  specifically. Also fixed a real gap surfaced while adding this:
+  `qsys_stub.lua`'s `PLUGIN_GLOBALS` never included `GetPins`/`GetWiring`/
+  `GetPages`, so `M.clear()` never reset them between plugins -- harmless
+  until a test loads two full distributables in one process AND calls
+  either function across that boundary (`test_stress.lua` does the
+  former for its runtime checks, not yet the latter), fixed the same way
+  the `period`/`timer`/`DolbyCP`/`sock` gap was fixed earlier this
+  session. Suite total: 224 -> 245 checks, all green.
+- **`check_wiring` relocated from `harness.lua` to `qsys_stub.lua`, same day
+  (2026-07-29, explicit user request).** First written into `harness.lua`
+  alongside `M.check`/`M.section`, which was a category mistake caught
+  after the fact: `harness.lua`'s own charter (see the host-emulator split
+  note below) is test-runner plumbing -- path resolution, the check
+  counter -- explicitly NOT anything about Q-SYS itself, while
+  `check_wiring` encodes a real piece of Q-SYS platform behavior (how a
+  `GetWiring` endpoint string resolves to a pin), the same category as the
+  Trigger/Meter split or the `.Value`/`.Boolean` split the stub already
+  owns. Moved with its doc comment; call sites in `test_dist_sweep.lua`
+  and `test_dist_subharmonic.lua` updated from `h.check_wiring` to
+  `qsys.check_wiring`. No behavior change -- `Developer/tests/run.sh`
+  stays at 245 checks, all green.
+- **`Developer/host-emulator/components/` added: one file per Q-SYS
+  component Type, exact pin lists instead of prefix matching (2026-07-29,
+  explicit user request, same day as the relocation above).** Before this,
+  `check_wiring` only checked that a wiring endpoint's component-name
+  prefix matched a declared `GetComponents` entry -- `"Mix Output 2"`
+  passed even though `Mix` is declared `n_outputs = 1` and has no such
+  pin. New per-Type files (`mixer.lua`, `sine.lua`, `gain.lua`,
+  `filter_lowpass.lua`, `equalizer_parametric.lua`, `stepper.lua`), each
+  `return function(props) ... end` returning the exact pin-name list for
+  that Type given its own `Properties`. `qsys_stub.lua` resolves its own
+  directory via `debug.getinfo(1, "S").source` (not `arg[0]` -- this file
+  is always `require()`'d, never the top-level chunk -- and not
+  `package.path`, so callers that never touch wiring never need to extend
+  their own path for it) and `loadfile`s the matching component file
+  lazily, cached, the first time a `Type` is looked up. An unregistered
+  `Type` returns `nil` and `check_wiring` falls back to its original
+  prefix-only check for that component -- an unmodeled Type is a gap to
+  fill, not a reason to fail every plugin using it. Verified the
+  stricter check actually bites: took a copy of `SubharmonicSynth.qplug`,
+  changed its own `GetWiring`'s `"Mix Output 1"` to `"Mix Output 2"`
+  (invalid for a 1-output mixer), and confirmed the new per-Type check
+  fails with that exact endpoint named where the old prefix-only version
+  passed it -- then discarded the copy. Confirmation status carried
+  per file, not asserted uniformly: `mixer.lua` and `sine.lua` are
+  independently confirmed (see the relocation note above for `mixer`;
+  `sine.lua` from a Q-SYS Help search summary matching Dolby Sweep's own
+  pre-existing wiring); `gain.lua`/`filter_lowpass.lua`/
+  `equalizer_parametric.lua` are NOT independently confirmed (Q-SYS Help
+  403'd both mirrors this session) and say so in their own header comment
+  -- they mirror the numbered-pin convention and match what
+  SubharmonicSynth already ships, but are marked as the thing to
+  re-verify first if a real host ever disagrees, not settled fact.
+  `stepper.lua` returns no pins, confirmed by absence (DolbyFader/CPSeries
+  both use it with no `GetPins`/`GetWiring` at all). No behavior change to
+  the checks that were already exact-verifiable; `run.sh` stays at 245.
+- **Stress/fuzz suite added, covering all five plugins (2026-07-29,
+  explicit user request).** `Developer/tests/test_stress.lua`, registered
+  in `run.sh`, 49 checks, runs in well under a second. Deliberately a
+  different kind of test from the rest of the suite: the `test_dist_*`
+  files assert exact values for known-good inputs, this one asserts only
+  the invariants that must survive abuse — nothing throws, nothing
+  publishes a nil, and every value a plugin writes stays inside its
+  declared range. Sections: CP Series wire fuzzing across all five models
+  (267 junk lines per model, three passes, one-at-a-time and bulk-drained
+  through `readData`), sustained polling driven 9000 ticks to cross the
+  `npoll % 0x2000` wraparound, the no-data watchdog's own close path,
+  Dolby Fader driven well past both ends of its dB range plus junk typed
+  into the `Level` text control and out-of-band stepper positions, Dolby
+  Sweep run 3000 ticks with mid-sweep control chatter, SubharmonicSynth
+  given 1500 rounds of out-of-range parameters, and MultiFlip-Flop at
+  InputCount=8 under 4000 random operations. Two design points worth
+  keeping if it's ever extended: `math.randomseed` is a fixed constant, so
+  a failure reproduces instead of vanishing on the next run; and several
+  sections carry an explicit anti-vacuity check. That second one is not
+  theoretical — the first working version of the corpus passed every CP
+  650 and CP 750 invariant while those two models silently rejected every
+  line before it reached their own fader/format handlers (their dialects
+  are `fader_level=` and `cp750.sys.*`, and the corpus was all `sys.*`).
+  Measured with a throwaway probe, then fixed by adding per-dialect
+  parseable-but-extreme lines and a permanent "the corpus actually reached
+  the parser" check per model. The same reasoning added "the storm did run
+  while bypassed" (SubharmonicSynth) and "multiple simultaneous instances
+  are reachable with Exclusive off" (MultiFlip-Flop) — without the latter,
+  the interlock invariant would also hold for a component that simply
+  never lets two instances be set at all. No plugin bug was found by any
+  of this; the guards in `commlib.lua` (documented in its own v3.0 header)
+  already cover what the fuzzing throws at them. `Developer/tests/README.md`
+  gained a "Stress and fuzz" section, and its Layout table was corrected
+  at the same time — it still listed the retired `test_plugin_defs.lua`
+  and pointed `test_modules.lua` at the deleted `Developer/Modules`.
+- **SubharmonicSynth incorporated as a 5th plugin (2026-07-29, explicit
+  user request, uploaded as `SubharmonicSynth_v0_6.qplug`):** a bass
+  enhancement / subharmonic-style boost for LFE/Sub channels, restructured
+  onto this repo's own convention rather than dropped in as-is. Split into
+  `Developer/plugins/SubharmonicSynth/{plugin,info,controls,layout,
+  runtime}.lua` (no `properties.lua` — `GetProperties()` returns `{}`
+  directly in `plugin.lua`, same pattern as DolbyFader), built via
+  PLUGCC.exe into the root `SubharmonicSynth.qplug` (no `.qplugx` yet).
+  Controls renamed to PascalCase (`DryLevel`/`SubLevel`/`SubGain`/
+  `QFactor`/`Cutoff`/`Bypass`, were `dry_level`/`sub_level`/`sub_gain`/
+  `q_factor`/`cutoff`/`bypass`) — breaking only relative to the original
+  upload, nothing in this repo was ever wired to the old names. Found and
+  fixed a real latent bug in the uploaded source: its per-control
+  `DefaultValue` field is not a real Q-SYS `GetControls` key (confirmed
+  against Q-SYS Help and the vendored templates — none of the other four
+  plugins use one either), so `SubGain`/`QFactor`/`Cutoff`'s intended
+  defaults (9 dB / 1.0 / 80 Hz) never actually applied on a fresh
+  instantiation; replaced with a guarded one-time `runtime.lua` init
+  (`if Controls.Cutoff.Value == 0 then ... end`, mirroring the pattern
+  already used by `cpseries.lua`/`dolbysweep.lua`). Also dropped the
+  original's `AddEventHandler` chaining helper (every control here has
+  exactly one handler, so the indirection bought nothing) in favor of
+  this repo's plain `Controls.X.EventHandler = function` style, and gated
+  `PrintFormat` on `Properties.plugin_show_debug.Value` like the rest of
+  this repo's debug output (was unconditional in the original). New
+  `Developer/tests/test_dist_subharmonic.lua` (23 checks: both host
+  passes, the one-time init, bypass routing, cutoff re-tune without
+  re-init) registered in `run.sh` and `harness.lua`'s `M.DIST`; embedded
+  components (`Lpf`/`Peq`/`GainSub`/`GainDry`/`Mix`) built ad hoc in the
+  test the same way Dolby Sweep's own test builds `Sine`, no stub changes
+  needed — `filter_lowpass`/`equalizer_parametric`/`gain`/`mixer` were
+  already covered component-type shapes. Full suite green afterward
+  (175 checks total, no regressions in the other four plugins).
 - **Button control `.Value` type, resolved (2026-07-29):** confirmed via
   the newly-vendored `vendor/qsc-q-sys` submodule's reverse-engineered docs
   (`components_emulator/docs/qsys-plugins.md`, cross-checked against its own
@@ -1099,3 +1338,35 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   GitHub UI (PR page's "Delete branch" button, or Settings > Branches),
   or investigating the proxy/connector side directly, not more retries
   from inside a session.
+- **`check-reply-format.sh`'s block reason made block-scoped, not just
+  Rebut-scoped (2026-07-29, explicit user request, root-caused after a
+  real recurrence in this exact session).** The 2026-07-28 fix above
+  scoped the repair message for a missing-Rebut-only violation, but a
+  language or formatting violation still got the old generic "reescriu
+  NOMES el fragment assenyalat" wording, WITHOUT ever saying which
+  fragment -- the retry had to guess. It guessed wrong this session: the
+  actual English text was a one-line narration ("All tests pass ...
+  Now committing."), but the retry instead re-sent the already-correct
+  closing summary verbatim, producing exactly the duplicate-looking reply
+  the rule exists to prevent. Two real bugs, both fixed: (1) the language
+  heuristic ran on the WHOLE joined turn text, including the mandatory-
+  English "Rebut: <order in English>" line -- scoring that line as English
+  is correct by design, but it also meant the Rebut line's own English
+  words could push a short, otherwise-compliant turn over the old
+  `en_count>=3` threshold; the language check now runs against every block
+  EXCEPT the first (Rebut) one. (2) once an offending block search was
+  added (score each block by en-stopword-count minus ca-stopword-count,
+  quote any block that scores net-English), the jq `--arg` regex variables
+  were built with a doubled backslash (`'(?i)\\b(...)\\b'`) on the mistaken
+  assumption they needed the same escaping as a regex written inline in jq
+  program source -- `--arg` passes the literal bytes straight through with
+  no re-escaping, so the pattern oniguruma actually saw was "match a
+  literal backslash then the letter b", which silently matched nothing,
+  ever. Fixed to a single backslash. Both fixes verified against synthetic
+  transcripts built by hand (no real session data touched): a genuine
+  English narration block is now quoted verbatim in the block reason and
+  the Rebut line is excluded from scoring either way; an all-Catalan turn
+  with a normal English Rebut summary no longer risks a false block; the
+  existing missing-Rebut-only scoped message is unchanged. Format/list
+  violations were extended the same way -- the offending line (with its
+  line number in the joined turn text) is now quoted too, not just named.
