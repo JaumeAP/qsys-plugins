@@ -1,7 +1,8 @@
 -- The root MultiFlip-Flop distributable. Unlike the other three plugins its
--- runtime logic is inline (`if Controls then ... end`), not require()d from
--- Developer/Modules -- see CLAUDE.md. Covers the per-instance control count
--- for a given InputCount, the Exclusive interlock, and the init pass.
+-- runtime logic was already inline (`if Controls then ... end`) even before
+-- the PLUGCC.exe restructuring -- see CLAUDE.md. Covers the per-instance
+-- control count for a given InputCount, the Exclusive interlock, and the
+-- init pass.
 
 package.path = (arg[0]:match("^(.*)[/\\]") or ".") .. "/?.lua;" .. package.path
 

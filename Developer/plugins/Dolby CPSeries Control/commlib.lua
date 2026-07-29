@@ -20,9 +20,6 @@
 
 	do
 
-		require("cpseries_models")
-		require("cpseries_protocol")
-
 		local POLLTIME = 0.02
 		local setValue,getValue,setState,getState,Poll,readData,request,received
 		local privates = setmetatable({}, {__mode = "k"}) -- set 'privates' as private field

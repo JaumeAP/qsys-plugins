@@ -9,13 +9,29 @@
 
 local M = {}
 
--- A single Q-SYS control. Note the explicit nil check rather than `v or 0`:
--- `false or 0` yields 0, and the plugins guard their one-time init with
--- `Controls.start.Value == false`, which 0 does not satisfy.
+-- A single Q-SYS control. .Value and .Boolean are two accessors onto the
+-- SAME underlying numeric storage, not independent fields -- confirmed via
+-- vendor/qsc-q-sys's Component.GetControls docs: .Value is always a number,
+-- .Boolean is a computed true/false view of it (reads as Value~=0, writes
+-- as Value=1/0). A metatable keeps the two in sync so plugin code can read
+-- or write either one interchangeably, matching real Q-SYS behavior.
 function M.control(v)
 	if v == nil then v = 0 end
-	return { Value = v, String = "", Position = 0, Color = "",
-	         Choices = {}, IsDisabled = false, EventHandler = nil }
+	local c = { String = "", Position = 0, Color = "",
+	            Choices = {}, IsDisabled = false, EventHandler = nil }
+	local numeric = v
+	return setmetatable(c, {
+		__index = function(_, k)
+			if k == "Value" then return numeric end
+			if k == "Boolean" then return numeric ~= 0 end
+			return nil
+		end,
+		__newindex = function(t, k, val)
+			if k == "Value" then numeric = val
+			elseif k == "Boolean" then numeric = val and 1 or 0
+			else rawset(t, k, val) end
+		end,
+	})
 end
 
 -- Globals the plugins define or expect; cleared between runs so one test
@@ -53,14 +69,7 @@ function M.install(opts)
 
 	local controls = {}
 	for _, name in ipairs(opts.controls or {}) do
-		-- `Start` latches the one-time init and is compared against `false`,
-		-- so it must start as a boolean. Spelled out rather than written as
-		-- `name == "Start" and false or nil`, which yields nil, not false.
-		if name == "Start" then
-			controls[name] = M.control(false)
-		else
-			controls[name] = M.control(nil)
-		end
+		controls[name] = M.control(nil)
 	end
 	controls.Selector = {}
 	for i = 1, (opts.selectors or 0) do controls.Selector[i] = M.control(0) end
