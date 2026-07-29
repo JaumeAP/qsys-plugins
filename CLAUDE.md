@@ -224,7 +224,9 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 ├── .vscode/settings.json             Associates *.qplug with the Lua language
 │
 ├── *.qplug / *.qplugx                Distributable plugins (repo root), built by
-│   │                                 Developer/tools/build_distributable.sh
+│   │                                 QSC's own PLUGCC.exe via
+│   │                                 .github/workflows/build-qplug.yml (see
+│   │                                 "Developer workflow" below)
 │   ├── DolbyFader.qplug              (v2.0)
 │   ├── DolbyFader.qplugx
 │   ├── Dolby Sweep V2.0.qplug
@@ -278,33 +280,56 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 │                                     vs. what qsc-q-sys added on top.
 │
 └── Developer/                        Working sources (edit here)
-    ├── plugins/                      Plugin definition files (layout + skeleton)
-    │   ├── DolbyFader V2.0.qplug
-    │   ├── Dolby CPSeries Control V4.0.qplug
-    │   ├── Dolby Sweep V2.0.qplug
-    │   ├── MultiFlip-Flop V2.0.qplug
+    ├── plugins/                      One folder per plugin, each built by QSC's own
+    │   │                             PLUGCC.exe (see "Developer workflow" below).
+    │   │                             `plugin.lua` is the PLUGCC entry point; sibling
+    │   │                             files are pulled in via `--[[ #include "x.lua" ]]`
+    │   │                             Lua-comment directives.
+    │   ├── DolbyFader/
+    │   │   ├── plugin.lua            PluginInfo/Get*/GetComponents + runtime #include
+    │   │   ├── info.lua              PluginInfo table
+    │   │   ├── controls.lua          GetControls body
+    │   │   └── layout.lua            GetControlLayout body
+    │   ├── Dolby Sweep/
+    │   │   ├── plugin.lua
+    │   │   ├── info.lua
+    │   │   ├── properties.lua        GetProperties body
+    │   │   ├── controls.lua
+    │   │   ├── layout.lua
+    │   │   └── runtime.lua           Runtime logic; #include's ../../shared/qknob.lua
+    │   ├── MultiFlip-Flop/
+    │   │   ├── plugin.lua
+    │   │   ├── info.lua
+    │   │   ├── properties.lua
+    │   │   ├── controls.lua
+    │   │   ├── layout.lua
+    │   │   └── runtime.lua           No shared-file dependency (simplest case)
+    │   ├── Dolby CPSeries Control/
+    │   │   ├── plugin.lua            #include order: shared/dolbyfader.lua, models.lua,
+    │   │   │                         protocol.lua, commlib.lua, runtime.lua (all direct,
+    │   │   │                         depth-1 includes -- see the #include rules below)
+    │   │   ├── info.lua
+    │   │   ├── properties.lua
+    │   │   ├── controls.lua
+    │   │   ├── layout.lua
+    │   │   ├── models.lua            Per-model wire config (private to this plugin)
+    │   │   ├── protocol.lua          Per-model message formatting/GET framing (private)
+    │   │   ├── commlib.lua           CPSeries class, per-model protocol state machine
+    │   │   │                         (private to this plugin, formerly
+    │   │   │                         Developer/Modules/cpseries_commlib.lua)
+    │   │   └── runtime.lua           Application layer: TCP connection lifecycle,
+    │   │                             Controls wiring (formerly Developer/Modules/cpseries.lua)
     │   └── reference.lua             Template/cheat-sheet of every component & control type
-    ├── Modules/                      Runtime logic pulled in by plugins via require()
-    │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base)
-    │   ├── strict.lua                Global-variable guard (errors on undeclared globals)
-    │   ├── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale)
-    │   ├── dolbysweep.lua            Sweep tone generator runtime
-    │   ├── cpseries.lua              CPSeries application layer (TCP connection lifecycle, Controls wiring)
-    │   ├── cpseries_commlib.lua      CPSeries class (per-model protocol state machine)
-    │   ├── cpseries_models.lua       Per-model wire config (TCP port, KEY=VALUE vs "param value")
-    │   └── cpseries_protocol.lua     Per-model message formatting and GET framing
-    ├── tools/
-    │   └── build_distributable.sh    Builds a root distributable from a Developer/ head +
-    │                                 named modules (see below). Supports a pre-guard /
-    │                                 post-guard module split for a plugin that needs a
-    │                                 module at design time, not just runtime -- none of
-    │                                 the four plugins here currently need that group
+    ├── shared/                       Code #include'd by more than one plugin
+    │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua
+    │   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
     └── tests/                        Lua 5.3 test suite, no framework (see its README)
         ├── run.sh                    Syntax pass over every source, then every test
         ├── qsys_stub.lua             Stand-in for the Q-SYS host globals
         ├── harness.lua               Path resolution + check counter
-        ├── test_modules.lua          CPSeries class, straight from Modules/
-        ├── test_plugin_defs.lua      Get* callbacks of the plugins/ definition files
+        ├── test_modules.lua          CPSeries class, loaded straight from
+        │                             Developer/plugins/Dolby CPSeries Control/
+        │                             {models,protocol,commlib}.lua
         ├── test_dist_cpseries.lua    Root CP Series distributable, both host passes
         ├── test_dist_fader.lua       Root Dolby Fader distributable, both host passes
         ├── test_dist_sweep.lua       Root Dolby Sweep distributable, both host passes
@@ -313,18 +338,28 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
 ```
 
 **`Developer/` holds the source of truth.** The root-level `.qplug` files are
-single-file distributable builds with their `Developer/Modules/*.lua`
-dependencies inlined and `require` stripped (built by
-`Developer/tools/build_distributable.sh`, see "Developer workflow" below) —
-never hand-edit them, or they drift from `Developer/` and the next rebuild
-silently discards the hand edit. The four root `.qplugx` files are packaged
-builds produced from those same `.qplug` files by
-`.github/workflows/build-qplugx.yml` (or Designer's own "Save as compiled
-plugin") — also never hand-edited; regenerate the same way after any `.qplug`
-rebuild. (Until 2026-07-27 only a stale `Dolby CPSeries Control V2.2.qplugx`
-existed, hand-compiled and predating this convention; it's been replaced by
-a current `V4.0.qplugx` built via the workflow, alongside `.qplugx` builds
-for the other three plugins.)
+single-file distributable builds produced from `Developer/plugins/<Name>/
+plugin.lua` (and its `#include`d siblings) by QSC's own `PLUGCC.exe`, run via
+`.github/workflows/build-qplug.yml` (see "Developer workflow" below) — never
+hand-edit them, or they drift from `Developer/` and the next rebuild silently
+discards the hand edit. The four root `.qplugx` files are packaged builds
+produced from those same `.qplug` files by `.github/workflows/build-qplugx.yml`
+(or Designer's own "Save as compiled plugin") — also never hand-edited;
+regenerate the same way after any `.qplug` rebuild.
+
+**PLUGCC.exe `#include` resolution rules (confirmed by trial, 2026-07-29;
+see the Continuity notes below for the full story):** (1) a relative
+`#include` path always resolves against the *original* `plugin.lua`'s own
+directory (the process cwd `PLUGCC.exe` is invoked from), never against
+whichever file's own text contains the directive. (2) A NESTED `#include`
+(one inside a file that itself got pulled in by another `#include`, as
+opposed to one written directly in `plugin.lua`) is only recognized if it is
+that file's first line. `Developer/shared/dolbyfader.lua`'s own `#include`
+of `qknob.lua` and `Dolby Sweep/runtime.lua`'s own `#include` of
+`shared/qknob.lua` both satisfy this; `Dolby CPSeries Control/plugin.lua`
+avoids the question entirely by `#include`ing everything it needs directly
+(all depth-1), since only `plugin.lua`'s own includes can appear anywhere in
+the file with no first-line restriction.
 
 ### How a Q-SYS plugin is structured
 
@@ -358,20 +393,24 @@ here don't follow this exact set of names and there's no need to rename them
 to match it — it's a convention some QSC-authored plugins use, not something
 Q-SYS enforces.
 
-Runtime side: at the bottom of the file a guard then a `require`:
+Runtime side (current, since the 2026-07-29 PLUGCC.exe restructuring): a
+guard at the bottom of `plugin.lua`, then one or more `#include`s:
 
 ```lua
-if not Controls and Reflect then return end   -- definition pass: stop here
-require "dolbyfader"                            -- runtime pass: load event logic
+if Controls then
+	--[[ #include "runtime.lua" ]]
+end
 ```
 
 When Q-SYS runs the component, the global `Controls` table (and `Properties`)
-exist, so execution falls through to `require`, loading the matching module from
-`Developer/Modules/`. `MultiFlip-Flop` is the exception — its runtime logic is
-inline in the `.qplug`, guarded by `if Controls then ... end` instead (both
-guard styles are valid; `MultiFlip-Flop` predates the other three plugins'
-guard-then-`require` split and there was no reason to change a working,
-self-contained file's shape just to match them).
+exist, so execution falls through the guard and PLUGCC.exe has already
+inlined the `#include`d file(s) at build time — nothing loads at runtime the
+way `require` used to. All four plugins now use this same `if Controls
+then ... end` guard style uniformly (before the restructuring, three of
+the four used `if not Controls and Reflect then return end` plus a
+`require "<module>"`, loading from the now-removed `Developer/Modules/`;
+`MultiFlip-Flop` was always the `if Controls then` exception, and the other
+three were switched to match it as part of the same restructuring).
 
 `reference.lua` is the canonical example: it enumerates every property type,
 component type, control type and layout key, and shows the `package.path`
@@ -712,71 +751,64 @@ the four `.qplug`/`Developer/Modules/*.lua` files this rewrite covered.
 
 ### Developer workflow
 
-Q-SYS Designer loads dev modules from the user's Modules folder. During local
-development plugins prepend it to `package.path` (see `reference.lua`):
-
-```
-<USERPROFILE|HOME>/Documents/QSC/Q-Sys Designer/Modules/?.lua
-//Mac/Home/Documents/QSC/Q-Sys Designer/Modules/?.lua   -- macOS/Parallels
-```
+All four plugins are built with QSC's own `PLUGCC.exe`
+(`vendor/qsys-plugins/{BasePlugin,ExamplePlugin}/PluginCompile/PLUGCC.exe`, a
+Windows binary), not a script in this repo — this repo's own
+`build_distributable.sh` / `Developer/Modules/` convention was retired
+2026-07-29 once all four plugins were restructured onto PLUGCC (see the
+Continuity notes below for the migration history).
 
 Typical loop:
-1. Symlink/copy `Developer/Modules/*.lua` into the Q-SYS Designer `Modules`
-   folder (or develop with the `package.path` prelude).
-2. Edit the `.qplug` in `Developer/plugins/` and its module in
-   `Developer/Modules/`.
-3. Run `Developer/tests/run.sh`. Fast, catches syntax errors and logic
-   regressions without leaving the terminal, but it is a filter, not a
-   substitute for step 4.
-4. Load the plugin in Q-SYS Designer; test in the emulator
-   (`System.IsEmulating` is true) or against a `Dolby CP Emulator/*.quc` on the
-   bench.
-5. Bump `Version`/`BuildVersion` in `PluginInfo`, then rebuild the root
-   distributable with `Developer/tools/build_distributable.sh [--bump
-   ver_maj|ver_min|ver_fix|ver_dev] <head.qplug> <output.qplug> --
-   <module1> <module2> ...` — never hand-edit the root file, it's a
-   single-file build with `Developer/Modules/*.lua` inlined and `require`
-   stripped, so a hand edit just gets discarded on the next rebuild.
-   `--bump` (added 2026-07-29, naming/semantics mirrors QSC's own
-   PluginCompile build task under
-   `vendor/qsys-plugins/BasePlugin/PluginCompile` — see that repo's own
-   README for the original) does the version bump on `<head.qplug>` in
-   place, before building, instead of by hand: `ver_maj`/`ver_min`/
-   `ver_fix`/`ver_dev` bump that octet of `BuildVersion` and zero
-   everything after it; `ver_maj`/`ver_min` also update the public
-   `Version` field's major.minor to match. Omit `--bump` to keep bumping
-   by hand first, same as before. The leading `--` (empty pre-guard group) is currently right for
-   all four plugins here — none of them need a module loaded before the
-   runtime guard, only a plugin whose `GetControls`/`GetControlLayout` reads
-   something from an external module at design time would need that group.
-   See any of the four root `.qplug` files' build for the exact module list,
-   or re-run the command from that plugin's own rewrite commit message.
-   `MultiFlip-Flop` is the exception: it has no Modules/ dependency at all,
-   so its root file is a plain copy of the Developer source, no build script
-   needed.
-   After rebuilding, re-run `Developer/tests/run.sh`: the `test_dist_*` files
-   execute the built artifact, which is the only thing that catches a module
-   inlined before something it depends on (that still compiles). If a
-   `.qplugx` also needs updating, that step still only happens inside
-   Designer — this script only produces `.qplug`.
+1. Edit the plugin's own files under `Developer/plugins/<Name>/`
+   (`plugin.lua` and its `#include`d siblings), or a shared file under
+   `Developer/shared/` if the change affects more than one plugin.
+2. Run `Developer/tests/run.sh`. Fast, catches syntax errors and logic
+   regressions without leaving the terminal, but it only runs against the
+   already-built root `.qplug` for the runtime-pass checks — it can't catch
+   a PLUGCC `#include` resolution mistake, only step 4 does that.
+3. Bump `BuildVersion` (and `Version` if it's a breaking change) in the
+   plugin's own `info.lua`, and in `plugin.lua`'s own header-comment version
+   history.
+4. Dispatch `.github/workflows/build-qplug.yml` (`workflow_dispatch`, pick
+   the plugin) — `windows-latest`, runs PLUGCC.exe, uploads the built
+   `.qplug` as a workflow artifact AND echoes it in full to the job log
+   (`get_job_logs`/`actions_get` with `download_workflow_run_artifact` —
+   the artifact's own blob-storage download URL is blocked by this
+   session's egress proxy, but the GitHub API job log isn't). Read the log
+   back, check it's what you expect (no literal, unexpanded `--[[ #include
+   ... ]]` comment left in the output — that means the nested-include
+   first-line rule above was violated), and write it to the root `.qplug`
+   — never hand-edit the root file directly, it gets silently discarded on
+   the next rebuild.
+5. Re-run `Developer/tests/run.sh` against the newly-written root file —
+   this is the step that actually exercises the runtime pass end to end.
+6. Load the plugin in Q-SYS Designer; test in the emulator
+   (`System.IsEmulating` is true) or against a `Dolby CP Emulator/*.quc` on
+   the bench. Steps 2-5 are a filter, not a substitute for this step.
+7. If a `.qplugx` also needs updating, dispatch
+   `.github/workflows/build-qplugx.yml` (`all` or a single plugin) the same
+   way — same job-log-echo workaround, same "never hand-edit" rule.
 
 ### Conventions when editing
 
 - **Preserve `PluginInfo.Id`** — it is the stable plugin UUID; changing it makes
   Designer treat the plugin as a different one. Bump `Version`/`BuildVersion`
   instead.
-- Follow the "Plugin structure/naming convention" section above for the four
-  rebuilt plugins; for anything else, match the existing (tab-heavy,
-  deeply-indented) formatting of the file rather than reflowing it.
-- Keep runtime logic in the `Developer/Modules/*.lua` module; keep the `.qplug`
-  focused on `PluginInfo` + the `Get*` definition callbacks + the final
-  `require`. `MultiFlip-Flop` is still the one exception (inline runtime).
-- Guard runtime code with `if not Controls and Reflect then return end` so the
-  definition pass never executes event logic (`MultiFlip-Flop`: `if Controls
-  then ... end`, see above).
+- Follow the "Plugin structure/naming convention" section above.
+- Keep a plugin's own runtime logic in its `Developer/plugins/<Name>/` folder
+  (`runtime.lua`, or inline in `plugin.lua`'s own `if Controls then` block for
+  MultiFlip-Flop/CPSeries-style short chains); code shared by more than one
+  plugin goes in `Developer/shared/` instead of being duplicated per plugin.
+- Guard runtime code with `if Controls then ... end` so the definition pass
+  never executes event logic — the sole exception is dead code, not a live
+  convention choice: none of the four plugins here use the older `if not
+  Controls and Reflect then return end` style any more.
 - Comments and identifiers are English; keep it that way.
-- After changing anything a plugin `require`s, verify the corresponding
-  distributable at the repo root is regenerated (it is easy to leave it stale).
+- After changing a shared file (`Developer/shared/*.lua`) or a plugin's own
+  private files, verify every plugin that `#include`s it gets its root
+  `.qplug` regenerated (it is easy to leave one stale) — check which
+  plugins reference the changed file before assuming only one needs a
+  rebuild.
 
 ### Git
 
@@ -897,39 +929,52 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   whatever blocked it was fixed out-of-band. Added as
   `vendor/qsc-q-sys` (PR #41). Its reverse-engineered docs are what
   resolved the `.Value`/`.Boolean` question above.
-- **PLUGCC.exe rebuild of all four plugins, in progress (2026-07-29,
-  explicit user request, repeatedly confirmed):** replacing this repo's
-  own `Developer/tools/build_distributable.sh` with QSC's official
-  `PLUGCC.exe` (`vendor/qsys-plugins/{BasePlugin,ExamplePlugin}/
-  PluginCompile/PLUGCC.exe`), run via a new manual-dispatch
+- **PLUGCC.exe rebuild of all four plugins, complete (started 2026-07-29,
+  explicit user request, repeatedly confirmed; finished same day).**
+  Replaced this repo's own `Developer/tools/build_distributable.sh` with
+  QSC's official `PLUGCC.exe` (`vendor/qsys-plugins/{BasePlugin,
+  ExamplePlugin}/PluginCompile/PLUGCC.exe`), run via a manual-dispatch
   `.github/workflows/build-qplug.yml` (`windows-latest`, same pattern as
-  `build-qplugx.yml`). Each plugin's `Developer/plugins/<Name>.qplug` is
+  `build-qplugx.yml`). Each plugin's `Developer/plugins/<Name>.qplug` was
   split into `Developer/plugins/<Name>/{plugin,info,properties,controls,
   layout,runtime}.lua`, `plugin.lua` being the PLUGCC entry point,
   `--[[ #include "file.lua" ]]` Lua-comment directives pulling the rest
   in. Code shared by more than one plugin (`qknob.lua`, `dolbyfader.lua`)
-  moved to a new `Developer/shared/` (parallel to the old
-  `Developer/Modules/`, which stays in place for CPSeries only, see
-  below). Done and verified byte-for-byte against CI output, each with
-  a full local `Developer/tests/run.sh` pass afterward: MultiFlip-Flop
-  (BuildVersion 2.0.0.2, no shared-file dependency, simplest case),
-  Dolby Sweep (2.0.0.2, one level of shared indirection via its own
-  `runtime.lua`), DolbyFader (2.0.0.2, reuses `shared/dolbyfader.lua` +
-  `shared/qknob.lua`, hit the `#include` resolution puzzle below before
-  landing). **Not yet started:** Dolby CPSeries Control V4.0 -- the
-  hardest case, needs `cpseries_models.lua`/`cpseries_protocol.lua`/
-  `cpseries_commlib.lua` (private to CPSeries) alongside
-  `shared/dolbyfader.lua`/`shared/qknob.lua` (shared); add it to
-  `build-qplug.yml`'s `plugin` choice input once restructured. Once
-  CPSeries no longer needs `Developer/Modules/*.lua` /
-  `build_distributable.sh`, both become fully obsolete -- ask before
-  deleting them, not decided yet. All four root `.qplugx` files are
-  stale relative to their rebuilt `.qplug`s; regenerate via
-  `.github/workflows/build-qplugx.yml` once CPSeries lands too (that
-  workflow also still has its own separate known issue: `submodules:
-  recursive` fails on `vendor/qsc-q-sys` being private -- same fix as
-  `build-qplug.yml` already applies, a scoped submodule init instead of
-  `recursive`, just not yet ported over).
+  moved to a new `Developer/shared/`. All four verified byte-for-byte (or
+  logically equivalent, for CPSeries's reflowed formatting) against actual
+  CI output, each with a full local `Developer/tests/run.sh` pass
+  afterward: MultiFlip-Flop (BuildVersion 2.0.0.2, no shared-file
+  dependency, simplest case), Dolby Sweep (2.0.0.2, one level of shared
+  indirection via its own `runtime.lua`), DolbyFader (2.0.0.2, reuses
+  `shared/dolbyfader.lua` + `shared/qknob.lua`, hit the `#include`
+  resolution puzzle below), Dolby CPSeries Control (4.0.0.3, the hardest
+  case -- `models.lua`/`protocol.lua`/`commlib.lua`, formerly
+  `Developer/Modules/cpseries_{models,protocol,commlib}.lua`, moved into
+  the plugin's own folder as private files with their `require()` calls
+  dropped, alongside `shared/dolbyfader.lua`/`shared/qknob.lua`; sidesteps
+  the nested-include first-line rule entirely by `#include`ing everything
+  directly from `plugin.lua`, all depth-1). `Developer/Modules/` and
+  `Developer/tools/build_distributable.sh` had no remaining consumer once
+  CPSeries landed and were deleted the same day (explicit user
+  confirmation); `test_modules.lua` (37 checks, direct CPSeries-class
+  protocol coverage) was migrated to `loadfile()` the new
+  `Developer/plugins/Dolby CPSeries Control/{models,protocol,commlib}.lua`
+  in `plugin.lua`'s own load order instead of `require()`-ing from
+  `Developer/Modules`. `test_plugin_defs.lua` (tested Developer-side
+  definition files directly via `loadfile()`, no longer possible once
+  every plugin's source became `#include`-based) was retired; its checks
+  moved into each plugin's own `test_dist_*.lua`, run against the compiled
+  root distributable instead -- same pattern already used for DolbyFader,
+  extended to CPSeries. All four root `.qplugx` files regenerated via
+  `.github/workflows/build-qplugx.yml` (fixed the same day: `submodules:
+  recursive` was trying to clone the private `vendor/qsc-q-sys` and
+  failing on the runner's default token, same root cause `build-qplug.yml`
+  already worked around -- switched to `submodules: false` plus a scoped
+  init of just `vendor/qsys-plugins/PluginEncryptionTool`). Both
+  `build-qplug.yml` and `build-qplugx.yml` also print their build output
+  in full to the job log, not just the workflow artifact -- the artifact's
+  own blob-storage download URL is blocked by this session's egress
+  proxy, but GitHub's own job-log API isn't.
   **`#include` resolution rules, confirmed by trial (2026-07-29):**
   (1) a relative `#include` path always resolves against the *original*
   `plugin.lua`'s own directory (the process cwd `PLUGCC.exe` is invoked
@@ -950,4 +995,7 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   line-position rule was spotted by diffing against Dolby Sweep's own
   already-working `runtime.lua` (its `#include` of `shared/qknob.lua`
   sits on line 1 there too, which is what made it work by accident, not
-  by design, before this was understood).
+  by design, before this was understood). `Developer/shared/dolbyfader.lua`
+  and `Dolby Sweep/runtime.lua` both now lead with their `#include` line
+  for exactly this reason; `Dolby CPSeries Control/plugin.lua` avoids the
+  question by never nesting an `#include` at all.
