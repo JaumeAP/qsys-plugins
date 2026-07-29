@@ -10,6 +10,3 @@
 [submodule "vendor/qsys-plugins/PluginEncryptionTool"]
 	path = vendor/qsys-plugins/PluginEncryptionTool
 	url = https://github.com/qsys-plugins/PluginEncryptionTool.git
-[submodule "vendor/qsc-q-sys"]
-	path = vendor/qsc-q-sys
-	url = https://github.com/jaumeap/qsc-q-sys.git

@@ -1242,6 +1242,17 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   whatever blocked it was fixed out-of-band. Added as
   `vendor/qsc-q-sys` (PR #41). Its reverse-engineered docs are what
   resolved the `.Value`/`.Boolean` question above.
+  **Update (2026-07-29, same day, explicit user request): removed
+  again.** A later session in the same day found `vendor/qsc-q-sys`
+  present in `.gitmodules` but still uninitialized on its own branch
+  (private-repo access not in scope for that session either), and
+  `add_repo` for `JaumeAP/qsc-q-sys` was offered again -- the user
+  denied it and asked for the pending submodule addition to be deleted
+  outright, with a standing instruction not to attempt or ask again.
+  Deregistered: `git rm` on `vendor/qsc-q-sys` plus its section removed
+  from `.gitmodules`. Standing rule from here on: do not call `add_repo`
+  for `qsc-q-sys` and do not ask about it, in this or any future
+  session, unless the user brings it up first.
 - **PLUGCC.exe rebuild of all four plugins, complete (started 2026-07-29,
   explicit user request, repeatedly confirmed; finished same day).**
   Replaced this repo's own `Developer/tools/build_distributable.sh` with
