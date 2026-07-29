@@ -842,3 +842,23 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   item above. (2) `cpseries_commlib.lua:406`'s `readData(self,true)` call
   passes an argument `readData` (only takes `self`) always ignores —
   harmless, just misleading. Neither fixed.
+- **`qsc-q-sys` submodule blocked, not added (2026-07-28):** the user
+  asked to add their own `qsc-q-sys` repo (referenced in "Plugin
+  structure/naming convention" above as the source of the original,
+  since-partly-reverted plugin convention) as a new `vendor/` submodule,
+  same pattern as the five submodules already there. `add_repo` for
+  `JaumeAP/qsc-q-sys` consistently fails with `MCP error -32003: MCP
+  tool call requires approval`, even after the user confirmed/retried
+  multiple times and checked `github.com/settings/installations` for
+  the GitHub App's repo access. Ruled out this session: Claude Code's
+  own local permission gate (already pre-allowlisted in
+  `settings.json`), a bad repo name, general GitHub auth (other
+  `mcp__github__*` tools work fine in the same session), and plain
+  `git clone` (fails the same way, proxy requires the repo added
+  first). Deliberately NOT worked around with the environment's own
+  `GITHUB_TOKEN` -- that would bypass the exact access-check `add_repo`
+  itself documents doing. Still unresolved: where this connector's own
+  approval surface actually lives for this session type. Next session:
+  retry `add_repo` first in case it was fixed out-of-band; if not,
+  this needs investigating outside the chat entirely (Anthropic/Claude
+  Code Remote side), not more retries here.
