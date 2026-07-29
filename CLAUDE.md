@@ -894,14 +894,29 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   plugins didn't settle it either way; fixing without proof risked a
   regression). Resolves with one check, `type(Controls.SomeButton.Value)`
   from a live EventHandler on real Designer or a CP Emulator bench — neither
-  available so far.
-- **Two unactioned review findings (2026-07-27):** (1)
-  `MultiFlip-Flop V2.0.qplug`'s `Toggle_N` handler writes a boolean to
-  `State_N.Value` then reads it back numeric (`== 1`) in the same
-  synchronous call, no host round-trip — a more fragile instance of the
-  item above. (2) `cpseries_commlib.lua:406`'s `readData(self,true)` call
-  passes an argument `readData` (only takes `self`) always ignores —
-  harmless, just misleading. Neither fixed.
+  available so far. One of the sites this ambiguity used to cover
+  (`MultiFlip-Flop`'s `Toggle_N`) is fixed as of 2026-07-29, see below — that
+  fix sidesteps the ambiguity by only ever WRITING an explicit number, so it
+  didn't need this question resolved; the remaining 7+ read-side sites
+  still do.
+- **`MultiFlip-Flop V2.0.qplug`'s `Toggle_N` bug, fixed (2026-07-29,
+  confirmed via the Lua stub harness, not real Designer/bench):** the
+  handler wrote a Lua boolean to `State_N.Value` (`Controls[...].Value ==
+  0`) then read it back with `== 1` inside `State_N`'s own `EventHandler`,
+  called synchronously in the same statement — `true == 1` is always false
+  in Lua (no boolean/number coercion), so `Toggle_N` corrupted
+  `State_N.Value` to `true`/`false` and never actually flipped `Out_N`/
+  `Not_N`. Reproduced with a standalone probe script (`Toggle_1` twice:
+  `Out_1`/`Not_1` never changed from their initial 0/1), then fixed to
+  assign an explicit `1`/`0`, re-verified with the same probe, and covered
+  by a new regression test in `test_dist_flipflop.lua` (`Toggle_3` twice,
+  checking `State_3`/`Out_3`/`Not_3` both directions). `BuildVersion`
+  bumped to `2.0.0.1`. This was one of the two "unactioned review findings"
+  logged below on 2026-07-27; item (2) there is still open.
+- **One remaining unactioned review finding (2026-07-27):**
+  `cpseries_commlib.lua:406`'s `readData(self,true)` call passes an
+  argument `readData` (only takes `self`) always ignores — harmless, just
+  misleading. Not fixed.
 - **`qsc-q-sys` submodule blocked, not added (2026-07-28):** the user
   asked to add their own `qsc-q-sys` repo (referenced in "Plugin
   structure/naming convention" above as the source of the original,

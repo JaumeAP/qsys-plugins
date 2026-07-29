@@ -18,11 +18,15 @@
 -- was never a declared value anywhere in the file (an undeclared global, so
 -- the whole assignment was `VTextAlign = nil`) -- vertical centering on
 -- these labels was silently never applied; now VTextAlign = "Center".
+-- v2.0.0.1: Toggle_N wrote a Lua boolean to State_N.Value (`... == 0`) then
+-- read it back with `== 1` in the same synchronous call -- always false in
+-- Lua, so Toggle_N corrupted State_N.Value to true/false without ever
+-- actually flipping Out_N/Not_N. Fixed to assign an explicit 1/0.
 
 PluginInfo = {
 	Name = "Dolby~Multi Flip-Flop",
 	Version = "2.0",
-	BuildVersion = "2.0.0.0",
+	BuildVersion = "2.0.0.1",
 	Id = "8d8af033-fa93-4962-805a-96d57b435859",
 	Author = "Jaume Puig",
 	Description = "Advanced Multi Flip-Flop Component Plugin",
@@ -275,7 +279,16 @@ if Controls then
 		end
 
 		Controls["Toggle_" .. t].EventHandler = function(ctrl)
-			Controls["State_" .. t].Value = Controls["State_" .. t].Value == 0
+			-- FIX: was `Controls[...].Value = Controls[...].Value == 0`, a
+			-- Lua boolean, then read back with `== 1` inside State_N's own
+			-- EventHandler below -- `true == 1` is always false in Lua (no
+			-- boolean/number coercion), so Toggle_N never actually toggled
+			-- Out_N/Not_N, only corrupted State_N.Value to true/false.
+			if Controls["State_" .. t].Value == 0 then
+				Controls["State_" .. t].Value = 1
+			else
+				Controls["State_" .. t].Value = 0
+			end
 			Controls["State_" .. t].EventHandler()
 		end
 
