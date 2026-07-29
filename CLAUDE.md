@@ -75,9 +75,13 @@ like any other unbundled recommendation, fetched live via
 a state it had already passed through once before this same day,
 reverted at the time, now the settled choice (see the history note
 below). This repo's own local copy of `find-skills` was deleted
-outright 2026-07-29 (explicit user request), same treatment as
-`git-rules`/`changelog-rules` above (`.claude/skills/find-skills/`
-deleted, path added to `.claude/removed-files.txt`). It had been meant
+outright 2026-07-29 (explicit user request) — `.claude/skills/
+find-skills/` removed from disk, repo-local only, deliberately NOT
+added to `.claude/removed-files.txt` (that would mechanize pruning it
+from every other repo importing this bundle in the future, which
+wasn't asked for and isn't warranted here — `find-skills` already
+isn't shipped as a bundled file per the paragraph above, so there's
+nothing export-side this deletion needed to affect). It had been meant
 to stay on disk but disabled via a `skillOverrides: {"find-skills":
 "off"}` entry in `.claude/settings.local.json` (gitignored) — but that
 settings file was never actually present in this checkout, so the
