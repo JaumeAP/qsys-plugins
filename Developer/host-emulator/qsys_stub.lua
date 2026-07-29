@@ -6,6 +6,17 @@
 -- Timers here never fire on their own -- there is no event loop. Tests drive
 -- them by hand with env:tick(), which is what makes the poll loop testable a
 -- step at a time.
+--
+-- Standing convention (2026-07-29): this file models real Q-SYS Lua host
+-- behavior, checked against Q-SYS Help (help.qsys.com / q-syshelp.qsc.com),
+-- not guessed. A new plugin that needs a host feature this stub doesn't
+-- have yet (a different embedded component, a Q-SYS Lua extension beyond
+-- Controls/Timer/TcpSocket/Properties/System, a control property this file
+-- doesn't model) should get that feature looked up in Q-SYS Help first, the
+-- same way the Trigger/Meter control-kind split and the Timer.CallAfter
+-- error-swallowing fix above were done, rather than guessed from how the
+-- plugin code merely happens to be written. Extend this file to add the
+-- capability, don't work around its absence in the plugin or the test.
 
 local M = {}
 

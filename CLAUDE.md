@@ -345,7 +345,13 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   └── qsys_stub.lua             Stand-in for the Q-SYS host globals (Controls,
     │                                 Timer, TcpSocket, Properties, System); every
     │                                 test file adds this directory to its own
-    │                                 package.path alongside Developer/tests/ itself
+    │                                 package.path alongside Developer/tests/ itself.
+    │                                 Standing convention: a new plugin needing a host
+    │                                 feature this stub doesn't model yet gets that
+    │                                 feature looked up in Q-SYS Help first (see the
+    │                                 file's own header comment), the stub extended to
+    │                                 add it -- never guessed, never worked around in
+    │                                 the plugin or the test instead
     └── tests/                        Lua 5.3 test suite, no framework (see its README)
         ├── run.sh                    Syntax pass over every source, then every test
         ├── harness.lua               Path resolution + check counter
