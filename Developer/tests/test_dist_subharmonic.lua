@@ -38,7 +38,7 @@ do
 	local pins = GetPins({})
 	h.check(#pins == 2, "GetPins declares exactly Input/Output (got " .. #pins .. ")")
 
-	local ok, err = pcall(h.check_wiring, comps, pins, GetWiring({}))
+	local ok, err = pcall(qsys.check_wiring, comps, pins, GetWiring({}))
 	h.check(ok, "GetWiring resolves against GetComponents/GetPins (" .. tostring(err) .. ")")
 end
 

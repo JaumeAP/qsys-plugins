@@ -204,4 +204,58 @@ function M.cpseries_properties(model, debug_on)
 	}
 end
 
+-- Structural validation for GetComponents/GetPins/GetWiring, the audio-path
+-- half of a plugin's definition pass that nothing in this file modeled
+-- until 2026-07-29. Belongs here, not in Developer/tests/harness.lua (test-
+-- runner plumbing -- path resolution, the check counter, nothing about Q-SYS
+-- itself): what this function encodes is real Q-SYS platform behavior, the
+-- same category as the Trigger/Meter control-kind split and the .Value/
+-- .Boolean split above, not a property of how the test suite is organized.
+--
+-- A wiring endpoint is either a plugin pin's own name (declared via
+-- GetPins) or "<ComponentName> <PinName>" for a component GetComponents
+-- declared -- Q-SYS's own convention, confirmed against a real GetWiring
+-- example ("main_mixer Input 1"/"main_mixer Output 1", gdyr/qsys-plugin-docs)
+-- since Q-SYS Help itself 403'd both mirrors the session this was added.
+-- A table literal with a typo'd or stale component/pin name still returns
+-- successfully from all three functions on its own -- nothing here throws
+-- without this check, which is exactly the gap it closes: a component
+-- rename in GetComponents that GetWiring's own strings were never updated
+-- to match used to compile fine and pass every test that existed before it.
+--
+-- Returns true, or raises with a descriptive message identifying exactly
+-- which component/pin/wire is wrong; callers wrap this in pcall and report
+-- through harness.lua's M.check the same way every other assertion-style
+-- check in the suite does.
+function M.check_wiring(comps, pins, wiring)
+	local comp_names = {}
+	for _, c in ipairs(comps or {}) do
+		assert(c.Name, "a GetComponents entry is missing Name")
+		assert(c.Type, "component '" .. tostring(c.Name) .. "' is missing Type")
+		comp_names[c.Name] = true
+	end
+	local pin_names = {}
+	for _, p in ipairs(pins or {}) do
+		assert(p.Name, "a GetPins entry is missing Name")
+		assert(p.Direction == "input" or p.Direction == "output",
+			"pin '" .. tostring(p.Name) .. "' has an invalid Direction (" .. tostring(p.Direction) .. ")")
+		pin_names[p.Name] = true
+	end
+	local function resolves(endpoint)
+		if pin_names[endpoint] then return true end
+		local comp = endpoint:match("^(.-)%s")
+		return comp ~= nil and comp_names[comp] == true
+	end
+	for _, w in ipairs(wiring or {}) do
+		assert(type(w) == "table" and #w == 2,
+			"a GetWiring entry is not a 2-element {source, dest} table")
+		for _, endpoint in ipairs(w) do
+			assert(resolves(endpoint),
+				"wiring endpoint '" .. tostring(endpoint) ..
+				"' does not resolve to a declared plugin pin or component pin")
+		end
+	end
+	return true
+end
+
 return M

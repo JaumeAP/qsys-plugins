@@ -37,7 +37,7 @@ do
 		local p = { Type = { Value = case.Type }, Count = { Value = case.Count } }
 		local pins = GetPins(p)
 		h.check(#pins == case.pins, "GetPins for Type=" .. case.Type .. " declares " .. case.pins .. " pin(s) (got " .. #pins .. ")")
-		local ok, err = pcall(h.check_wiring, comps, pins, GetWiring(p))
+		local ok, err = pcall(qsys.check_wiring, comps, pins, GetWiring(p))
 		h.check(ok, "GetWiring for Type=" .. case.Type .. " resolves against GetComponents/GetPins (" .. tostring(err) .. ")")
 	end
 end

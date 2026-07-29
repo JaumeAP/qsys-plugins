@@ -982,7 +982,8 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   `GetWiring`'s own string literals were never updated to match would
   compile fine (`luac -p` sees a table literal, not a mismatch) and every
   existing test would still pass, since none of them ever looked. Added
-  `harness.lua`'s `M.check_wiring(comps, pins, wiring)`: validates that
+  `M.check_wiring(comps, pins, wiring)` (moved to `qsys_stub.lua` the same
+  day -- see the follow-up note right after this one): validates that
   every `GetComponents` entry has `Name`/`Type`, every `GetPins` entry has
   a valid `Direction`, and every `GetWiring` endpoint resolves to either a
   declared plugin pin or `"<ComponentName> <PinName>"` for a declared
@@ -1017,6 +1018,19 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   former for its runtime checks, not yet the latter), fixed the same way
   the `period`/`timer`/`DolbyCP`/`sock` gap was fixed earlier this
   session. Suite total: 224 -> 245 checks, all green.
+- **`check_wiring` relocated from `harness.lua` to `qsys_stub.lua`, same day
+  (2026-07-29, explicit user request).** First written into `harness.lua`
+  alongside `M.check`/`M.section`, which was a category mistake caught
+  after the fact: `harness.lua`'s own charter (see the host-emulator split
+  note below) is test-runner plumbing -- path resolution, the check
+  counter -- explicitly NOT anything about Q-SYS itself, while
+  `check_wiring` encodes a real piece of Q-SYS platform behavior (how a
+  `GetWiring` endpoint string resolves to a pin), the same category as the
+  Trigger/Meter split or the `.Value`/`.Boolean` split the stub already
+  owns. Moved with its doc comment; call sites in `test_dist_sweep.lua`
+  and `test_dist_subharmonic.lua` updated from `h.check_wiring` to
+  `qsys.check_wiring`. No behavior change -- `Developer/tests/run.sh`
+  stays at 245 checks, all green.
 - **Stress/fuzz suite added, covering all five plugins (2026-07-29,
   explicit user request).** `Developer/tests/test_stress.lua`, registered
   in `run.sh`, 49 checks, runs in well under a second. Deliberately a
