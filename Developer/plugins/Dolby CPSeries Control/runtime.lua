@@ -128,7 +128,7 @@
 				["ready"] = function() Print(true, 'found "Dolby ' .. result .. '"') SetStatus(0) end,
 				["formlist"] = function() Controls.Select.Choices = result end,
 				["formname"] = function() Controls.Select.String = result end,
-				["mute"] = function() Controls.Mute.Value = result end,
+				["mute"] = function() Controls.Mute.Boolean = (result ~= 0) end,
 				["fader"] = function()
 					DKNob.Value = result
 					DKNob.EventHandler(DolbyCP)
@@ -154,7 +154,7 @@
 		end
 
 		Controls.Mute.EventHandler = function(ctrl)
-			DolbyCP:Action("mute", Controls.Mute.Value)
+			DolbyCP:Action("mute", Controls.Mute.Boolean)
 		end
 
 		Controls.Select.EventHandler = function(ctrl)
@@ -193,7 +193,7 @@
 			Controls.Start.Value = 1
 			DKNob.Value = 7.0
 			DKNob.EventHandler(DolbyCP)
-			Controls.Mute.Value = 0
+			Controls.Mute.Boolean = false
 			Controls.Selector[1].Value = 1
 			Controls.Selector[1].EventHandler(DolbyCP)
 		end
