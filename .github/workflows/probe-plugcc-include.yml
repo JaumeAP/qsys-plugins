@@ -21,6 +21,14 @@ jobs:
       - name: Init only the ExamplePlugin submodule (PLUGCC.exe lives there)
         shell: pwsh
         run: |
+          # ExamplePlugin's own nested PluginCompile submodule is registered
+          # with an SSH URL (git@github.com:...); actions/checkout only
+          # rewrites SSH->HTTPS when its own `submodules` input is truthy,
+          # which we deliberately left off (submodules: false above) to
+          # avoid recursing into vendor/qsc-q-sys. Do the same rewrite by
+          # hand so this clone goes over HTTPS with the already-configured
+          # GITHUB_TOKEN instead of failing on a runner with no SSH key.
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
           git submodule update --init vendor/qsys-plugins/ExamplePlugin
           git -C vendor/qsys-plugins/ExamplePlugin submodule update --init PluginCompile
 
