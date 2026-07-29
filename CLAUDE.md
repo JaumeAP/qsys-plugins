@@ -282,8 +282,7 @@ Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
     │   ├── DolbyFader V2.0.qplug
     │   ├── Dolby CPSeries Control V4.0.qplug
     │   ├── Dolby Sweep V2.0.qplug
-    │   ├── MultiFlip-Flop V2.0.qplug
-    │   └── reference.lua             Template/cheat-sheet of every component & control type
+    │   └── MultiFlip-Flop V2.0.qplug
     ├── Modules/                      Runtime logic pulled in by plugins via require()
     │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base)
     │   ├── strict.lua                Global-variable guard (errors on undeclared globals)
@@ -372,10 +371,6 @@ inline in the `.qplug`, guarded by `if Controls then ... end` instead (both
 guard styles are valid; `MultiFlip-Flop` predates the other three plugins'
 guard-then-`require` split and there was no reason to change a working,
 self-contained file's shape just to match them).
-
-`reference.lua` is the canonical example: it enumerates every property type,
-component type, control type and layout key, and shows the `package.path`
-prelude used to locate modules during local development.
 
 ### Q-SYS runtime globals (available to plugin/module code)
 
@@ -713,7 +708,7 @@ the four `.qplug`/`Developer/Modules/*.lua` files this rewrite covered.
 ### Developer workflow
 
 Q-SYS Designer loads dev modules from the user's Modules folder. During local
-development plugins prepend it to `package.path` (see `reference.lua`):
+development plugins prepend it to `package.path`:
 
 ```
 <USERPROFILE|HOME>/Documents/QSC/Q-Sys Designer/Modules/?.lua
