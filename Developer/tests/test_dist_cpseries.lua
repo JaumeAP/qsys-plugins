@@ -34,6 +34,15 @@ do
 	local shown = { ["TCP Log"] = { IsHidden = true }, plugin_show_debug = { Value = 1 } }
 	RectifyProperties(shown)
 	h.check(shown["TCP Log"].IsHidden == false, "TCP Log is shown when debug is on")
+
+	local comps = GetComponents({})
+	h.check(#comps == 1 and comps[1].Name == "Step" and comps[1].Type == "stepper",
+		"GetComponents declares one 'Step' component of Type stepper")
+	-- No GetPins/GetWiring: CPSeries is a control-only plugin (TCP to the
+	-- processor, no audio path) -- same shape as DolbyFader, see its own
+	-- test for why that is the expected shape rather than an omission.
+	h.check(GetPins == nil and GetWiring == nil,
+		"no GetPins/GetWiring is declared (control-only plugin, no audio path)")
 end
 
 h.section("per model definition")

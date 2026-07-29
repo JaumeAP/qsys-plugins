@@ -21,6 +21,25 @@ do
 	for _, n in ipairs(SWEEP_CONTROLS) do
 		h.check(by_name[n] ~= nil, n .. " is declared")
 	end
+
+	local comps = GetComponents({})
+	h.check(#comps == 1 and comps[1].Name == "Sine" and comps[1].Type == "sine",
+		"GetComponents declares one 'Sine' component of Type sine")
+
+	-- GetPins/GetWiring are dynamic on props.Type -- Mono/Stereo/Multi-channel
+	-- each produce a different pin count, and each has to wire back to the
+	-- same 'Sine' component GetComponents declared above.
+	for _, case in ipairs({
+		{ Type = "Mono", Count = 8, pins = 1 },
+		{ Type = "Stereo", Count = 8, pins = 2 },
+		{ Type = "Multi-channel", Count = 5, pins = 5 },
+	}) do
+		local p = { Type = { Value = case.Type }, Count = { Value = case.Count } }
+		local pins = GetPins(p)
+		h.check(#pins == case.pins, "GetPins for Type=" .. case.Type .. " declares " .. case.pins .. " pin(s) (got " .. #pins .. ")")
+		local ok, err = pcall(h.check_wiring, comps, pins, GetWiring(p))
+		h.check(ok, "GetWiring for Type=" .. case.Type .. " resolves against GetComponents/GetPins (" .. tostring(err) .. ")")
+	end
 end
 
 h.section("runtime pass")

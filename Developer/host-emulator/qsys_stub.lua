@@ -73,6 +73,15 @@ local PLUGIN_GLOBALS = {
 	"DKNob", "Print", "DolbyFaderEventHandler", "Class", "class",
 	"GetColor", "GetPrettyName", "GetProperties", "RectifyProperties",
 	"GetComponents", "GetControls", "GetControlLayout",
+	-- GetPins/GetWiring/GetPages are optional (only Dolby Sweep and
+	-- SubharmonicSynth declare them) -- omitted here until 2026-07-29,
+	-- which meant a test loading two full distributables in one process
+	-- (test_stress.lua does, for its runtime checks) could see one
+	-- plugin's leftover GetPins/GetWiring still defined while testing a
+	-- later plugin that declares neither. Harmless while nothing called
+	-- them across that boundary, but the same latent gap PLUGIN_GLOBALS
+	-- exists to close for every other definition-pass function.
+	"GetPins", "GetWiring", "GetPages",
 	-- Dolby Sweep's own globals (see CLAUDE.md's strict.lua wiring notes)
 	"period", "timer",
 	-- Dolby CPSeries Control's own globals

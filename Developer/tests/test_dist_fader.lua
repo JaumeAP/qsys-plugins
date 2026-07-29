@@ -30,6 +30,15 @@ do
 		"Level is a Text control, which QKnob requires")
 	h.check(by_name.Gain and by_name.Gain.Min == -100 and by_name.Gain.Max == 20,
 		"Gain knob spans -100..20 dB")
+
+	local comps = GetComponents({})
+	h.check(#comps == 1 and comps[1].Name == "Step" and comps[1].Type == "stepper",
+		"GetComponents declares one 'Step' component of Type stepper")
+	-- No GetPins/GetWiring: DolbyFader has no audio path, only the control
+	-- pins declared in GetControls (no network I/O either -- see the file
+	-- header). A control-only component legitimately declares neither.
+	h.check(GetPins == nil and GetWiring == nil,
+		"no GetPins/GetWiring is declared (control-only plugin, no audio path)")
 end
 
 h.section("runtime pass")

@@ -975,6 +975,48 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   `period`/`timer` and `Dolby CPSeries Control`'s `DolbyCP`/`sock` globals
   were never in the list, so `M.clear()` never reset them between test
   runs.
+- **GetComponents/GetPins/GetWiring gained test coverage, previously zero
+  (2026-07-29, explicit user request).** Before this, no test file in this
+  repo called any of the three definition-pass functions that build a
+  plugin's audio path -- a component rename in `GetComponents` that
+  `GetWiring`'s own string literals were never updated to match would
+  compile fine (`luac -p` sees a table literal, not a mismatch) and every
+  existing test would still pass, since none of them ever looked. Added
+  `harness.lua`'s `M.check_wiring(comps, pins, wiring)`: validates that
+  every `GetComponents` entry has `Name`/`Type`, every `GetPins` entry has
+  a valid `Direction`, and every `GetWiring` endpoint resolves to either a
+  declared plugin pin or `"<ComponentName> <PinName>"` for a declared
+  component -- Q-SYS's own convention, confirmed against a real
+  `GetWiring` example (`"main_mixer Input 1"`/`"main_mixer Output 1"`,
+  gdyr/qsys-plugin-docs) since Q-SYS Help itself 403'd both mirrors this
+  session (transient, same as noted elsewhere in this file). Verified the
+  check actually catches a break, not just a vacuous pass: corrupted a
+  copy of the built `SubharmonicSynth.qplug`'s own wiring string and
+  confirmed the new check fails with the exact bad endpoint named, then
+  discarded the copy. Wired into the definition pass of every
+  `test_dist_*.lua` that has an audio path (`sweep`, `subharmonic`, each
+  across every dynamic pin-count case sweep's own `Type` property
+  produces) and, for the two control-only plugins (`fader`, `cpseries`),
+  an explicit assertion that `GetPins`/`GetWiring` are correctly absent
+  rather than silently unchecked. `MultiFlip-Flop` has none of the three
+  and needs no addition. Confirmed independently and specifically: the
+  Sine Generator component exposes a single unnumbered `"Output"` pin
+  (matches Dolby Sweep's pre-existing `"Sine Output"` wiring exactly);
+  `gain`/`filter_lowpass`/`equalizer_parametric` were not independently
+  re-confirmed against an official source this session (inherited
+  unverified from the external SubharmonicSynth contribution, consistent
+  with the mixer convention above but not separately proven) -- if this
+  ever needs settling, `vendor/qsc-q-sys` likely has it, but that
+  submodule is still uninitialized in this session (see its own item
+  below) and wasn't added for this, since the user didn't ask for that
+  specifically. Also fixed a real gap surfaced while adding this:
+  `qsys_stub.lua`'s `PLUGIN_GLOBALS` never included `GetPins`/`GetWiring`/
+  `GetPages`, so `M.clear()` never reset them between plugins -- harmless
+  until a test loads two full distributables in one process AND calls
+  either function across that boundary (`test_stress.lua` does the
+  former for its runtime checks, not yet the latter), fixed the same way
+  the `period`/`timer`/`DolbyCP`/`sock` gap was fixed earlier this
+  session. Suite total: 224 -> 245 checks, all green.
 - **Stress/fuzz suite added, covering all five plugins (2026-07-29,
   explicit user request).** `Developer/tests/test_stress.lua`, registered
   in `run.sh`, 49 checks, runs in well under a second. Deliberately a

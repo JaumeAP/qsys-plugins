@@ -22,6 +22,24 @@ do
 	for _, n in ipairs(CONTROLS) do
 		h.check(by_name[n] ~= nil, n .. " is declared")
 	end
+
+	local comps = GetComponents({})
+	local comp_by_name = {}
+	for _, c in ipairs(comps) do comp_by_name[c.Name] = c end
+	for _, n in ipairs({ "Lpf", "Peq", "GainSub", "GainDry", "Mix" }) do
+		h.check(comp_by_name[n] ~= nil, "GetComponents declares '" .. n .. "'")
+	end
+	h.check(comp_by_name.Lpf and comp_by_name.Lpf.Type == "filter_lowpass", "Lpf is Type filter_lowpass")
+	h.check(comp_by_name.Peq and comp_by_name.Peq.Type == "equalizer_parametric", "Peq is Type equalizer_parametric")
+	h.check(comp_by_name.Mix and comp_by_name.Mix.Type == "mixer"
+		and comp_by_name.Mix.Properties["n_inputs"] == 2 and comp_by_name.Mix.Properties["n_outputs"] == 1,
+		"Mix is a 2-input 1-output mixer")
+
+	local pins = GetPins({})
+	h.check(#pins == 2, "GetPins declares exactly Input/Output (got " .. #pins .. ")")
+
+	local ok, err = pcall(h.check_wiring, comps, pins, GetWiring({}))
+	h.check(ok, "GetWiring resolves against GetComponents/GetPins (" .. tostring(err) .. ")")
 end
 
 -- Build the embedded DSP components fresh, same ad hoc pattern Dolby
