@@ -23,17 +23,22 @@
 -- v2.0.0.2: restructured onto QSC's official PLUGCC.exe build convention
 -- (vendor/qsys-plugins/BasePlugin/PluginCompile, PLUGCC.exe) instead of
 -- this repo's own build_distributable.sh -- split into this file plus
--- info.lua/controls.lua/layout.lua/runtime.lua, built by PLUGCC.exe on
--- Windows CI (.github/workflows/build-qplug.yml). runtime.lua now
--- #include's Developer/shared/dolbyfader.lua (also used by CPSeries, moved
--- there rather than duplicated), which in turn #include's
--- Developer/shared/qknob.lua (also used by Dolby Sweep) -- PLUGCC.exe
--- confirmed to resolve cross-folder #include paths, including nested ones
--- (see CLAUDE.md continuity notes). No functional change from v2.0.0.1;
--- the dev-only 'strict' globals guard is dropped rather than carried over,
--- same call as MultiFlip-Flop/Dolby Sweep's own restructuring, since it
--- never shipped to production and PLUGCC.exe has no equivalent stripping
--- step build_distributable.sh had.
+-- info.lua/controls.lua/layout.lua. No separate runtime.lua: this file's
+-- own `if Controls then` block #include's Developer/shared/dolbyfader.lua
+-- (also used by CPSeries, moved there rather than duplicated) directly,
+-- which in turn #include's Developer/shared/qknob.lua (also used by
+-- Dolby Sweep) -- PLUGCC.exe only expands #include directives up to 2
+-- levels deep from plugin.lua (confirmed by trial: a 3-level chain
+-- through an intermediate runtime.lua left the innermost #include as a
+-- literal, unexpanded comment, silently dropping QKnob -- see CLAUDE.md
+-- continuity notes), so the plugin.lua -> shared/dolbyfader.lua ->
+-- shared/qknob.lua chain has to stay exactly 2 deep, same shape as Dolby
+-- Sweep's own working plugin.lua -> runtime.lua -> shared/qknob.lua
+-- chain. No functional change from v2.0.0.1; the dev-only 'strict'
+-- globals guard is dropped rather than carried over, same call as
+-- MultiFlip-Flop/Dolby Sweep's own restructuring, since it never shipped
+-- to production and PLUGCC.exe has no equivalent stripping step
+-- build_distributable.sh had.
 
 --[[ #include "info.lua" ]]
 
@@ -81,5 +86,5 @@ function GetComponents(props)
 end
 
 if Controls then
-	--[[ #include "runtime.lua" ]]
+	--[[ #include "../../shared/dolbyfader.lua" ]]
 end
