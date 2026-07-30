@@ -27,7 +27,6 @@ webapp-testing -> anthropics/skills
 simplify -> anthropics/skills
 static-analysis -> anthropics/skills
 remotion -> remotion/remotion
-hookdeck-webhook-skills -> hookdeck/claude-skills
 skill-security-auditor -> anthropics/skills
 docker-best-practices -> anthropics/skills
 documentation-handbook -> anthropics/skills
