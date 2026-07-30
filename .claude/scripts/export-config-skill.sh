@@ -12,16 +12,24 @@
 #
 # A .skill package may contain exactly ONE SKILL.md (the claude.ai/Skills
 # API upload path rejects more than one). This bundle carries THREE
-# skills as files: file-operations, github-rules, and changelog-rules
-# are mandatory/blind-copy. `file-operations`/`github-rules` were each
+# skills as files: file-operations and github-rules
+# are mandatory/blind-copy; changelog-rules is bundled the same way but
+# OPTIONAL per target repo (config-export-import.md step 2.5) -- still
+# packaged into every export regardless (that's what makes it available
+# to offer), the optionality is purely an import-side, per-repo choice.
+# `file-operations`/`github-rules` were each
 # briefly made an optional import choice on 2026-07-27, then moved back
 # the same day by explicit user request -- github-rules first,
 # file-operations shortly after -- see config-export-import.md step 2.2.
-# `changelog-rules` had a longer road: briefly deleted entirely on
+# `changelog-rules` had the longest road of any skill that stayed
+# bundled: briefly deleted entirely on
 # 2026-07-27, restored and made optional on 2026-07-28, removed from the
-# bundle entirely a second time the same day, then reinstated a THIRD
-# time on 2026-07-30 (explicit user request) -- this time as mandatory
-# rather than optional, its settled state; see `.claude/skills-history.md`
+# bundle entirely a second time the same day, reinstated a THIRD
+# time on 2026-07-30 as mandatory, then reverted a FOURTH time later the
+# same day (explicit user request) back to optional -- its settled state,
+# at least so far. Its full current content is also embedded verbatim in
+# config-export-import.md's own appendix now, so it survives even in a
+# repo that doesn't install it; see `.claude/skills-history.md`
 # for the full timeline. `find-skills` is NOT bundled as a file any
 # more -- after its own long mandatory/optional history (see
 # `.claude/skills-history.md`), it moved a final time on 2026-07-28
@@ -116,13 +124,19 @@ repeated here.
   installed into the target's own `.claude/scripts/` too, so the target
   repo can export its own bundle later instead of only ever being an
   import destination.
-- `references/skills/<name>/<name>.md` -- three bundled mandatory skills,
-  `file-operations`, `github-rules`, and `changelog-rules` (step 2.2).
-  `file-operations`/`github-rules` were each briefly made optional on
+- `references/skills/<name>/<name>.md` -- three bundled skills:
+  `file-operations` and `github-rules`, mandatory (step 2.2), plus
+  `changelog-rules`, bundled the same way but optional per target repo
+  (step 2.5) -- install it only where the repo actually maintains a
+  changelog. `file-operations`/`github-rules` were each briefly made
+  optional on
   2026-07-27, moved back the same day. `changelog-rules` went through the
   longest history of any skill here -- deleted, restored optional, removed
-  entirely, all within 2026-07-27/28 -- before being reinstated a third
-  time on 2026-07-30, this time as mandatory rather than optional; see
+  entirely, all within 2026-07-27/28, reinstated as mandatory on
+  2026-07-30, then reverted the same day to optional, its settled state;
+  its full current content also lives verbatim in
+  `config-export-import.md`'s own appendix now, so a repo without it
+  installed still has the definition on hand; see
   `.claude/skills-history.md` for the full timeline. `caveman` and
   `karpathy-guidelines` are also mandatory (2026-07-30) but fetch-on-demand
   remote only (see `recommended-skills.txt` above — listed there for remote
