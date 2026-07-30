@@ -137,6 +137,7 @@ EOF
 sed '/^## Project-specific rules/,$d' CLAUDE.md > "$skill_dir/references/CLAUDE.md"
 cp .claude/config-export-import.md "$skill_dir/references/"
 cp .claude/recommended-skills.txt "$skill_dir/references/"
+[ -f .claude/programming-optional-skills.txt ] && cp .claude/programming-optional-skills.txt "$skill_dir/references/"
 [ -f .claude/removed-files.txt ] && cp .claude/removed-files.txt "$skill_dir/references/"
 # skills-history.md carries the bundled/optional/removed reasoning that the
 # common CLAUDE.md's "Portable skills" section points at rather than
