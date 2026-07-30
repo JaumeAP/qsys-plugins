@@ -1,6 +1,17 @@
 # Programming-focused optional skills
-# Install via: npx skills add <source>
-# These skills are available optionally during config import
+#
+# PURPOSE: Offer these skills as optional recommendations during config import
+# into target repos. This list contains all programming-related skills currently
+# installed in qsys-plugins (19 skills total).
+#
+# USAGE: During target repo's import step 2.7, present these skills grouped by
+# source (superpowers pack: 13 skills, anthropics pack: 6 skills) as optional
+# installations. Target repos can selectively add any or all of these via:
+#   npx skills add obra/superpowers -s <skill-name>
+#   npx skills add anthropics/skills -s <skill-name>
+#
+# FORMAT: skill-name -> owner/repo (same as recommended-skills.txt)
+# Always fetch individual skills, never by pack name.
 
 # Core development & architecture
 brainstorming -> obra/superpowers
