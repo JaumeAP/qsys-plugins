@@ -5,16 +5,12 @@ description: MUST use whenever reading, writing, copying, moving, or deleting fi
 
 ## MANDATORY
 
-For ALL file operations -- reading, writing, recording, playback,
-copying, moving, deleting, streaming, compression, in-place edits --
-you MUST use this library (`fileops.py`). Do NOT use native `open()`,
-`shutil`, `gzip`, `hashlib`, or raw shell `cp`/`mv`/`rm`/`cat`.
-Invoke via `import fileops` (or `python3 -c` importing it under
-bash_tool). This applies to every action that records, reproduces, or
-copies files, without exception, and to EVERY function in the catalog
-below -- every function has a `fileops` equivalent that MUST be used
-instead of any native/stdlib/shell alternative. No file operation is
-exempt regardless of which function it maps to.
+Use `fileops.py` for every file operation -- reading, writing, copying,
+moving, deleting, streaming, compression, in-place edits. Never native
+`open()`, `shutil`, `gzip`, `hashlib`, or shell `cp`/`mv`/`rm`/`cat`:
+every function in the catalog below has a `fileops` equivalent, no
+exceptions. Invoke via `import fileops` (or `python3 -c` importing it
+under bash_tool).
 
 # File Operations (Python)
 

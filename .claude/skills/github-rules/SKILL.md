@@ -1,11 +1,11 @@
 ---
 name: github-rules
-description: GitHub PR conventions — workflow shape, reading pull_request_read results (status, mergeable_state, CI), and merge automation defaults. Consult whenever opening, updating, merging, or reasoning about PRs, and whenever GitHub conventions matter. Background knowledge only — explicit user instructions always override this.
+description: MUST consult whenever opening, updating, merging, or reasoning about PRs, or whenever GitHub conventions matter — mandatory background for all PR/GitHub work. Covers workflow shape, reading pull_request_read results (status, mergeable_state, CI), and merge automation defaults. Explicit user instructions always override this.
 ---
 
 # GitHub conventions
 
-Portable reference for GitHub workflows across repos. This is general context, not a step-by-step checklist — use judgment and check the repo's own `CLAUDE.md` for project-specific rules.
+Portable reference for GitHub workflows across repos. General context, not a step-by-step checklist — apply judgment, and check the repo's own `CLAUDE.md` for project-specific rules.
 
 **Precedence:** Explicit user instructions always override anything here.
 
