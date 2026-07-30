@@ -96,7 +96,12 @@ repeated here.
 - `references/removed-files.txt` -- files retired from the mandatory
   bundle (hooks, scripts, skills, ...); on import, any of these paths
   still present under the target's `.claude/` get deleted (see
-  `references/config-export-import.md` step 2.2), not installed.
+  `references/config-export-import.md` step 2.2), not installed. Widened
+  2026-07-30: it can also list hooks that mechanize a retired SYSTEM the
+  bundle itself has moved past (e.g. the former `HANDOFF.md` continuity
+  system), even ones that were never actually bundled content -- see step
+  2.4b, which is the binding half for cases like that one, since a path
+  list alone can't migrate content out of a root file first.
 - `references/00-START-HERE.md` -- the same "read config-export-import.md
   first, don't copy anything in blind" note the .zip export carries,
   kept here for parity even though this package's own SKILL.md now
