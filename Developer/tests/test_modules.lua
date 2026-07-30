@@ -251,4 +251,73 @@ do
 	end
 end
 
+h.section("CP650 echo fix")
+do
+	-- CP650 echoes the raw command line before its real response
+	-- ("Protocol Guarantees": expect RESPONSE, not echo). Its handshake
+	-- query reuses the fader wire key ('fader_level'), so an unfiltered
+	-- echo of that query structurally matches the fader/readiness pattern
+	-- and used to flip readiness to true on the plugin's own echoed bytes,
+	-- before the processor had said anything at all.
+	local cp, sock, events, timer = started("CP 650")
+	timer.EventHandler()
+	local sent = sock.writes[1]
+	h.check(sent == "fader_level=?", "CP 650: handshake query sent (got '" .. tostring(sent) .. "')")
+
+	sock.lines = { sent }   -- the device echoing our own line back
+	sock.Data()
+	h.check(saw(events, "ready") == nil, "the raw echo alone must not fire readiness")
+
+	sock.lines = { "fader_level=42" }   -- the real reply, after the echo
+	sock.Data()
+	h.check(saw(events, "ready") ~= nil, "the real reply after the echo fires readiness")
+
+	cp:Stop()
+end
+do
+	-- Only the FIRST identical line is treated as the echo; once consumed,
+	-- a second occurrence of the same text is a genuine (if repetitive)
+	-- reply and must be processed normally, not discarded again.
+	local cp, sock, events, timer = started("CP 650")
+	timer.EventHandler()
+	local sent = sock.writes[1]
+
+	sock.lines = { sent, sent }   -- echo, then a reply identical to the echo
+	sock.Data()
+	h.check(saw(events, "ready") ~= nil,
+		"a second occurrence of the same line (post-echo) is treated as the real reply")
+	cp:Stop()
+end
+do
+	-- A device that never echoes at all (or whose echo is already drained
+	-- by the time the poll fires) must still reach readiness normally --
+	-- the echo filter only discards a match, it never blocks on one.
+	local cp, sock, events, timer = started("CP 650")
+	timer.EventHandler()
+
+	sock.lines = { "fader_level=42" }   -- no echo, straight to the real reply
+	sock.Data()
+	h.check(saw(events, "ready") ~= nil, "readiness still fires with no echo at all")
+	cp:Stop()
+end
+do
+	-- Non-CP650 models never echo and must be completely unaffected by the
+	-- echopending machinery. CP850 reuses 'sys.fader' for its readiness
+	-- row too, so a line equal to the sent query is a structurally valid
+	-- reply here (unlike the CP650 case above, this isn't a mechanical
+	-- echo, just a coincidence of shared wire keys) -- with no echopending
+	-- logic gated in for this model, it must be processed normally and
+	-- fire readiness immediately, in contrast to CP650's suppression.
+	local cp, sock, events, timer = started("CP 850")
+	timer.EventHandler()
+	local sent = sock.writes[1]
+	h.check(sent == "sys.fader ?", "CP 850: handshake query sent (got '" .. tostring(sent) .. "')")
+
+	sock.lines = { sent }
+	sock.Data()
+	h.check(saw(events, "ready") ~= nil,
+		"CP 850: unlike CP650, a line equal to what was sent is processed normally, firing readiness")
+	cp:Stop()
+end
+
 h.report()

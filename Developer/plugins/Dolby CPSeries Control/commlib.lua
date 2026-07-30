@@ -105,6 +105,7 @@
 			private.libmodel = (private.model.value):gsub("%s","")
 			private.isMacro = isMacro(private.model)
 			private.gapticks = (private.model == Model.CP650) and GAP_TICKS_CP650 or GAP_TICKS_DEFAULT
+			private.echopending = nil
 			private.time = Timer.New()
 			return setmetatable( self, CPSeries)
  		end
@@ -118,6 +119,7 @@
  		function CPSeries:Start(Sock)
 			local private = privates[self]
 			private.cache = {}
+			private.echopending = nil   -- no outbound message sent yet on this connection
  			private.sock = Sock
  		    private.sock.Data = function(sock,data) readData(self) end
   			private.time.EventHandler = function(timer) Poll(self) end
@@ -322,6 +324,11 @@
      		end
      		pcall(write)      -- write to socket
 			private.sincesend = 0   -- the gap is measured from the last send
+			-- CP650 raw-echoes the sent line before its real response
+			-- ("Protocol Guarantees": expect RESPONSE, not echo). Arm the
+			-- expectation for readData() below; other models never set
+			-- this, so their read path is unchanged.
+			private.echopending = (private.model == Model.CP650) and msg or nil
 			Print(updated,'TX',msg)
 		end
 
@@ -339,7 +346,22 @@
  			local watchdog = false
  			repeat
     			local str = trimstr(private.sock:ReadLine(TcpSocket.EOL.Any));
-    			if str and str ~='' then watchdog = true received(self,str)  end
+    			if str and str ~='' then
+    				if private.echopending and str == private.echopending then
+    					-- The mechanical CP650 echo of what we just sent, not a
+    					-- real reply: discard it without touching the watchdog
+    					-- or calling received() on it, so it can neither be
+    					-- misread as the answer (e.g. a query's echoed "?" is
+    					-- not a value) nor prematurely satisfy the busy/one-
+    					-- in-flight wait for the real response. Cleared after
+    					-- one match: only the first identical line is the
+    					-- mechanical echo -- a second one is a genuine (if
+    					-- repetitive) reply and must be processed normally.
+    					private.echopending = nil
+    				else
+    					watchdog = true received(self,str)
+    				end
+    			end
 			until str==nil or private.sock.IsConnected == false
  			if not private.sock.IsConnected then doClose(self) end
  			if (watchdog) then private.waiting = 0 end

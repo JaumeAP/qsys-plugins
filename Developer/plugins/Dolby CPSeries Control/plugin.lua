@@ -85,6 +85,22 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.9 - CP650 echo fix ("Protocol Guarantees": expect RESPONSE, not
+--        echo). readData() had no way to tell the device's own raw echo of
+--        the sent line from a real reply. This was concretely wrong, not
+--        just theoretically: CP650's readiness handshake reuses the fader
+--        wire key ('fader_level'), so the echoed query structurally matched
+--        the fader/readiness pattern and flipped readiness to true on the
+--        plugin's own bytes bouncing back, before the processor had said
+--        anything at all -- confirmed by a reproduction script before this
+--        fix, not just by inspection. writeSocket() now records the raw
+--        sent line; readData() discards exactly one matching line before
+--        treating anything as a real response, without touching the
+--        watchdog/busy counter for that discarded line. Only armed for
+--        CP650 -- the other four models are unaffected, don't echo, and
+--        their own coincidental reuse of the same wire key across rows
+--        (e.g. CP850's 'sys.fader') is unrelated existing behaviour, not
+--        something this touches.
 -- v4.0.0.8 - private.cache (the pending-message queue ahead of the regular
 --        poll cycle) honours two more of the "Protocol Guarantees": it now
 --        drains oldest-first (was table.remove() with no index, which pops
