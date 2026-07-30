@@ -139,9 +139,38 @@ session. Content is unchanged, only relocated.
    `Developer/**`, `vendor/**`, `Dolby CP Emulator/**`, `*.qplug`/`*.qplugx`,
    `.github/workflows/**`.
 3. `docs/continuity-notes.md` — dated institutional memory: why past
-   decisions were made, what was tried and reverted, what is still pending.
-   NOT auto-loaded. Read it before re-deriving something that looks settled,
-   and append new dated entries there rather than here.
+   decisions were made, what was tried and reverted, the full reasoning
+   behind anything summarized here. NOT auto-loaded. Read it before
+   re-deriving something that looks settled, and append new dated entries
+   there rather than here.
+
+Native auto memory (`MEMORY.md`) does not substitute for any of this in this
+repo: it is machine-local under `~/.claude/projects/<project>/memory/`, and
+sessions here run in ephemeral containers that get reclaimed. Anything that
+must survive has to be committed.
+
+### Open threads
+
+The one part of the continuity record that has to stay in context every
+session — knowing what is unfinished is what keeps a session from
+re-deriving or silently skipping it. Keep this list short and current:
+close an item by deleting its line here, and put the full story in
+`docs/continuity-notes.md`.
+
+1. All four root `.qplugx` are stale relative to their `.qplug`, and
+   `SubharmonicSynth` has no `.qplugx` at all. Regenerate by dispatching
+   `.github/workflows/build-qplugx.yml` with `all`.
+2. 17 stale `origin/claude/*` branches are audited and approved for
+   deletion but blocked: this session's git proxy returns HTTP 403 on ref
+   deletion specifically, and no delete-branch MCP tool exists. Names are
+   listed in the continuity notes. Retry the push-based delete first in
+   case the proxy policy changed; otherwise it needs the user deleting them
+   from the GitHub UI.
+3. `Developer/host-emulator/components/` pin lists for `gain`,
+   `filter_lowpass`, and `equalizer_parametric` are NOT independently
+   confirmed against an official source — they mirror the numbered-pin
+   convention and match what SubharmonicSynth ships. Re-verify these first
+   if a real host ever disagrees about wiring.
 
 ### Git
 
