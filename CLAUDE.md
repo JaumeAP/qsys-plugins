@@ -53,9 +53,9 @@ imposes no list-format rule either way) — every list in a reply uses `1.
 
 ## Portable skills (installed with the config)
 
-These travel with this file and the rest of `.claude/`. Two skills are
-bundled as files — `file-operations` and `github-rules`. Two additional
-mandatory skills — `caveman` and `karpathy-guidelines` — fetch on-demand
+These travel with this file and the rest of `.claude/`. Three skills are
+bundled as files — `file-operations`, `github-rules`, and `caveman`. One
+additional mandatory skill — `karpathy-guidelines` — fetches on-demand
 from remote (not bundled locally). Import mechanics (blind-copy, merge
 rules, everything else in that process) live solely in
 `.claude/config-export-import.md`, not restated here. Pointers only here,
