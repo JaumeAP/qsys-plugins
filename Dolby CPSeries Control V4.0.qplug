@@ -85,6 +85,32 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.9 - CP650 echo fix ("Protocol Guarantees": expect RESPONSE, not
+--        echo). readData() had no way to tell the device's own raw echo of
+--        the sent line from a real reply. This was concretely wrong, not
+--        just theoretically: CP650's readiness handshake reuses the fader
+--        wire key ('fader_level'), so the echoed query structurally matched
+--        the fader/readiness pattern and flipped readiness to true on the
+--        plugin's own bytes bouncing back, before the processor had said
+--        anything at all -- confirmed by a reproduction script before this
+--        fix, not just by inspection. writeSocket() now records the raw
+--        sent line; readData() discards exactly one matching line before
+--        treating anything as a real response, without touching the
+--        watchdog/busy counter for that discarded line. Only armed for
+--        CP650 -- the other four models are unaffected, don't echo, and
+--        their own coincidental reuse of the same wire key across rows
+--        (e.g. CP850's 'sys.fader') is unrelated existing behaviour, not
+--        something this touches.
+-- v4.0.0.8 - private.cache (the pending-message queue ahead of the regular
+--        poll cycle) honours two more of the "Protocol Guarantees": it now
+--        drains oldest-first (was table.remove() with no index, which pops
+--        the LAST item -- LIFO, not FIFO) and is capped at QMAX=10, dropping
+--        the oldest entry first past capacity. request() is currently the
+--        queue's only producer and is only ever called once per Start(), so
+--        the queue never actually holds more than one entry today -- this
+--        guards a future second caller from inheriting silently wrong
+--        ordering or unbounded growth, not an observed bug in current
+--        behaviour.
 -- v4.0.0.7 - commlib.lua now honours two of the "Protocol Guarantees" of the
 --        Dolby CP Cinema Control spec it previously ignored. (1) Minimum gap
 --        between sent commands: there was none -- the poll loop sent again
@@ -124,7 +150,7 @@ PluginInfo =
 {
 	Name = "Dolby~CP Series Control",
 	Version = "4.0",
-	BuildVersion = "4.0.0.7",
+	BuildVersion = "4.0.0.9",
 	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
 	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
 	Manufacturer = "Dolby",
@@ -713,6 +739,17 @@ if Controls then
 			local GAP_TICKS_DEFAULT = math.ceil(GAP_DEFAULT / POLLTIME)
 			local WATCHDOG_TICKS = math.ceil(WATCHDOG / POLLTIME)
 	
+			-- private.cache's own guarantee, per the same spec: a single FIFO
+			-- queue of pending outbound messages ahead of the regular poll
+			-- cycle, capped at QMAX -- past capacity the OLDEST entry is
+			-- dropped first, so the most recent request always survives.
+			-- request() (below) is currently this queue's only producer, and it
+			-- is only ever called once per Start() (the readiness handshake),
+			-- so today the queue never actually holds more than one entry --
+			-- this exists so a future second caller doesn't inherit a queue
+			-- that silently reordered or grew without bound.
+			local QMAX = 10
+	
 			local setValue,getValue,setState,getState,Poll,readData,request,received
 			local privates = setmetatable({}, {__mode = "k"}) -- set 'privates' as private field
 	
@@ -768,6 +805,7 @@ if Controls then
 				private.libmodel = (private.model.value):gsub("%s","")
 				private.isMacro = isMacro(private.model)
 				private.gapticks = (private.model == Model.CP650) and GAP_TICKS_CP650 or GAP_TICKS_DEFAULT
+				private.echopending = nil
 				private.time = Timer.New()
 				return setmetatable( self, CPSeries)
 	 		end
@@ -781,6 +819,7 @@ if Controls then
 	 		function CPSeries:Start(Sock)
 				local private = privates[self]
 				private.cache = {}
+				private.echopending = nil   -- no outbound message sent yet on this connection
 	 			private.sock = Sock
 	 		    private.sock.Data = function(sock,data) readData(self) end
 	  			private.time.EventHandler = function(timer) Poll(self) end
@@ -985,6 +1024,11 @@ if Controls then
 	     		end
 	     		pcall(write)      -- write to socket
 				private.sincesend = 0   -- the gap is measured from the last send
+				-- CP650 raw-echoes the sent line before its real response
+				-- ("Protocol Guarantees": expect RESPONSE, not echo). Arm the
+				-- expectation for readData() below; other models never set
+				-- this, so their read path is unchanged.
+				private.echopending = (private.model == Model.CP650) and msg or nil
 				Print(updated,'TX',msg)
 			end
 	
@@ -992,6 +1036,9 @@ if Controls then
 				local private = privates[self]
 				local param = CPServices[Actions.reset.index][model.index]
 				table.insert(private.cache, CPProtocol.FormatQuery(private.libmodel,param))
+				if #private.cache > QMAX then
+					table.remove(private.cache, 1)   -- saturation: drop the oldest first
+				end
 			end
 	
 			readData = function(self)
@@ -999,7 +1046,22 @@ if Controls then
 	 			local watchdog = false
 	 			repeat
 	    			local str = trimstr(private.sock:ReadLine(TcpSocket.EOL.Any));
-	    			if str and str ~='' then watchdog = true received(self,str)  end
+	    			if str and str ~='' then
+	    				if private.echopending and str == private.echopending then
+	    					-- The mechanical CP650 echo of what we just sent, not a
+	    					-- real reply: discard it without touching the watchdog
+	    					-- or calling received() on it, so it can neither be
+	    					-- misread as the answer (e.g. a query's echoed "?" is
+	    					-- not a value) nor prematurely satisfy the busy/one-
+	    					-- in-flight wait for the real response. Cleared after
+	    					-- one match: only the first identical line is the
+	    					-- mechanical echo -- a second one is a genuine (if
+	    					-- repetitive) reply and must be processed normally.
+	    					private.echopending = nil
+	    				else
+	    					watchdog = true received(self,str)
+	    				end
+	    			end
 				until str==nil or private.sock.IsConnected == false
 	 			if not private.sock.IsConnected then doClose(self) end
 	 			if (watchdog) then private.waiting = 0 end
@@ -1064,7 +1126,7 @@ if Controls then
 						else
 							msg = CPProtocol.FormatMessage(private.libmodel,param,result)
 						end
-					else msg = table.remove(private.cache) end
+					else msg = table.remove(private.cache, 1) end   -- FIFO: oldest queued message first
 	  				writeSocket(self, msg, updated )
 	  			end
 	  			private.waiting = private.waiting + 1
