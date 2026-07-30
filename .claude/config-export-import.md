@@ -1,8 +1,8 @@
 # Config export/import (cross-repo `.claude/` propagation)
 
-This repo's `.claude/` tooling (`settings.json`, `hooks/`, two bundled
-generic skills — `file-operations` and `github-rules`, under `.claude/skills/`,
-plus this file) is meant to be portable
+This repo's `.claude/` tooling (`settings.json`, `hooks/`, three bundled
+generic skills — `file-operations`, `github-rules`, and `changelog-rules`,
+under `.claude/skills/`, plus this file) is meant to be portable
 across all my repos, same as `CLAUDE.md`. Which additional skills also
 travel (if any) is defined in `.claude/scripts/export-config-skill.sh` — not
 repeated here. This file is deliberately plain, not a `SKILL.md`
@@ -71,9 +71,9 @@ directions, mechanized best-effort by
    bundled copy any more, see step 2.5.) A `.skill`
    package may
    contain only ONE `SKILL.md` (the claude.ai/Skills API upload path
-   rejects more than one), so the two bundled skills' own `SKILL.md`
-   files (`file-operations` and `github-rules`, both mandatory
-   blind-copies — see step 2.2) are renamed to
+   rejects more than one), so the three bundled skills' own `SKILL.md`
+   files (`file-operations`, `github-rules`, and `changelog-rules`, all
+   mandatory blind-copies — see step 2.2) are renamed to
    `references/skills/<name>/<name>.md` inside the package — restore
    each one back to `SKILL.md` when actually installing it into a
    target repo's `.claude/skills/<name>/`, that rename is what makes
@@ -181,7 +181,9 @@ directions, mechanized best-effort by
         `github-rules` and `file-operations` (2026-07-27, explicit user
         request each time, both reverted the same day they were briefly
         moved into the optional group in 2.5 — `github-rules` first,
-        `file-operations` later that same day): both blind-copied into
+        `file-operations` later that same day), plus `changelog-rules`
+        (reinstated here 2026-07-30, see below): all three blind-copied
+        into
         `.claude/skills/<name>/`, same as the
         hooks above — always overwritten with whatever the bundle
         carries, even if the target already has its own copy, no
@@ -198,13 +200,15 @@ directions, mechanized best-effort by
         `recommended-skills.txt` (see 2.7) — its final resting state, at
         least so far, landing back where its very first attempt at this
         left off.
-        `changelog-rules` walked a similar
-        path for a while (briefly deleted from the bundle entirely
-        2026-07-27, then restored from git history and put back as
-        optional 2026-07-28) but ended differently: deleted from the
-        bundle a second and final time, also 2026-07-28, also explicit
-        user request -- see the "NOT in this optional group" note under
-        2.5 for where it stands now.
+        `changelog-rules` walked the longest road of any skill that
+        stayed bundled: optional (2026-07-27) → deleted entirely the same
+        day → restored from git history as optional (2026-07-28) →
+        deleted from the bundle a second time, also 2026-07-28, also
+        explicit user request → reinstated a THIRD time on 2026-07-30
+        (explicit user request), this time straight into the mandatory
+        blind-copy group above rather than optional — its settled state,
+        at least so far. `.claude/skills-history.md` has the full
+        timeline with reasoning at each turn.
         **Call this out explicitly while narrating this step (2026-07-28,
         explicit user request):** the bundled `github-rules` now defaults
         to full automation of the routine commit/push/PR/merge cycle —
@@ -335,10 +339,11 @@ directions, mechanized best-effort by
         empty: both skills that used to occupy this group are gone from
         it, for two different reasons covered in the history note below
         — `find-skills` moved to fetch-on-demand-only (see 2.7,
-        `recommended-skills.txt`), `changelog-rules` was removed from
-        the bundle entirely (see the note under 2.2, `removed-files.txt`).
-        `file-operations` and `github-rules` are NOT in
-        this group either — both are mandatory blind-copies, see
+        `recommended-skills.txt`), `changelog-rules` moved to the
+        mandatory blind-copy group instead (2026-07-30, see 2.2 and the
+        history note below for the reinstatement itself).
+        `file-operations`, `github-rules`, and `changelog-rules` are NOT
+        in this group either — all three are mandatory blind-copies, see
         2.2.
         (History: 2026-07-24 `find-skills` promoted from the then-optional
         group in 2.6 into the then-mandatory one — it was already always
@@ -369,13 +374,18 @@ directions, mechanized best-effort by
         this left off. `changelog-rules` stayed
         here as optional for the rest of that earlier history, but was then
         removed from the bundle entirely, also 2026-07-28, also explicit
-        user request — same treatment as `git-rules`. This group has had
-        zero members since, though the mechanism stays defined here in
-        case a future skill lands in it.)
+        user request — same treatment as `git-rules`. It stayed removed
+        until 2026-07-30, when it was reinstated a third time (explicit
+        user request) straight into the mandatory blind-copy group in
+        2.2 — this time skipping this optional group entirely, unlike
+        every earlier chapter of its history. This group has had zero
+        members since that reinstatement too, though the mechanism stays
+        defined here in case a future skill lands in it.)
    2.6. **Additional packs actually bundled as files, always offer,
-        optional to accept**: every skill beyond `file-operations` and
-        `github-rules` (bundled mandatory per 2.2; `caveman` and
-        `karpathy-guidelines` are mandatory but fetch-on-demand, see 2.2)
+        optional to accept**: every skill beyond `file-operations`,
+        `github-rules`, and `changelog-rules` (all three bundled mandatory
+        per 2.2; `caveman` and `karpathy-guidelines` are mandatory but
+        fetch-on-demand, see 2.2)
         and beyond whatever's currently in 2.5 (empty right now, see there)
         that the bundle actually carries as files — the full list is
         open-ended and growing over time (see

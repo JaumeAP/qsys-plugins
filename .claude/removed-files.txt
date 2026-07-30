@@ -18,15 +18,6 @@
 hooks/local-merge-reminder.sh
 hooks/sync-command-reminder.sh
 
-# skills/changelog-rules -- removed 2026-07-28, explicit user request.
-# Went through a longer history first (optional import choice, briefly
-# deleted from the bundle entirely, restored from git history and put
-# back as optional -- see `.claude/skills-history.md` and
-# config-export-import.md step 2.5 for the full timeline) before this
-# final removal: changelog work now follows the repo-wide conventions
-# stated directly where needed, not a dedicated skill.
-skills/changelog-rules
-
 # hooks/check-reply-format.sh, hooks/reply-format-preflight.sh --
 # removed 2026-07-30, explicit user request. Same failure mode as the
 # two hooks at the top of this list: they mechanically enforced reply
