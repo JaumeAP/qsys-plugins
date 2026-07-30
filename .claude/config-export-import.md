@@ -42,7 +42,7 @@ directions, mechanized best-effort by
    otherwise still ship, pointing at a hook file the target repo never
    receives), and (b) any permission string listed in
    `.claude/local-only-permissions.txt` — this repo's own declared list
-   of permissions (e.g. `Bash(lua5.3 *)`, `Bash(apt-get install *)`)
+   of permissions (e.g. a `Bash(<this-repo's-own-cli> *)` allow rule)
    that exist solely for its own tooling. Both filters are generic
    mechanisms driven by data the source repo declares (the hooks array,
    the permissions file), not hardcoded knowledge of any one repo's

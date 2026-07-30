@@ -8,9 +8,10 @@ you need the reasoning behind a skill's bundled/optional/removed status. -->
 
 <!-- Cross-references in this file that say "above"/"below" may now point at
 a sibling file after the 2026-07-30 split: CLAUDE.md (operative rules),
-.claude/rules/repo-layout.md (directory tree),
-.claude/rules/qsys-plugin-development.md (plugin/build reference), or
-docs/continuity-notes.md (dated history). -->
+this repo's own path-scoped .claude/rules/*.md files (repo-specific detail,
+named in CLAUDE.md's "Where the detail lives" section, not repeated here
+since the exact filenames differ per repo), or docs/continuity-notes.md
+(dated history). -->
 
 ## Portable skills (installed with the config)
 

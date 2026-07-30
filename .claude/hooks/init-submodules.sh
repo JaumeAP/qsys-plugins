@@ -54,13 +54,14 @@ fi
 # swallows it and the tree is left partially initialized.
 #
 # The exit status is captured rather than discarded (2026-07-30). Found by
-# hitting the consequence: a whole session ran with both nested
-# PluginCompile submodules uninitialized, so PLUGCC.exe -- the compiler the
-# documented build workflow depends on -- was simply absent, while
-# CLAUDE.md asserted a fresh clone gets it automatically. Re-running the
-# very same command by hand fixed it in about a second, so the automatic
-# attempt had failed or been cut short at session start without anything
-# saying so.
+# hitting the consequence: a whole session ran with a nested submodule
+# uninitialized, so tooling the documented build workflow depends on was
+# simply absent, while CLAUDE.md asserted a fresh clone gets it
+# automatically. Re-running the very same command by hand fixed it in
+# about a second, so the automatic attempt had failed or been cut short
+# at session start without anything saying so. (Repo-specific detail on
+# exactly what was missing belongs in that repo's own CLAUDE.md, not
+# here -- same rule this file's other comments already follow.)
 init_rc=0
 timeout 180s git submodule update --init --recursive >/dev/null 2>&1 || init_rc=$?
 
