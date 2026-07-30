@@ -197,4 +197,58 @@ do
 	cp:Stop()
 end
 
+h.section("command gap and watchdog")
+do
+	-- The two timing guarantees of the Dolby CP Cinema Control spec the poll
+	-- loop has to honour: a minimum gap between sent commands (250ms on a
+	-- CP650, 100ms elsewhere) and a 3s no-response watchdog. Measured in
+	-- POLLTIME (0.02s) ticks, since that is what Poll actually counts.
+	local TICK = 0.02
+
+	-- Gap: answer every tick, so nothing but the gap can hold a send back,
+	-- and take the tightest spacing between two consecutive writes.
+	local function min_gap_ticks(model, reply)
+		local cp, sock, _, timer = started(model)
+		local last, smallest = nil, math.huge
+		for t = 1, 200 do
+			local before = #sock.writes
+			timer.EventHandler()
+			if #sock.writes > before then
+				if last and t - last < smallest then smallest = t - last end
+				last = t
+			end
+			sock.lines = { reply } sock.Data()
+		end
+		cp:Stop()
+		return smallest
+	end
+
+	local gap650 = min_gap_ticks("CP 650", "fader_level=42")
+	h.check(gap650 * TICK >= 0.25,
+		"CP 650: at least 250ms between commands (got " .. string.format("%.2f", gap650 * TICK) .. "s)")
+	local gap850 = min_gap_ticks("CP 850", "sys.fader 42")
+	h.check(gap850 * TICK >= 0.10,
+		"CP 850: at least 100ms between commands (got " .. string.format("%.2f", gap850 * TICK) .. "s)")
+	h.check(gap650 > gap850, "the CP 650 gap is the wider of the two")
+
+	-- Watchdog: stop answering and count the ticks to the close event. Not
+	-- an exact-equality check -- the point is 3s, not 0.6s (the old value)
+	-- and not never.
+	do
+		local cp, sock, _, timer = started("CP 850")
+		sock.lines = { "sys.fader 42" } sock.Data()
+		local closed_at
+		cp.EventHandler = function(service) if service == "close" and not closed_at then closed_at = true end end
+		local fired
+		for t = 1, 400 do
+			timer.EventHandler()
+			if closed_at then fired = t break end
+		end
+		h.check(fired ~= nil, "silence eventually declares the connection closed")
+		h.check(fired and fired * TICK >= 3.0 and fired * TICK < 3.5,
+			"the watchdog fires at ~3s of silence (got " .. string.format("%.2f", (fired or 0) * TICK) .. "s)")
+		cp:Stop()
+	end
+end
+
 h.report()

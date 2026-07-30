@@ -21,6 +21,24 @@
 	do
 
 		local POLLTIME = 0.02
+
+		-- Minimum gap between two sent commands, and the no-response
+		-- watchdog, both in seconds. These are the "Protocol Guarantees" of
+		-- the Dolby CP Cinema Control spec: the CP650 needs more headroom
+		-- than the general case (250ms minimum, not 100ms), and a link that
+		-- stops answering is declared dead after 3s rather than polled
+		-- forever.
+		local GAP_CP650 = 0.25
+		local GAP_DEFAULT = 0.10
+		local WATCHDOG = 3.0
+
+		-- Poll runs off a POLLTIME timer and counts ticks, so both live here
+		-- as tick counts. Rounded up: rounding down would sit just under the
+		-- documented minimum, which is the one direction that matters.
+		local GAP_TICKS_CP650 = math.ceil(GAP_CP650 / POLLTIME)
+		local GAP_TICKS_DEFAULT = math.ceil(GAP_DEFAULT / POLLTIME)
+		local WATCHDOG_TICKS = math.ceil(WATCHDOG / POLLTIME)
+
 		local setValue,getValue,setState,getState,Poll,readData,request,received
 		local privates = setmetatable({}, {__mode = "k"}) -- set 'privates' as private field
 
@@ -75,6 +93,7 @@
 			-- resolve per-connection model facts once (used on every Poll/received)
 			private.libmodel = (private.model.value):gsub("%s","")
 			private.isMacro = isMacro(private.model)
+			private.gapticks = (private.model == Model.CP650) and GAP_TICKS_CP650 or GAP_TICKS_DEFAULT
 			private.time = Timer.New()
 			return setmetatable( self, CPSeries)
  		end
@@ -93,6 +112,10 @@
   			private.time.EventHandler = function(timer) Poll(self) end
    			private.time:Start(POLLTIME)
 			private.waiting=0
+			-- Start with the gap already elapsed, so the first poll after a
+			-- connect puts the handshake query on the wire immediately
+			-- instead of idling for one gap period.
+			private.sincesend = private.gapticks
   	 		private.npoll = 0
     	    private.ready=false
     		for _,elem in pairs(Actions) do
@@ -287,6 +310,7 @@
      			private.sock:Write(msg..'\r\n')
      		end
      		pcall(write)      -- write to socket
+			private.sincesend = 0   -- the gap is measured from the last send
 			Print(updated,'TX',msg)
 		end
 
@@ -329,9 +353,17 @@
  		Poll = function(self)
 			local msg
   			local private = privates[self]
-    		if private.waiting > 30 then
+    		if private.waiting > WATCHDOG_TICKS then
   				doClose(self) return end
+			private.sincesend = private.sincesend + 1
   			if private.waiting ==0 then
+				-- Hold the wire until the model's minimum gap has passed.
+				-- Returning before the waiting counter is bumped is what
+				-- keeps this a hold and not a deadlock: waiting only starts
+				-- counting once a command is actually in flight, so the next
+				-- tick gets to try again instead of waiting forever for a
+				-- response to a command that was never sent.
+				if private.sincesend < private.gapticks then return end
   			  	local updated = false
   		    	if #private.cache == 0 then
   					local result = '?'

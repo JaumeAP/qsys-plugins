@@ -85,6 +85,19 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.7 - commlib.lua now honours two of the "Protocol Guarantees" of the
+--        Dolby CP Cinema Control spec it previously ignored. (1) Minimum gap
+--        between sent commands: there was none -- the poll loop sent again
+--        on the first 0.02s tick after a response, which on a CP650 is far
+--        under the 250ms that model's hardware needs (100ms for the others).
+--        Poll now holds the wire until the model's gap has elapsed,
+--        measured from the last send. (2) The no-response watchdog was 30
+--        ticks, i.e. 0.6s, five times more aggressive than the documented
+--        3.0s, so a merely slow link was declared dead; it is now 150 ticks.
+--        Both are expressed as seconds and converted to ticks against
+--        POLLTIME rather than hardcoded as tick counts. The waiting counter
+--        now only advances once a command is actually in flight, which is
+--        what keeps the new gap a hold rather than a deadlock.
 -- v4.0.0.6 - TcpSocket construction, IPv4 address validation, and
 --        Connect/Disconnect/IsConnected now go through the new shared
 --        Developer/shared/socket.lua module (SocketConn), so any future
