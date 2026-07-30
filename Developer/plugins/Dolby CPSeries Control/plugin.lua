@@ -85,6 +85,16 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.8 - private.cache (the pending-message queue ahead of the regular
+--        poll cycle) honours two more of the "Protocol Guarantees": it now
+--        drains oldest-first (was table.remove() with no index, which pops
+--        the LAST item -- LIFO, not FIFO) and is capped at QMAX=10, dropping
+--        the oldest entry first past capacity. request() is currently the
+--        queue's only producer and is only ever called once per Start(), so
+--        the queue never actually holds more than one entry today -- this
+--        guards a future second caller from inheriting silently wrong
+--        ordering or unbounded growth, not an observed bug in current
+--        behaviour.
 -- v4.0.0.7 - commlib.lua now honours two of the "Protocol Guarantees" of the
 --        Dolby CP Cinema Control spec it previously ignored. (1) Minimum gap
 --        between sent commands: there was none -- the poll loop sent again

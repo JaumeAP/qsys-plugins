@@ -39,6 +39,17 @@
 		local GAP_TICKS_DEFAULT = math.ceil(GAP_DEFAULT / POLLTIME)
 		local WATCHDOG_TICKS = math.ceil(WATCHDOG / POLLTIME)
 
+		-- private.cache's own guarantee, per the same spec: a single FIFO
+		-- queue of pending outbound messages ahead of the regular poll
+		-- cycle, capped at QMAX -- past capacity the OLDEST entry is
+		-- dropped first, so the most recent request always survives.
+		-- request() (below) is currently this queue's only producer, and it
+		-- is only ever called once per Start() (the readiness handshake),
+		-- so today the queue never actually holds more than one entry --
+		-- this exists so a future second caller doesn't inherit a queue
+		-- that silently reordered or grew without bound.
+		local QMAX = 10
+
 		local setValue,getValue,setState,getState,Poll,readData,request,received
 		local privates = setmetatable({}, {__mode = "k"}) -- set 'privates' as private field
 
@@ -318,6 +329,9 @@
 			local private = privates[self]
 			local param = CPServices[Actions.reset.index][model.index]
 			table.insert(private.cache, CPProtocol.FormatQuery(private.libmodel,param))
+			if #private.cache > QMAX then
+				table.remove(private.cache, 1)   -- saturation: drop the oldest first
+			end
 		end
 
 		readData = function(self)
@@ -390,7 +404,7 @@
 					else
 						msg = CPProtocol.FormatMessage(private.libmodel,param,result)
 					end
-				else msg = table.remove(private.cache) end
+				else msg = table.remove(private.cache, 1) end   -- FIFO: oldest queued message first
   				writeSocket(self, msg, updated )
   			end
   			private.waiting = private.waiting + 1
