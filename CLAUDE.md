@@ -45,11 +45,12 @@ dead, with their own retirement notes.
 
 ## Portable skills (installed with the config)
 
-These travel with this file and the rest of `.claude/` (see
-`.claude/config-export-import.md`). `file-operations` and `github-rules` are
-the only two still bundled as files, both mandatory/blind-copy on import.
-Pointers only here, never summaries — each skill is the authority on its own
-topic, and a summary in this file just drifts out of sync with it:
+These travel with this file and the rest of `.claude/`. `file-operations` and
+`github-rules` are the only two still bundled as files — import mechanics
+(blind-copy, merge rules, everything else in that process) live solely in
+`.claude/config-export-import.md`, not restated here. Pointers only here,
+never summaries — each skill is the authority on its own topic, and a
+summary in this file just drifts out of sync with it:
 
 1. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
    PR conventions: workflow shape, reading `pull_request_read` results, merge
