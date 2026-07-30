@@ -33,4 +33,3 @@ caveman-review -> JuliusBrussee/caveman
 caveman-stats -> JuliusBrussee/caveman
 mem-search -> thedotmack/claude-mem
 how-it-works -> thedotmack/claude-mem
-planning-with-files -> OthmanAdi/planning-with-files
