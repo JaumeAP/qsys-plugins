@@ -64,6 +64,16 @@ to, so it still gets its own "Rebut:" line.
 Lists: always numbered — never unnumbered/bulleted, at every level. Nested
 sub-items are numbered too (e.g. `3.1`, `3.2`), never dashes/bullets.
 
+**Precedence over `caveman`.** The `caveman` skill (JuliusBrussee/caveman,
+installed 2026-07-30) shares this section's goal of extreme token economy,
+but its own rules conflict with two things above: it replies in the user's
+own language, while this file mandates Catalan always; and it doesn't
+enforce numbered-only lists or the ban on bold/em-dash/ellipsis/headers/
+tables. Wherever `caveman` and this section disagree, this section wins —
+`caveman` stays installed for its compression discipline and its sibling
+tools (caveman-commit, caveman-review, caveman-compress, caveman-stats),
+not as a replacement for the language/format rules above.
+
 ## Portable skills (installed with the config)
 
 These generic skills travel with this file and the rest of the `.claude/`
