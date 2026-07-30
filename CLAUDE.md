@@ -1443,5 +1443,21 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   round-trip check available, and each run emits a fresh random IV, so a
   wine-built `.qplugx` cannot be byte-compared against a Windows-built
   one either. That leaves Q-SYS Designer as the only way to confirm a
-  wine-built `.qplugx` actually loads. `build-qplugx.yml` stays on
-  `windows-latest` until someone does that.
+  wine-built `.qplugx` actually loads.
+  **Update, same day: superseded.** User explicitly asked to always use
+  wine64, accepting the no-round-trip/no-byte-compare caveats above as a
+  known, accepted gap rather than a blocker. Before switching,
+  double-checked whether wine64 could also replace mono for
+  `build-qplug.yml` (for one consistent runtime instead of two) -- it
+  cannot: plain `wine64 PLUGCC.exe ...` fails with "Application could
+  not be started, or no application associated with the specified
+  file", since running a .NET assembly under Wine needs the separate
+  Wine Mono package, not available via `apt-cache search wine-mono` on
+  this runner. So the two workflows stay on two different runtimes by
+  necessity, not oversight: `build-qplug.yml` on `ubuntu-latest` + native
+  `mono` (the only thing that runs PLUGCC.exe here), `build-qplugx.yml`
+  now also on `ubuntu-latest` + `wine64` (the only thing that runs
+  plugin_tool_release.exe here) instead of `windows-latest`. Manual
+  Designer verification of a wine-built `.qplugx` is still outstanding --
+  this switch proceeds without it per explicit instruction, not because
+  the gap was closed.
