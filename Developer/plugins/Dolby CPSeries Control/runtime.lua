@@ -56,6 +56,10 @@
 			end
 		end
 
+		-- recon=false is unreachable today (refreshCNX() is the only call
+		-- site and always passes true) -- kept, not collapsed to a single
+		-- branch, since a future explicit "Disconnect" control that should
+		-- NOT auto-reconnect is a plausible caller of this exact case.
 		local function disconnect(recon)
 			DolbyCP:Stop()
 			sock:Disconnect()

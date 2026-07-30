@@ -85,6 +85,11 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.8 - disconnect(recon)'s recon=false branch documented as
+--        intentionally-unreachable-for-now (a future explicit "Disconnect"
+--        control that shouldn't auto-reconnect is a plausible caller),
+--        not collapsed to a single branch -- found by the same coverage
+--        audit as v4.0.0.7, comment only, no functional change.
 -- v4.0.0.7 - SocketConn:IsConnected() removed (Developer/shared/socket.lua):
 --        a one-line wrapper around sock.Socket.IsConnected, used exactly
 --        once, when every other socket field is already read straight off
