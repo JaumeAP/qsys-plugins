@@ -137,6 +137,74 @@ class ClassifyAllowsSafeCommands(unittest.TestCase):
     def test_var_assignment_with_glued_semicolon_is_not_a_verb(self):
         self.assertEqual(classify("d=/home/user/CPSeries; echo $d"), "OK")
 
+    # --- Found and fixed in a second code-review pass, 2026-07-30 ---
+
+    def test_fd_duplication_redirect_not_treated_as_backgrounding(self):
+        # 2>&1 is a file-descriptor duplication, not `&` backgrounding --
+        # found while fixing the lone-& case above: this exact shape
+        # (`cmd 2>&1 | tail`) is used constantly in this repo's own
+        # sessions and was getting mis-split at the &.
+        self.assertEqual(
+            classify("./Developer/tests/run.sh 2>&1 | tail -3"), "OK"
+        )
+
+    def test_stdout_stderr_dup_before_dangerous_verb_still_blocks(self):
+        # Same redirect shape, but this time piped into something that
+        # DOES touch a real repo path -- must still block.
+        self.assertTrue(classify(
+            "cat build.log 2>&1 | tee /home/user/qsys-plugins/CLAUDE.md"
+        ).startswith("BLOCK"))
+
+    def test_heredoc_body_prose_no_longer_false_positives(self):
+        # A heredoc body line starting with a bare word that happens to
+        # match a DANGEROUS verb ("install ...") used to trigger a false
+        # block -- heredoc bodies are data, not commands.
+        cmd = "cat <<EOF\ninstall the required packages first\nEOF"
+        self.assertEqual(classify(cmd), "OK")
+
+    def test_heredoc_with_trailing_command_on_opening_line(self):
+        # The exact pattern used throughout this session's own commits:
+        # a heredoc redirect followed by `&& <command>` on the SAME line
+        # as the opening `<<'EOF'`. Must still split on the && correctly,
+        # and the heredoc body itself must still be skipped as data.
+        cmd = (
+            "git commit -q -F - <<'EOF' && git log --oneline -1\n"
+            "Some message\n"
+            "install notes here\n"
+            "EOF"
+        )
+        self.assertEqual(classify(cmd), "OK")
+
+    def test_real_danger_before_a_heredoc_still_blocks(self):
+        cmd = (
+            "cp /home/user/qsys-plugins/CLAUDE.md /home/user/CPSeries/CLAUDE.md\n"
+            "cat <<EOF\nbody\nEOF"
+        )
+        self.assertTrue(classify(cmd).startswith("BLOCK"))
+
+    def test_command_substitution_no_longer_fragments_into_garbage(self):
+        # $(...) is now scanned as an opaque span rather than split on at
+        # the top level -- this no longer produces a nonsense fragment
+        # like "cp $(echo a" as its own mis-parsed sub-command. (Full
+        # recursive parsing of the substitution's own contents is a
+        # documented, separate residual limitation -- not what this test
+        # checks.)
+        subs = split_subcommands("cp $(echo a; echo b) /tmp/dest")
+        self.assertEqual(len(subs), 1, subs)
+
+    def test_trailing_comment_with_inert_text_does_not_block(self):
+        self.assertEqual(
+            classify("echo hi # ; rm -rf /home/user/qsys-plugins/CLAUDE.md"), "OK"
+        )
+
+    def test_comment_does_not_swallow_a_real_command_on_the_next_line(self):
+        self.assertTrue(classify(
+            "echo hi # comment\ncp /home/user/qsys-plugins/CLAUDE.md /home/user/CPSeries/CLAUDE.md"
+        ).startswith("BLOCK"))
+
+    def test_hash_inside_a_word_is_not_a_comment(self):
+        self.assertEqual(classify("echo foo#bar"), "OK")
+
 
 class SplitSubcommandsQuoteHandling(unittest.TestCase):
     def test_backslash_escaped_quote_inside_double_quotes_does_not_split(self):
