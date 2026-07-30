@@ -123,17 +123,12 @@ Optional; use only if explicitly requested:
 - **v2.0.0-rc.1** (2026-06-30) - Release candidate
 ```
 
-## Integration with Coding Rules
-
-Changelog accumulation is governed by **Critical Rules > Verification** and this skill:
-
-- Critical Rules dictate: before writing the changelog to disk, verify the entry is accumulated
-- This skill dictates: do not write mid-session, accumulate silently, flush just before the push
-- Both rules align: the push flow triggers verification and disk write in one step
-
-No contradiction; they work together.
-
 ## Changelog
+
+- **v1.1.1** (2026-07-30) - Lean editing pass (skill-creator review)
+  - docs: Removed "Integration with Coding Rules" section -- referenced
+    a "Critical Rules" doc that does not exist anywhere in the bundle,
+    dangling since genericization; no other content lost
 
 - **v1.1.0** (2026-07-06) - Converted standard to skill format
   - refactor: Repackaged CHANGELOG-RULES.md as SKILL.md with frontmatter for auto-discovery

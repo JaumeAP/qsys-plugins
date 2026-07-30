@@ -1,5 +1,9 @@
 # Changelog
 
+- **v1.2.1** (2026-07-30) - Lean editing pass (skill-creator review)
+  - docs: MANDATORY section in SKILL.md cut from 3x-repeated "no
+    exceptions" phrasing to one pass -- same requirement, less noise
+
 - **v1.2.0** (2026-07-05) - Restructured for progressive disclosure
   - refactor: split monolithic 1609-line SKILL.md into SKILL.md (<150
     lines) + references/ (functions, guards, testing, changelog)
