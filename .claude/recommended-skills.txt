@@ -19,7 +19,6 @@ caveman-compress -> JuliusBrussee/caveman
 caveman-help -> JuliusBrussee/caveman
 caveman-review -> JuliusBrussee/caveman
 caveman-stats -> JuliusBrussee/caveman
-skill-creator -> anthropics/skills
 claude-security -> anthropics/skills
 dataviz -> anthropics/skills
 webapp-testing -> anthropics/skills
