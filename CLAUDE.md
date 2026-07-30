@@ -79,6 +79,19 @@ Mandatory fetch-on-demand (listed in `.claude/recommended-skills.txt`):
 4. `karpathy-guidelines` (forrestchang/andrej-karpathy-skills) — thinking
    principles and behavioral guidelines applicable to any project.
 
+**"Mandatory" is enforced, not just stated (2026-07-30).** A full-session
+audit found all four above invoked zero times despite repeatedly matching
+their own trigger descriptions — documentation-only "mandatory" wording
+doesn't self-enforce. Two mechanisms now back it, neither optional to a
+session: `.claude/hooks/file-operations-enforcement.sh` (`PreToolUse`/
+`Bash`, hard block) stops raw `cp`/`mv`/`rm`/`dd`/`tee`/`sed -i` against a
+repo file outside `/tmp/` — narrower than the skill's full "MUST" scope
+(doesn't catch e.g. a `python3 -c` file write, deliberately, to avoid
+blocking legitimate reads); `rule-check-reminder.sh` names all four by name
+every firing (first call + every 15th), a deliberate narrow exception to
+its own "don't enumerate skills" rule for the 25 merely-recommended ones.
+Full rationale in both hooks' own comments — not restated here.
+
 Everything else installed locally is listed by name/source in
 `.claude/recommended-skills.txt` (fetch-on-demand, updated by hand). What
 actually travels on export is defined in
