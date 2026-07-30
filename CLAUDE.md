@@ -1419,3 +1419,29 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   Rebut-missing-only path is unchanged. Same file, same day as the fix
   above it -- this is the second bug found in the same retry-instruction
   logic, both from actually hitting them live rather than from review.
+- **`build-qplug.yml` moved off `windows-latest` onto `ubuntu-latest` +
+  mono (2026-07-30, explicit user request).** PLUGCC.exe is a PE32
+  Mono/.NET assembly (`file` reports "Mono/.Net assembly"), so mono runs
+  it natively on Linux -- no Windows runner needed. Verified before
+  switching, not assumed: installed `mono-runtime`, built MultiFlip-Flop
+  with `mono PLUGCC.exe MultiFlip-Flop plugin.lua` from the plugin's own
+  directory, and `cmp`'d the result against the root
+  `MultiFlip-Flop.qplug` produced by the old windows-latest job --
+  byte-identical, line endings included. The `cd` into the plugin
+  directory stays load-bearing (PLUGCC resolves relative `#include`s
+  against its cwd), same role the old job's `Push-Location` had.
+  **This does NOT generalize to `build-qplugx.yml`.** Its
+  `plugin_tool_release.exe` is a PE32+ native x86-64 Windows binary
+  linking MSVC/OpenSSL DLLs, not a .NET assembly: mono refuses it
+  outright (`File does not contain a valid CIL image`, confirmed by
+  running it, not inferred). `wine64` DOES run it -- `version` returns
+  `1.0.0.0` and `encrypt` produces a structurally correct envelope
+  (same `data`/`iv`/`key` keys, `iv_len=24`, `key_len=344` as the
+  committed windows-built `.qplugx`) -- but that was deliberately NOT
+  adopted, for two reasons worth keeping if this is revisited: the tool
+  has no `decrypt` command (only `version`/`encrypt`), so there is no
+  round-trip check available, and each run emits a fresh random IV, so a
+  wine-built `.qplugx` cannot be byte-compared against a Windows-built
+  one either. That leaves Q-SYS Designer as the only way to confirm a
+  wine-built `.qplugx` actually loads. `build-qplugx.yml` stays on
+  `windows-latest` until someone does that.

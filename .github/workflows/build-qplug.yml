@@ -2,8 +2,21 @@ name: Build .qplug (PLUGCC)
 
 # Manual only. Builds a restructured plugin's .qplug from
 # Developer/plugins/<name>/plugin.lua using QSC's own PLUGCC.exe
-# (vendor/qsys-plugins/ExamplePlugin/PluginCompile/PLUGCC.exe), a Windows
-# binary -- hence windows-latest, same reasoning as build-qplugx.yml.
+# (vendor/qsys-plugins/ExamplePlugin/PluginCompile/PLUGCC.exe).
+#
+# Runs on ubuntu-latest under mono, NOT windows-latest (changed 2026-07-30,
+# explicit user request). PLUGCC.exe is a PE32 Mono/.NET assembly (confirmed
+# with `file`: "Mono/.Net assembly"), so mono runs it directly on Linux --
+# no Windows runner needed. Verified byte-for-byte before switching: built
+# MultiFlip-Flop under `mono PLUGCC.exe` on Linux and `cmp`'d the result
+# against the root MultiFlip-Flop.qplug produced by the old windows-latest
+# job -- byte-identical, line endings included.
+#
+# NOTE: this does NOT generalize to build-qplugx.yml. Its
+# plugin_tool_release.exe is a PE32+ native x86-64 Windows binary (not a
+# .NET assembly, and it links MSVC/OpenSSL DLLs), which mono cannot run at
+# all; that workflow stays on windows-latest.
+#
 # Replaces Developer/tools/build_distributable.sh for any plugin that has
 # been migrated onto this file-split convention (currently: MultiFlip-Flop,
 # Dolby Sweep, DolbyFader, Dolby CPSeries Control). Confirmed PLUGCC.exe #include rules (see
@@ -36,56 +49,60 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: false
 
+      - name: Install mono (PLUGCC.exe is a .NET assembly)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mono-runtime
+          mono --version | head -1
+
       - name: Init only the ExamplePlugin submodule (PLUGCC.exe lives there)
-        shell: pwsh
         run: |
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git submodule update --init vendor/qsys-plugins/ExamplePlugin
           git -C vendor/qsys-plugins/ExamplePlugin submodule update --init PluginCompile
 
-      - name: Compile with PLUGCC.exe
-        shell: pwsh
+      - name: Compile with PLUGCC.exe under mono
         run: |
-          $plugcc = Join-Path $env:GITHUB_WORKSPACE "vendor\qsys-plugins\ExamplePlugin\PluginCompile\PLUGCC.exe"
-          if (-not (Test-Path $plugcc)) {
-            throw "PLUGCC.exe not found at $plugcc"
-          }
-          $name = "${{ inputs.plugin }}"
-          $pluginDir = Join-Path $env:GITHUB_WORKSPACE "Developer\plugins\$name"
-          $pluginLua = Join-Path $pluginDir "plugin.lua"
-          if (-not (Test-Path $pluginLua)) {
-            throw "plugin.lua not found at $pluginLua"
-          }
+          set -euo pipefail
+          plugcc="$GITHUB_WORKSPACE/vendor/qsys-plugins/ExamplePlugin/PluginCompile/PLUGCC.exe"
+          if [ ! -f "$plugcc" ]; then
+            echo "PLUGCC.exe not found at $plugcc" >&2
+            exit 1
+          fi
+          name="${{ inputs.plugin }}"
+          plugin_dir="$GITHUB_WORKSPACE/Developer/plugins/$name"
+          if [ ! -f "$plugin_dir/plugin.lua" ]; then
+            echo "plugin.lua not found at $plugin_dir/plugin.lua" >&2
+            exit 1
+          fi
 
-          Push-Location $pluginDir
-          & $plugcc $name $pluginLua
-          $exitCode = $LASTEXITCODE
-          Pop-Location
+          # PLUGCC resolves every relative #include against its own cwd (the
+          # original plugin.lua's directory), so the cd is load-bearing, not
+          # cosmetic -- same reason the old pwsh job used Push-Location.
+          cd "$plugin_dir"
+          mono "$plugcc" "$name" "plugin.lua"
 
-          if ($exitCode -ne 0) {
-            throw "PLUGCC.exe failed (exit $exitCode)"
-          }
-          $outPath = Join-Path $pluginDir "$name.qplug"
-          if (-not (Test-Path $outPath)) {
-            throw "PLUGCC.exe reported success but produced no output at $outPath"
-          }
-          Write-Host "Built: $outPath"
+          out_path="$plugin_dir/$name.qplug"
+          if [ ! -f "$out_path" ]; then
+            echo "PLUGCC.exe reported success but produced no output at $out_path" >&2
+            exit 1
+          fi
+          echo "Built: $out_path"
           # Also echoed to the job log (not just uploaded as an artifact):
           # the artifact's blob-storage download URL isn't reachable through
           # this session's egress proxy, but job logs are (GitHub API).
-          Write-Host "----- BEGIN $name.qplug -----"
-          Get-Content $outPath | Write-Host
-          Write-Host "----- END $name.qplug -----"
+          echo "----- BEGIN $name.qplug -----"
+          cat "$out_path"
+          echo "----- END $name.qplug -----"
 
       - name: Sanitize artifact name (some plugin names have spaces)
         id: safe_name
-        shell: bash
         run: echo "name=qplug-build-$(echo "${{ inputs.plugin }}" | tr ' ' '-')" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
