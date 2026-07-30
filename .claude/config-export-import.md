@@ -121,6 +121,10 @@ directions, mechanized best-effort by
    2.1. **Bootstrap**: if the target repo has no `.claude/` config yet,
         copy everything directly, skip the rest of this list.
    2.2. **Mandatory core files**: every hook under `hooks/`, plus
+        `hooks/lib/` (2026-07-30: `file-operations-enforcement.sh`'s
+        classifier and its regression test, extracted out of that hook's
+        own inline heredoc so it's independently testable — a runtime
+        dependency of that hook, not optional, copied recursively), plus
         `scripts/merge-settings.sh` and `scripts/export-config-skill.sh`
         themselves, is a blind copy into
         `.claude/hooks/`/`.claude/scripts/` respectively, no

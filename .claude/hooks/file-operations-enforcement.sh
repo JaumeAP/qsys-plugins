@@ -51,139 +51,24 @@ if ! echo "$command" | grep -qE '(^|[;&|]|\s)(cp|mv|rm|dd|tee|install)(\s|$)' \
 fi
 
 # The pre-filter above matches "rm"/"mv" even inside "git rm"/"git mv" --
-# the Python classifier below is what actually tells those apart (it skips
-# any sub-command whose head token is "git"), so a lone `git mv`/`git rm`
+# the Python classifier is what actually tells those apart (it skips any
+# sub-command whose head token is "git"), so a lone `git mv`/`git rm`
 # still passes through to `echo '{}'` at the end, just one step later.
-verdict="$(python3 - "$command" <<'PYEOF'
-import re, shlex, sys
-
-cmd = sys.argv[1]
-
-DANGEROUS = {"cp", "mv", "rm", "dd", "tee", "install"}
-
-def is_scratch(path):
-    return path.startswith("/tmp/")
-
-def looks_like_path(tok):
-    if tok.startswith("-"):
-        return False
-    if "/" in tok:
-        return True
-    # bare filename with a dotted extension, no flag prefix
-    return bool(re.search(r"\.[A-Za-z0-9]{1,8}$", tok)) or tok not in {"", "|", "&&", "||", ";"}
-
-def split_subcommands(cmd):
-    # Quote-aware scan of the RAW command string, splitting on ;, &&, ||,
-    # | and bare newlines wherever they occur -- INCLUDING glued directly
-    # onto a word with no surrounding whitespace (2026-07-30 bugfix: the
-    # original version below split shlex.split(cmd)'s tokens looking for
-    # ";"/"&&"/"||"/"|" as an exact, standalone token. shlex only splits
-    # on whitespace, so an operator with no space before it -- "Eines;" in
-    # `for r in CPSeries Eines; do`, "hi;" in `echo hi; cp a b` -- stays
-    # glued to the preceding word and was never recognized as a boundary
-    # at all. That's the ordinary, idiomatic way people write shell
-    # loops and one-liners, so in practice this hook was blind to almost
-    # every multi-command script all session -- confirmed by an actual
-    # audit finding dozens of `cp`/`rm` calls this exact hook exists to
-    # catch, all inside `for ...; do ... done` loops, none blocked).
-    # Scanning the raw string ourselves, quote-aware, catches the glued
-    # form and the spaced form identically, and a bare newline is treated
-    # the same as `;` since that's how multi-line heredoc scripts (this
-    # session's dominant shape) actually separate commands.
-    # Known, accepted limitation: this doesn't understand heredoc
-    # (`<<'EOF' ... EOF`) syntax specifically, so a heredoc BODY still
-    # gets split line-by-line like any other text -- a body line whose
-    # very first bare word happens to exactly match a DANGEROUS verb
-    # would misclassify. Judged an acceptable, narrow tradeoff: this hook
-    # already documents itself as "conservative... block rather than
-    # silently let something unparseable slip through", and the
-    # alternative (a real heredoc-aware parser) is a much bigger,
-    # riskier change for a rare edge case.
-    subs = []
-    buf = []
-    quote = None
-    i, n = 0, len(cmd)
-    while i < n:
-        ch = cmd[i]
-        if quote:
-            buf.append(ch)
-            if ch == quote:
-                quote = None
-            i += 1
-            continue
-        if ch in ("'", '"'):
-            quote = ch
-            buf.append(ch)
-            i += 1
-            continue
-        if ch == "\\" and i + 1 < n:
-            buf.append(ch)
-            buf.append(cmd[i + 1])
-            i += 2
-            continue
-        if cmd[i:i + 2] in ("&&", "||"):
-            subs.append("".join(buf))
-            buf = []
-            i += 2
-            continue
-        if ch in (";", "|", "\n"):
-            subs.append("".join(buf))
-            buf = []
-            i += 1
-            continue
-        buf.append(ch)
-        i += 1
-    subs.append("".join(buf))
-    return [s for s in subs if s.strip()]
-
-try:
-    subcommands = [shlex.split(s) for s in split_subcommands(cmd)]
-except ValueError:
-    # Unbalanced quotes or similar -- can't safely classify, block rather
-    # than silently let something unparseable slip through.
-    print("BLOCK: could not parse the command to check its file targets")
-    sys.exit(0)
-
-for sub in subcommands:
-    if not sub:
-        continue
-    head = sub[0]
-    if head == "git":
-        continue  # git's own allowlist governs this, not this hook
-    is_sed_i = head == "sed" and any(
-        a == "-i" or a.startswith("-i") or a in ("--in-place",) for a in sub[1:]
-    )
-    if head not in DANGEROUS and not is_sed_i:
-        continue
-    args = sub[1:]
-    if is_sed_i:
-        # sed's own script argument ('s/a/b/', an -e value, ...) routinely
-        # contains '/' and would otherwise misclassify as a path. Skip the
-        # first non-flag argument (the script) before collecting real file
-        # targets -- covers the common `sed -i 'script' file...` form this
-        # repo's own hooks and this session both use; an -e/-f script is
-        # still a flag argument here and correctly never skipped as a
-        # "target".
-        skipped_script = False
-        args_for_targets = []
-        for a in args:
-            if not skipped_script and not a.startswith("-"):
-                skipped_script = True
-                continue
-            args_for_targets.append(a)
-        args = args_for_targets
-    targets = [a for a in args if looks_like_path(a)]
-    outside_scratch = [t for t in targets if not is_scratch(t)]
-    if outside_scratch:
-        print(
-            "BLOCK: '%s' touches a repo path outside /tmp (%s)"
-            % (" ".join(sub), ", ".join(outside_scratch))
-        )
-        sys.exit(0)
-
-print("OK")
-PYEOF
-)"
+#
+# Classifier lives in lib/file_ops_classifier.py, not inline here (moved
+# 2026-07-30, second bugfix round): a code-reviewer subagent, asked to
+# review the FIRST rewrite of this classifier, actually ran constructed
+# inputs against it rather than just reading the code, and found the
+# glued-operator fix didn't cover `for x in a b; do <cmd>; done` on one
+# line (the single most common loop shape, and the exact case this hook's
+# own commit message claimed to fix) or a lone `&` backgrounding operator
+# -- both silently let a dangerous command through. Extracting the
+# classifier into its own importable module is what makes a real,
+# committed regression suite (test_file_ops_classifier.py, same
+# directory) possible instead of hand-verifying cases that turn out not
+# to be the ones that matter.
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+verdict="$(python3 "$script_dir/lib/file_ops_classifier.py" "$command")"
 
 if [[ "$verdict" == OK* ]]; then
   echo '{}'
