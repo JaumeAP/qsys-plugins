@@ -85,6 +85,17 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.6 - TcpSocket construction, IPv4 address validation, and
+--        Connect/Disconnect/IsConnected now go through the new shared
+--        Developer/shared/socket.lua module (SocketConn), so any future
+--        plugin needing a TCP client can reuse them instead of duplicating
+--        this boilerplate -- per an explicit request to put socket
+--        operations in a module other plugins can call. Connection
+--        orchestration (when to reconnect, what status to show) stays in
+--        this plugin's own runtime.lua, since that part is plugin-specific.
+--        sock is now a SocketConn instance; the raw TcpSocket is
+--        sock.Socket (needed by CPSeries:Start(sock.Socket), which still
+--        wants the raw socket object). No functional change.
 -- v4.0.0.5 - commlib.lua's isEqual() compared a stored value against an
 --        incoming one with plain '==', so a value stored as a Lua boolean
 --        (Actions.reset's `value or true`, Mute's .Boolean writes) never
@@ -181,6 +192,7 @@ end
 
 if Controls then
 	--[[ #include "../../shared/dolbyfader.lua" ]]
+	--[[ #include "../../shared/socket.lua" ]]
 	--[[ #include "models.lua" ]]
 	--[[ #include "protocol.lua" ]]
 	--[[ #include "commlib.lua" ]]
