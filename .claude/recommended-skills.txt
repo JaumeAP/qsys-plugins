@@ -31,5 +31,3 @@ caveman-compress -> JuliusBrussee/caveman
 caveman-help -> JuliusBrussee/caveman
 caveman-review -> JuliusBrussee/caveman
 caveman-stats -> JuliusBrussee/caveman
-mem-search -> thedotmack/claude-mem
-how-it-works -> thedotmack/claude-mem
