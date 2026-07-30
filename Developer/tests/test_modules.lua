@@ -197,4 +197,309 @@ do
 	cp:Stop()
 end
 
+h.section("command gap and watchdog")
+do
+	-- The two timing guarantees of the Dolby CP Cinema Control spec the poll
+	-- loop has to honour: a minimum gap between sent commands (250ms on a
+	-- CP650, 100ms elsewhere) and a 3s no-response watchdog. Measured in
+	-- POLLTIME (0.02s) ticks, since that is what Poll actually counts.
+	local TICK = 0.02
+
+	-- Gap: answer every tick, so nothing but the gap can hold a send back,
+	-- and take the tightest spacing between two consecutive writes.
+	--
+	-- A local change is kept pending for the whole run on purpose. Idle
+	-- polling is rate-limited to POLL_INTERVAL (1s), so with nothing pending
+	-- this would measure the poll interval, not the gap -- and would still
+	-- have reported the right number by accident, off the single
+	-- handshake-to-first-poll pair. The device's replies deliberately never
+	-- match the value being set, so the SET is never confirmed, stays
+	-- pending, and every send in the run is gap-governed.
+	local function min_gap_ticks(model, reply)
+		local cp, sock, _, timer = started(model)
+		timer.EventHandler()                     -- handshake out
+		sock.lines = { reply } sock.Data()       -- ...answered: now ready
+		cp:Action("fader", 9.9)                  -- a value no reply ever confirms
+
+		local last, smallest = nil, math.huge
+		for t = 1, 200 do
+			local before = #sock.writes
+			timer.EventHandler()
+			if #sock.writes > before then
+				if last and t - last < smallest then smallest = t - last end
+				last = t
+			end
+			sock.lines = { reply } sock.Data()
+		end
+		cp:Stop()
+		return smallest
+	end
+
+	local gap650 = min_gap_ticks("CP 650", "fader_level=42")
+	h.check(gap650 * TICK >= 0.25,
+		"CP 650: at least 250ms between commands (got " .. string.format("%.2f", gap650 * TICK) .. "s)")
+	local gap850 = min_gap_ticks("CP 850", "sys.fader 42")
+	h.check(gap850 * TICK >= 0.10,
+		"CP 850: at least 100ms between commands (got " .. string.format("%.2f", gap850 * TICK) .. "s)")
+	h.check(gap650 > gap850, "the CP 650 gap is the wider of the two")
+
+	-- Watchdog: stop answering and count the ticks to the close event. Not
+	-- an exact-equality check -- the point is 3s, not 0.6s (the old value)
+	-- and not never.
+	do
+		local cp, sock, _, timer = started("CP 850")
+		sock.lines = { "sys.fader 42" } sock.Data()
+		local closed_at
+		cp.EventHandler = function(service) if service == "close" and not closed_at then closed_at = true end end
+		local fired
+		for t = 1, 400 do
+			timer.EventHandler()
+			if closed_at then fired = t break end
+		end
+		h.check(fired ~= nil, "silence eventually declares the connection closed")
+		h.check(fired and fired * TICK >= 3.0 and fired * TICK < 3.5,
+			"the watchdog fires at ~3s of silence (got " .. string.format("%.2f", (fired or 0) * TICK) .. "s)")
+		cp:Stop()
+	end
+end
+
+h.section("CP650 echo fix")
+do
+	-- CP650 echoes the raw command line before its real response
+	-- ("Protocol Guarantees": expect RESPONSE, not echo). Its handshake
+	-- query reuses the fader wire key ('fader_level'), so an unfiltered
+	-- echo of that query structurally matches the fader/readiness pattern
+	-- and used to flip readiness to true on the plugin's own echoed bytes,
+	-- before the processor had said anything at all.
+	local cp, sock, events, timer = started("CP 650")
+	timer.EventHandler()
+	local sent = sock.writes[1]
+	h.check(sent == "fader_level=?", "CP 650: handshake query sent (got '" .. tostring(sent) .. "')")
+
+	sock.lines = { sent }   -- the device echoing our own line back
+	sock.Data()
+	h.check(saw(events, "ready") == nil, "the raw echo alone must not fire readiness")
+
+	sock.lines = { "fader_level=42" }   -- the real reply, after the echo
+	sock.Data()
+	h.check(saw(events, "ready") ~= nil, "the real reply after the echo fires readiness")
+
+	cp:Stop()
+end
+do
+	-- Only the FIRST identical line is treated as the echo; once consumed,
+	-- a second occurrence of the same text is a genuine (if repetitive)
+	-- reply and must be processed normally, not discarded again.
+	local cp, sock, events, timer = started("CP 650")
+	timer.EventHandler()
+	local sent = sock.writes[1]
+
+	sock.lines = { sent, sent }   -- echo, then a reply identical to the echo
+	sock.Data()
+	h.check(saw(events, "ready") ~= nil,
+		"a second occurrence of the same line (post-echo) is treated as the real reply")
+	cp:Stop()
+end
+do
+	-- A device that never echoes at all (or whose echo is already drained
+	-- by the time the poll fires) must still reach readiness normally --
+	-- the echo filter only discards a match, it never blocks on one.
+	local cp, sock, events, timer = started("CP 650")
+	timer.EventHandler()
+
+	sock.lines = { "fader_level=42" }   -- no echo, straight to the real reply
+	sock.Data()
+	h.check(saw(events, "ready") ~= nil, "readiness still fires with no echo at all")
+	cp:Stop()
+end
+do
+	-- Non-CP650 models never echo and must be completely unaffected by the
+	-- echopending machinery. CP850 reuses 'sys.fader' for its readiness
+	-- row too, so a line equal to the sent query is a structurally valid
+	-- reply here (unlike the CP650 case above, this isn't a mechanical
+	-- echo, just a coincidence of shared wire keys) -- with no echopending
+	-- logic gated in for this model, it must be processed normally and
+	-- fire readiness immediately, in contrast to CP650's suppression.
+	local cp, sock, events, timer = started("CP 850")
+	timer.EventHandler()
+	local sent = sock.writes[1]
+	h.check(sent == "sys.fader ?", "CP 850: handshake query sent (got '" .. tostring(sent) .. "')")
+
+	sock.lines = { sent }
+	sock.Data()
+	h.check(saw(events, "ready") ~= nil,
+		"CP 850: unlike CP650, a line equal to what was sent is processed normally, firing readiness")
+	cp:Stop()
+end
+
+h.section("boolean mute from the Controls layer")
+do
+	-- runtime.lua wires the Mute button straight through as
+	-- DolbyCP:Action("mute", Controls.Mute.Boolean) -- a Lua boolean, not a
+	-- number. The poll loop then formats that value for the wire, and both
+	-- string.format and arithmetic reject a boolean outright, so the first
+	-- Mute press threw out of the poll timer. No test covered the boolean
+	-- path, which is why it survived.
+	local function press(model, reply, wireParam, sep, deviceSaysMuted, value)
+		local cp, sock, _, timer = started(model)
+		timer.EventHandler()
+		sock.lines = { reply } sock.Data()
+		if deviceSaysMuted then
+			sock.lines = { wireParam .. sep .. "1" } sock.Data()
+		end
+		cp:Action("mute", value)
+
+		local threw, found
+		for t = 1, 200 do
+			local ok, err = pcall(timer.EventHandler)
+			if not ok then threw = err break end
+			for _, w in ipairs(sock.writes) do
+				if w:match("^" .. wireParam:gsub("%p", "%%%0") .. sep:gsub("%p", "%%%0"))
+					and not w:match("%?$") then found = w end
+			end
+			if found then break end
+			sock.lines = { reply } sock.Data()
+		end
+		cp:Stop()
+		return threw, found
+	end
+
+	local threw, sent = press("CP 850", "sys.fader 42", "sys.mute", " ", false, true)
+	h.check(threw == nil, "CP 850: a boolean mute does not throw (" .. tostring(threw) .. ")")
+	h.check(sent == "sys.mute 1", "CP 850: boolean true goes on the wire as 1 (got " .. tostring(sent) .. ")")
+
+	-- Unmute only travels when the plugin believes the device IS muted --
+	-- from the default state it is already 0, so isEqual() correctly drops
+	-- it as a no-op. Let the device report muted first, then unmute.
+	local threw2, sent2 = press("CP 850", "sys.fader 42", "sys.mute", " ", true, false)
+	h.check(threw2 == nil, "CP 850: a boolean unmute does not throw (" .. tostring(threw2) .. ")")
+	h.check(sent2 == "sys.mute 0", "CP 850: boolean false goes on the wire as 0 (got " .. tostring(sent2) .. ")")
+
+	local threw3, sent3 = press("CP 650", "fader_level=42", "mute", "=", false, true)
+	h.check(threw3 == nil, "CP 650: a boolean mute does not throw (" .. tostring(threw3) .. ")")
+	h.check(sent3 == "mute=1", "CP 650: boolean true goes on the wire as 1 (got " .. tostring(sent3) .. ")")
+end
+
+h.section("poll interval")
+do
+	-- The spec rate-limits ASKING the device for state (poll_interval, 1s),
+	-- never TELLING it about a user action -- the reference implementation
+	-- runs its poll loop and its command drain loop separately, the latter
+	-- gap-limited only. Both halves are checked here, since rate-limiting
+	-- the wrong one would make a fader move take up to a second to leave.
+	local TICK = 0.02
+
+	local function spacings(model, reply, keepPending)
+		local cp, sock, _, timer = started(model)
+		timer.EventHandler()
+		sock.lines = { reply } sock.Data()        -- ready
+		if keepPending then cp:Action("fader", 9.9) end   -- never confirmed by the reply
+
+		local at = {}
+		for t = 1, 300 do
+			local before = #sock.writes
+			timer.EventHandler()
+			if #sock.writes > before then at[#at + 1] = t end
+			sock.lines = { reply } sock.Data()
+		end
+		cp:Stop()
+		local mn, mx = math.huge, 0
+		for i = 2, #at do
+			local d = at[i] - at[i - 1]
+			if d < mn then mn = d end
+			if d > mx then mx = d end
+		end
+		return #at, mn, mx
+	end
+
+	local n, mn, mx = spacings("CP 850", "sys.fader 42", false)
+	h.check(mn == mx and math.abs(mn * TICK - 1.0) < 0.05,
+		"idle polling settles at 1s between queries (got " ..
+		string.format("%.2f", mn * TICK) .. "s.." .. string.format("%.2f", mx * TICK) .. "s)")
+	h.check(n <= 8, "300 ticks of idle polling is a handful of queries, not one per tick (got " .. n .. ")")
+
+	local n2, mn2 = spacings("CP 850", "sys.fader 42", true)
+	h.check(math.abs(mn2 * TICK - 0.10) < 0.01,
+		"a pending local change is NOT rate-limited, it goes at gap rate (got " ..
+		string.format("%.2f", mn2 * TICK) .. "s)")
+	h.check(n2 > n * 5,
+		"which means far more sends than idle polling (" .. n2 .. " vs " .. n .. ")")
+end
+
+h.section("query timeout")
+do
+	-- A lost response is not a dead link. At QUERY_TIMEOUT (1.5s) the
+	-- in-flight message is retransmitted once; the watchdog keeps counting
+	-- underneath, so a link that really is dead still dies on schedule.
+	local TICK = 0.02
+	local cp, sock, _, timer = started("CP 850")
+	timer.EventHandler()
+	sock.lines = { "sys.fader 42" } sock.Data()   -- handshake answered, then silence
+
+	local closed
+	cp.EventHandler = function(service) if service == "close" and not closed then closed = true end end
+
+	local sendTick, retryTick, closeTick
+	for t = 1, 400 do
+		local before = #sock.writes
+		timer.EventHandler()
+		if #sock.writes > before then
+			if not sendTick then sendTick = t else retryTick = retryTick or t end
+		end
+		if closed then closeTick = t break end
+	end
+
+	h.check(retryTick ~= nil, "an unanswered message is retransmitted at all")
+	h.check(retryTick and math.abs((retryTick - sendTick) * TICK - 1.5) < 0.05,
+		"the retransmit lands ~1.5s after the send (got " ..
+		string.format("%.2f", ((retryTick or 0) - (sendTick or 0)) * TICK) .. "s)")
+	local n = #sock.writes
+	h.check(n >= 2 and sock.writes[n] == sock.writes[n - 1],
+		"the retransmit is byte-identical to the message it retries")
+	h.check(n == 3, "exactly one retransmit, not a retry storm (got " .. (n - 2) .. ")")
+	h.check(closeTick and closeTick * TICK >= 3.0 and closeTick * TICK < 3.5,
+		"the watchdog still closes at ~3s despite the retry (got " ..
+		string.format("%.2f", (closeTick or 0) * TICK) .. "s)")
+	cp:Stop()
+end
+do
+	-- The point of the retry, against a realistic request/response device:
+	-- it answers whatever it receives, except that ONE response goes
+	-- missing in transit. Without a retransmit there is no second request,
+	-- so no second answer, and the watchdog tears the link down; with one,
+	-- the device is asked again and the link recovers. Driving the replies
+	-- off the device's own Write side (rather than injecting them
+	-- unprompted) is what makes this discriminating -- an unprompted
+	-- injection would keep the link alive either way and prove nothing.
+	local cp, sock, _, timer = started("CP 850")
+	timer.EventHandler()
+	sock.lines = { "sys.fader 42" } sock.Data()   -- handshake answered by hand
+
+	-- Only now does the device start behaving as request/response, with the
+	-- very next request's answer lost. Hooking Write before the handshake
+	-- would spend the "lost" response on the handshake instead, and the
+	-- test would pass with or without the fix.
+	local dropped = false
+	local realWrite = sock.Write
+	sock.Write = function(s, m)
+		realWrite(s, m)
+		if not dropped then
+			dropped = true       -- this one's response never arrives
+		else
+			s.lines = { "sys.fader 55" }   -- every later request is answered
+		end
+	end
+
+	local closed
+	cp.EventHandler = function(service) if service == "close" then closed = true end end
+	for t = 1, 200 do
+		timer.EventHandler()
+		if #sock.lines > 0 then sock.Data() end
+		if closed then break end
+	end
+	h.check(not closed,
+		"a single lost response is recovered by the retransmit instead of killing the link")
+	cp:Stop()
+end
+
 h.report()

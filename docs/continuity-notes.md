@@ -669,3 +669,51 @@ history actually matters.)
   at all -- it would apply automatically to every future merge_pull_request
   call from any session, closing the gap for good without needing any
   new session-side capability.
+
+- **The four "mandatory" skills were never actually invoked, and the fix is
+  only partly mechanical (2026-07-30).** A full-session audit, prompted by the
+  user asking whether the repo's skills were really being obeyed, found
+  `file-operations`, `github-rules`, `caveman` and `karpathy-guidelines` --
+  all four called mandatory by `CLAUDE.md` -- invoked zero times via the
+  `Skill` tool across a long session that repeatedly matched their own trigger
+  descriptions (writing `.qplug`/`.qplugx` files with raw `cp`/`sed -i`,
+  dispatching workflows and merging PRs, replying without a compression or
+  behavioural-principles pass). Root cause worth remembering: `CLAUDE.md` and
+  `.claude/rules/*.md` are auto-injected passive context, whereas a `SKILL.md`
+  loads its real content ONLY on an explicit `Skill` call. Conflating the two
+  is what let it go unnoticed -- the rules "being in context" is not the skill
+  running.
+  Fix, same day: `file-operations` got a genuine hard gate,
+  `.claude/hooks/file-operations-enforcement.sh` (`PreToolUse`/`Bash`,
+  `permissionDecision: deny`), modelled on `no-commit-on-main.sh`. **Honest
+  limit, do not overstate it later**: that hook covers only raw
+  `cp`/`mv`/`rm`/`dd`/`tee`/`install`/`sed -i` against a repo path outside
+  `/tmp/`. It deliberately does NOT catch a `python3 -c` file write, because
+  detecting that by pattern risks blocking legitimate reads. The other three
+  skills have no comparable chokepoint -- no single command means "replied
+  without compressing" or "merged without checking conventions" -- so they are
+  backed only by `rule-check-reminder.sh` naming them every firing. That is a
+  stronger reminder, NOT a guarantee, and the difference is the whole point of
+  this entry.
+
+- **The config bundle had never actually been applied to CPSeries
+  (2026-07-30).** The import commit there (`d516d15`) added only metadata
+  files -- `config-export-import.md`, `recommended-skills.txt`,
+  `skills-history.md`, `removed-files.txt`, `00-START-HERE.md`,
+  `programming-optional-skills.txt` -- and never touched `CLAUDE.md`,
+  `settings.json` or `hooks/`. It was reported at the time as a completed
+  import. Two consequences surfaced only when the user asked, sessions later,
+  whether the other repos still had their changelog rules: CPSeries kept its
+  pre-bundle common section, and a later cleanup commit (`b988959`) deleted
+  the skills that section pointed at, leaving live dangling pointers to
+  `git-rules`, `changelog-rules` and `karpathy-guidelines`.
+  That same `b988959` also deleted two skills that were on NO removal list:
+  CPSeries' own `cpx50-parser` and `cpx50-equalizer`. The import step should
+  prune only what `removed-files.txt` names; it pruned everything outside the
+  bundle allowlist instead. The user chose to keep them deleted rather than
+  restore, so the damage is settled -- but the lesson is the procedure, not
+  the outcome: **an import must delete only what `removed-files.txt` lists,
+  and "imported the bundle" must not be reported unless `CLAUDE.md`,
+  `settings.json` and `hooks/` were actually part of it.** Eines, checked the
+  same day, had received the full import correctly and needed only the
+  latest revision.

@@ -135,3 +135,35 @@ it turned out to prescribe a competing TDD-based process for this same
 action, conflicting with `skill-creator`; also dropped from
 `recommended-skills.txt`. `skill-creator` remains the sole mandated
 process here.
+
+**"Mandatory" wasn't actually enforced, and a full-session audit caught
+it (2026-07-30).** `CLAUDE.md` has called `file-operations`,
+`github-rules`, `caveman`, and `karpathy-guidelines` mandatory for a
+while; none of the four had ever been invoked via the `Skill` tool in a
+session that touched their trigger conditions dozens of times over
+(rebuilding/writing `.qplug`/`.qplugx` files with raw shell commands
+instead of `file-operations`, dispatching GitHub Actions and merging
+PRs without ever loading `github-rules`' own content, no reply-
+compression or behavioral-principles pass from `caveman`/
+`karpathy-guidelines`). Skills load their real content only on an
+explicit `Skill` call; `CLAUDE.md`'s own text and the always-loaded
+`.claude/rules/*.md` files are a completely separate, passive mechanism
+(auto-injected as context) that was never a substitute for that call —
+conflating the two is exactly what let this go unnoticed for an entire
+session.
+
+Fix, same day: `file-operations` gets an actual mechanical gate,
+`.claude/hooks/file-operations-enforcement.sh` (`PreToolUse`/`Bash`,
+hard block, same `permissionDecision: deny` pattern `no-commit-on-main.sh`
+already used successfully) — narrower than the skill's full "MUST" scope
+by design (covers `cp`/`mv`/`rm`/`dd`/`tee`/`sed -i` against a repo path
+outside `/tmp/`; does NOT try to catch e.g. a `python3 -c` file write,
+since detecting that reliably risks blocking legitimate reads instead).
+The other three have no equivalent tool-level chokepoint to gate on (no
+single command means "wrote a reply without compressing it" or "merged a
+PR without consulting conventions"), so `rule-check-reminder.sh` instead
+names all four explicitly on every firing (first call + every 15th) — a
+narrow, deliberate exception to that hook's own 2026-07-30 decision to
+stop enumerating skills, scoped to just these four mandatory ones, not
+reverted for the 25 merely-recommended ones. `CLAUDE.md`'s own "Portable
+skills" section points here rather than restating this.

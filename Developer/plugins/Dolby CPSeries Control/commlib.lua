@@ -21,6 +21,50 @@
 	do
 
 		local POLLTIME = 0.02
+
+		-- Minimum gap between two sent commands, and the no-response
+		-- watchdog, both in seconds. These are the "Protocol Guarantees" of
+		-- the Dolby CP Cinema Control spec: the CP650 needs more headroom
+		-- than the general case (250ms minimum, not 100ms), and a link that
+		-- stops answering is declared dead after 3s rather than polled
+		-- forever.
+		local GAP_CP650 = 0.25
+		local GAP_DEFAULT = 0.10
+		local WATCHDOG = 3.0
+		-- Query timeout, deliberately separate from the watchdog above: a
+		-- single lost response is a lost response, not a dead link. At this
+		-- point the in-flight message is retransmitted ONCE ("fast recovery
+		-- for a lost poll/query response"); only if that also draws nothing
+		-- does the watchdog eventually declare the connection dead.
+		local QUERY_TIMEOUT = 1.5
+		-- Idle poll interval. This rate-limits QUERIES only. A pending local
+		-- change (a fader move, a mute, a format press) is still delivered
+		-- at gap rate, mirroring how the reference implementation separates
+		-- its poll loop (poll_interval, 1.0s) from its command drain loop
+		-- (continuous, gap-limited): the spec rate-limits asking the device
+		-- for state, never telling it about a user action.
+		local POLL_INTERVAL = 1.0
+
+		-- Poll runs off a POLLTIME timer and counts ticks, so both live here
+		-- as tick counts. Rounded up: rounding down would sit just under the
+		-- documented minimum, which is the one direction that matters.
+		local GAP_TICKS_CP650 = math.ceil(GAP_CP650 / POLLTIME)
+		local GAP_TICKS_DEFAULT = math.ceil(GAP_DEFAULT / POLLTIME)
+		local WATCHDOG_TICKS = math.ceil(WATCHDOG / POLLTIME)
+		local QUERY_TIMEOUT_TICKS = math.ceil(QUERY_TIMEOUT / POLLTIME)
+		local POLL_INTERVAL_TICKS = math.ceil(POLL_INTERVAL / POLLTIME)
+
+		-- private.cache's own guarantee, per the same spec: a single FIFO
+		-- queue of pending outbound messages ahead of the regular poll
+		-- cycle, capped at QMAX -- past capacity the OLDEST entry is
+		-- dropped first, so the most recent request always survives.
+		-- request() (below) is currently this queue's only producer, and it
+		-- is only ever called once per Start() (the readiness handshake),
+		-- so today the queue never actually holds more than one entry --
+		-- this exists so a future second caller doesn't inherit a queue
+		-- that silently reordered or grew without bound.
+		local QMAX = 10
+
 		local setValue,getValue,setState,getState,Poll,readData,request,received
 		local privates = setmetatable({}, {__mode = "k"}) -- set 'privates' as private field
 
@@ -75,6 +119,8 @@
 			-- resolve per-connection model facts once (used on every Poll/received)
 			private.libmodel = (private.model.value):gsub("%s","")
 			private.isMacro = isMacro(private.model)
+			private.gapticks = (private.model == Model.CP650) and GAP_TICKS_CP650 or GAP_TICKS_DEFAULT
+			private.echopending = nil
 			private.time = Timer.New()
 			return setmetatable( self, CPSeries)
  		end
@@ -88,11 +134,20 @@
  		function CPSeries:Start(Sock)
 			local private = privates[self]
 			private.cache = {}
+			private.echopending = nil   -- no outbound message sent yet on this connection
+			private.lastmsg = nil       -- nothing in flight to retransmit yet
+			-- Start with the poll interval already elapsed, so the first
+			-- poll after a connect is immediate rather than a second late.
+			private.sincepoll = POLL_INTERVAL_TICKS
  			private.sock = Sock
  		    private.sock.Data = function(sock,data) readData(self) end
   			private.time.EventHandler = function(timer) Poll(self) end
    			private.time:Start(POLLTIME)
 			private.waiting=0
+			-- Start with the gap already elapsed, so the first poll after a
+			-- connect puts the handshake query on the wire immediately
+			-- instead of idling for one gap period.
+			private.sincesend = private.gapticks
   	 		private.npoll = 0
     	    private.ready=false
     		for _,elem in pairs(Actions) do
@@ -287,6 +342,16 @@
      			private.sock:Write(msg..'\r\n')
      		end
      		pcall(write)      -- write to socket
+			private.sincesend = 0   -- the gap is measured from the last send
+			-- CP650 raw-echoes the sent line before its real response
+			-- ("Protocol Guarantees": expect RESPONSE, not echo). Arm the
+			-- expectation for readData() below; other models never set
+			-- this, so their read path is unchanged.
+			private.echopending = (private.model == Model.CP650) and msg or nil
+			-- Remember what is in flight, so a response lost in transit can
+			-- be retried at QUERY_TIMEOUT rather than only being noticed by
+			-- the watchdog, which kills the whole connection.
+			private.lastmsg = msg
 			Print(updated,'TX',msg)
 		end
 
@@ -294,6 +359,9 @@
 			local private = privates[self]
 			local param = CPServices[Actions.reset.index][model.index]
 			table.insert(private.cache, CPProtocol.FormatQuery(private.libmodel,param))
+			if #private.cache > QMAX then
+				table.remove(private.cache, 1)   -- saturation: drop the oldest first
+			end
 		end
 
 		readData = function(self)
@@ -301,11 +369,40 @@
  			local watchdog = false
  			repeat
     			local str = trimstr(private.sock:ReadLine(TcpSocket.EOL.Any));
-    			if str and str ~='' then watchdog = true received(self,str)  end
+    			if str and str ~='' then
+    				if private.echopending and str == private.echopending then
+    					-- The mechanical CP650 echo of what we just sent, not a
+    					-- real reply: discard it without touching the watchdog
+    					-- or calling received() on it, so it can neither be
+    					-- misread as the answer (e.g. a query's echoed "?" is
+    					-- not a value) nor prematurely satisfy the busy/one-
+    					-- in-flight wait for the real response. Cleared after
+    					-- one match: only the first identical line is the
+    					-- mechanical echo -- a second one is a genuine (if
+    					-- repetitive) reply and must be processed normally.
+    					private.echopending = nil
+    				else
+    					watchdog = true received(self,str)
+    				end
+    			end
 			until str==nil or private.sock.IsConnected == false
  			if not private.sock.IsConnected then doClose(self) end
  			if (watchdog) then private.waiting = 0 end
  		end
+
+		-- True while any action carries a locally-set value the device has
+		-- not confirmed yet -- i.e. a user action still on its way out.
+		-- While that is the case the poll interval is bypassed, so a fader
+		-- move is never held back by the idle polling rate. Gating the whole
+		-- send block rather than the individual message keeps the action
+		-- rotation intact: holding only the query slots would stall the
+		-- rotation on a held slot and never reach the one carrying the SET.
+		local function hasPendingSet(self)
+			for _,elem in ipairs(Actions) do
+				if getState(self,elem) then return true end
+			end
+			return false
+		end
 
 		local function pollAction(self)
 			local private = privates[self]
@@ -329,11 +426,39 @@
  		Poll = function(self)
 			local msg
   			local private = privates[self]
-    		if private.waiting > 30 then
+    		if private.waiting > WATCHDOG_TICKS then
   				doClose(self) return end
+			private.sincesend = private.sincesend + 1
+			private.sincepoll = private.sincepoll + 1
+			-- Query timeout: the in-flight command has gone unanswered this
+			-- long, so retransmit it ONCE. Deliberately not resetting the
+			-- waiting counter -- it keeps running toward the watchdog, so a
+			-- link that is genuinely dead still gets declared dead on time;
+			-- this only buys a lost single response a second chance first.
+			-- Exact equality, so it fires on one tick only, never a retry
+			-- storm.
+			if private.waiting == QUERY_TIMEOUT_TICKS and private.lastmsg then
+				writeSocket(self, private.lastmsg, false)
+			end
   			if private.waiting ==0 then
+				-- Hold the wire until the model's minimum gap has passed.
+				-- Returning before the waiting counter is bumped is what
+				-- keeps this a hold and not a deadlock: waiting only starts
+				-- counting once a command is actually in flight, so the next
+				-- tick gets to try again instead of waiting forever for a
+				-- response to a command that was never sent.
+				if private.sincesend < private.gapticks then return end
   			  	local updated = false
   		    	if #private.cache == 0 then
+					-- Idle polling runs at POLL_INTERVAL, not at tick rate.
+					-- Checked before pollAction() so a held tick doesn't
+					-- consume a rotation slot. Queued messages (the branch
+					-- below) and the retransmit above are deliberately not
+					-- rate-limited -- neither is idle polling.
+					if not hasPendingSet(self) and private.sincepoll < POLL_INTERVAL_TICKS then
+						return
+					end
+					private.sincepoll = 0
   					local result = '?'
 					local action = pollAction(self)
   					local param = CPServices[action.index][private.model.index]
@@ -345,11 +470,25 @@
   			    			result = getButtonName(private.model,result)
   			    			if result == nil then result = '?' end -- invalid format value: query instead of a bad SET
   			   		 	end
-  			    		if action == Actions.fader then
-  			    			result = string.format('%.0f',result * 10)
-  			    		end
-  			    		if action == Actions.mute then
-  			    			result = string.format('%.0f',result)
+  			    		if action == Actions.fader or action == Actions.mute then
+  			    			-- The stored value can be a Lua boolean, not a
+  			    			-- number: runtime.lua pushes Controls.Mute.Boolean
+  			    			-- straight through Action(). Both string.format
+  			    			-- and arithmetic reject a boolean outright, so the
+  			    			-- first Mute press used to throw out of the poll
+  			    			-- timer. Normalize to 0/1 exactly the way isEqual()
+  			    			-- already does for the same reason, and fall back
+  			    			-- to a query for anything still not numeric rather
+  			    			-- than crash or put garbage on the wire -- the same
+  			    			-- rule the format branch above already applies.
+  			    			result = normalize(result)
+  			    			if type(result) ~= "number" then
+  			    				result = '?'
+  			    			elseif action == Actions.fader then
+  			    				result = string.format('%.0f',result * 10)
+  			    			else
+  			    				result = string.format('%.0f',result)
+  			    			end
   			    		end
   			    		updated = getState(self,action)
   			    	end
@@ -358,7 +497,7 @@
 					else
 						msg = CPProtocol.FormatMessage(private.libmodel,param,result)
 					end
-				else msg = table.remove(private.cache) end
+				else msg = table.remove(private.cache, 1) end   -- FIFO: oldest queued message first
   				writeSocket(self, msg, updated )
   			end
   			private.waiting = private.waiting + 1

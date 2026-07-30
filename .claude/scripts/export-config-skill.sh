@@ -161,6 +161,7 @@ cp .claude/recommended-skills.txt "$skill_dir/references/"
 # every target repo, and re-registering them there would reimpose rules
 # the common CLAUDE.md no longer states.
 bundled_hooks=(config-ingest-reminder.sh
+  file-operations-enforcement.sh
   init-submodules.sh no-commit-on-main.sh precompact-hygiene-flag.sh
   rule-check-reminder.sh
   skill-creation-reminder.sh submodule-clone-fixup.sh)

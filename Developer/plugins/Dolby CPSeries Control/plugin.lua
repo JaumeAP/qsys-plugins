@@ -85,6 +85,88 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.12 - crash fix, long-standing and unrelated to the timer work
+--        above: pressing Mute threw out of the poll timer. runtime.lua
+--        wires the button through as Action("mute", Controls.Mute.Boolean),
+--        a Lua boolean, and the poll loop fed that straight to
+--        string.format('%.0f', ...), which rejects a boolean outright --
+--        "bad argument #2 to 'format' (number expected, got boolean)". The
+--        value is now normalized to 0/1 first, exactly the way isEqual()
+--        already did for the same boolean-vs-number reason, and anything
+--        still not numeric falls back to a query rather than crashing or
+--        putting garbage on the wire, matching the rule the format branch
+--        already applied. Found while testing the poll-interval change; no
+--        test had ever driven the boolean path, which is how it survived.
+--        Unmute from the default state remains a deliberate no-op: the
+--        mirror already reads 0, so isEqual() drops it -- it only travels
+--        once the device has reported itself muted.
+-- v4.0.0.11 - idle poll interval, completing the spec's four separated
+--        timers. The loop used to query the processor on every tick the gap
+--        allowed -- ~10 queries/s, or ~4 on a CP650 -- where the spec asks
+--        for one per second. Queries are now rate-limited to POLL_INTERVAL.
+--        Deliberately queries ONLY: a pending local change (fader, mute,
+--        format) still goes out at gap rate, mirroring how the reference
+--        implementation keeps its poll loop (1s) separate from its command
+--        drain loop (continuous). Rate-limiting both would have put up to a
+--        second of latency on every fader move. The check sits before
+--        pollAction() so a held tick doesn't consume a rotation slot, and
+--        gates the whole send block rather than individual messages --
+--        holding only the query slots would stall the rotation on a held
+--        slot and never reach the one carrying the SET.
+--        Consequence worth knowing on the bench: state changed at the
+--        processor's own front panel is now reflected in Q-SYS within a
+--        couple of seconds rather than a couple of hundred milliseconds.
+--        That is the spec's own trade, not an accident of this change.
+-- v4.0.0.10 - query timeout, the last of the spec's four separated timers
+--        the poll loop was missing. A response lost in transit used to be
+--        indistinguishable from a dead link: nothing was retransmitted, so
+--        the connection simply sat idle until the 3s watchdog tore it down,
+--        losing the link over a single dropped packet. writeSocket() now
+--        remembers the message in flight and Poll() retransmits it once, at
+--        1.5s, byte-identical. The waiting counter deliberately keeps
+--        running underneath, so a link that really is dead is still
+--        declared dead on the same 3s schedule -- the retry buys a lost
+--        response a second chance, it does not extend the watchdog. Fires
+--        on exact tick equality, so it can never become a retry storm.
+-- v4.0.0.9 - CP650 echo fix ("Protocol Guarantees": expect RESPONSE, not
+--        echo). readData() had no way to tell the device's own raw echo of
+--        the sent line from a real reply. This was concretely wrong, not
+--        just theoretically: CP650's readiness handshake reuses the fader
+--        wire key ('fader_level'), so the echoed query structurally matched
+--        the fader/readiness pattern and flipped readiness to true on the
+--        plugin's own bytes bouncing back, before the processor had said
+--        anything at all -- confirmed by a reproduction script before this
+--        fix, not just by inspection. writeSocket() now records the raw
+--        sent line; readData() discards exactly one matching line before
+--        treating anything as a real response, without touching the
+--        watchdog/busy counter for that discarded line. Only armed for
+--        CP650 -- the other four models are unaffected, don't echo, and
+--        their own coincidental reuse of the same wire key across rows
+--        (e.g. CP850's 'sys.fader') is unrelated existing behaviour, not
+--        something this touches.
+-- v4.0.0.8 - private.cache (the pending-message queue ahead of the regular
+--        poll cycle) honours two more of the "Protocol Guarantees": it now
+--        drains oldest-first (was table.remove() with no index, which pops
+--        the LAST item -- LIFO, not FIFO) and is capped at QMAX=10, dropping
+--        the oldest entry first past capacity. request() is currently the
+--        queue's only producer and is only ever called once per Start(), so
+--        the queue never actually holds more than one entry today -- this
+--        guards a future second caller from inheriting silently wrong
+--        ordering or unbounded growth, not an observed bug in current
+--        behaviour.
+-- v4.0.0.7 - commlib.lua now honours two of the "Protocol Guarantees" of the
+--        Dolby CP Cinema Control spec it previously ignored. (1) Minimum gap
+--        between sent commands: there was none -- the poll loop sent again
+--        on the first 0.02s tick after a response, which on a CP650 is far
+--        under the 250ms that model's hardware needs (100ms for the others).
+--        Poll now holds the wire until the model's gap has elapsed,
+--        measured from the last send. (2) The no-response watchdog was 30
+--        ticks, i.e. 0.6s, five times more aggressive than the documented
+--        3.0s, so a merely slow link was declared dead; it is now 150 ticks.
+--        Both are expressed as seconds and converted to ticks against
+--        POLLTIME rather than hardcoded as tick counts. The waiting counter
+--        now only advances once a command is actually in flight, which is
+--        what keeps the new gap a hold rather than a deadlock.
 -- v4.0.0.6 - TcpSocket construction, IPv4 address validation, and
 --        Connect/Disconnect/IsConnected now go through the new shared
 --        Developer/shared/socket.lua module (SocketConn), so any future

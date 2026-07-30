@@ -241,9 +241,12 @@ do
 	sock.lines = { "sys.fader 42" }
 	sock.Data()
 
+	-- The watchdog is 3.0s of silence, counted in POLLTIME (0.02s) ticks, so
+	-- it takes 150 unanswered polls plus one to trip -- 160 leaves margin
+	-- without depending on the exact boundary.
 	local timer = env.timers[#env.timers]
-	for _ = 1, 40 do pcall(timer.EventHandler) end
-	h.check(closed > 0, "40 unanswered polls declare the connection closed")
+	for _ = 1, 160 do pcall(timer.EventHandler) end
+	h.check(closed > 0, "160 unanswered polls declare the connection closed")
 
 	cp:Stop()
 end
