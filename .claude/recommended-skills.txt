@@ -25,3 +25,13 @@ firecrawl-scrape -> firecrawl/firecrawl-claude-plugin
 firecrawl-search -> firecrawl/firecrawl-claude-plugin
 frontend-design -> anthropics/claude-code
 karpathy-guidelines -> forrestchang/andrej-karpathy-skills
+cavecrew -> JuliusBrussee/caveman
+caveman -> JuliusBrussee/caveman
+caveman-commit -> JuliusBrussee/caveman
+caveman-compress -> JuliusBrussee/caveman
+caveman-help -> JuliusBrussee/caveman
+caveman-review -> JuliusBrussee/caveman
+caveman-stats -> JuliusBrussee/caveman
+mem-search -> thedotmack/claude-mem
+how-it-works -> thedotmack/claude-mem
+planning-with-files -> OthmanAdi/planning-with-files
