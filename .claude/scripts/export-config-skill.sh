@@ -140,6 +140,11 @@ sed '/^## Project-specific rules/,$d' CLAUDE.md > "$skill_dir/references/CLAUDE.
 cp .claude/config-export-import.md "$skill_dir/references/"
 cp .claude/recommended-skills.txt "$skill_dir/references/"
 [ -f .claude/removed-files.txt ] && cp .claude/removed-files.txt "$skill_dir/references/"
+# skills-history.md carries the bundled/optional/removed reasoning that the
+# common CLAUDE.md's "Portable skills" section points at rather than
+# restates (split out 2026-07-30 to keep CLAUDE.md under ~200 lines). It has
+# to travel, or that pointer dangles in every target repo.
+[ -f .claude/skills-history.md ] && cp .claude/skills-history.md "$skill_dir/references/"
 
 # bundled_hooks is the single source of truth for which hooks are
 # portable -- reused below both to copy the hook files themselves and to

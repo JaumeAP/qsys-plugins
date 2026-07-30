@@ -12,6 +12,28 @@ official path-scoped-rules mechanism at code.claude.com/docs/en/memory) to
 keep the main CLAUDE.md under the ~200-line guidance and load this technical
 reference only when Claude is actually touching plugin source or a build. -->
 
+<!-- Cross-references in this file that say "above"/"below" may now point at
+a sibling file after the 2026-07-30 split: CLAUDE.md (operative rules),
+.claude/rules/repo-layout.md (directory tree),
+.claude/rules/qsys-plugin-development.md (plugin/build reference), or
+docs/continuity-notes.md (dated history). -->
+
+### PLUGCC.exe `#include` resolution rules
+
+**PLUGCC.exe `#include` resolution rules (confirmed by trial, 2026-07-29;
+see the Continuity notes below for the full story):** (1) a relative
+`#include` path always resolves against the *original* `plugin.lua`'s own
+directory (the process cwd `PLUGCC.exe` is invoked from), never against
+whichever file's own text contains the directive. (2) A NESTED `#include`
+(one inside a file that itself got pulled in by another `#include`, as
+opposed to one written directly in `plugin.lua`) is only recognized if it is
+that file's first line. `Developer/shared/dolbyfader.lua`'s own `#include`
+of `qknob.lua` and `Dolby Sweep/runtime.lua`'s own `#include` of
+`shared/qknob.lua` both satisfy this; `Dolby CPSeries Control/plugin.lua`
+avoids the question entirely by `#include`ing everything it needs directly
+(all depth-1), since only `plugin.lua`'s own includes can appear anywhere in
+the file with no first-line restriction.
+
 ### How a Q-SYS plugin is structured
 
 A `.qplug` file is a Lua script the Q-SYS Designer host runs in two roles. It
