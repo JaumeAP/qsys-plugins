@@ -2,6 +2,9 @@
   "permissions": {
     "allow": [
       "mcp__Claude_Code_Remote__add_repo",
+      "mcp__Claude_Code_Remote__list_repos",
+      "mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__add_repo",
+      "mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__list_repos",
       "Bash(git submodule *)",
       "Bash(git clone *)",
       "Bash(git fetch *)",

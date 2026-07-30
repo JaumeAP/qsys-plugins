@@ -23,15 +23,16 @@ Bash(apt-get update *)
 Bash(apt-get install *)
 Bash(apt-get remove *)
 
-# mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__add_repo -- removed 2026-07-30
-# (found during a config audit, explicit user request), not just from this
-# file but from settings.json's own permissions.allow too. This comment
-# already called it "instance-specific... likely invalid in any other
-# session" when it was still meant to travel-exclude; turns out it was
-# already invalid in THIS session too. The connector this session actually
-# uses grants add_repo as `mcp__Claude_Code_Remote__add_repo` (see the
-# entry right above this one in settings.json), which was already present
-# alongside it -- the UUID-suffixed form is some earlier session's
-# connector instance ID and can never match a real tool-call name again.
-# Dead permission grant, not a security-relevant one (it only ever widened
-# what could match, never narrowed it), just clutter.
+# The UUID-suffixed Claude_Code_Remote entries below are travel-excluded:
+# the UUID is this installation's own MCP connector server ID, meaningless
+# in any other user's repo. RESTORED 2026-07-30, same day they were
+# removed: the removal (commit e92cd1f) claimed the UUID form "can never
+# match a real tool-call name again" and that this session's connector
+# grants the tool as `mcp__Claude_Code_Remote__add_repo` -- verified wrong
+# hours later, in the same session type, when list_repos/add_repo calls
+# started demanding manual approval: the live tool names here ARE
+# `mcp__bf7c680d-...__*`, and the friendly-name entry matches nothing.
+# Both forms now stay in settings.json (whichever the harness exposes
+# wins); only the UUID ones are excluded from the export bundle here.
+mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__add_repo
+mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__list_repos
