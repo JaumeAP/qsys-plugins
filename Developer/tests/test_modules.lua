@@ -207,8 +207,20 @@ do
 
 	-- Gap: answer every tick, so nothing but the gap can hold a send back,
 	-- and take the tightest spacing between two consecutive writes.
+	--
+	-- A local change is kept pending for the whole run on purpose. Idle
+	-- polling is rate-limited to POLL_INTERVAL (1s), so with nothing pending
+	-- this would measure the poll interval, not the gap -- and would still
+	-- have reported the right number by accident, off the single
+	-- handshake-to-first-poll pair. The device's replies deliberately never
+	-- match the value being set, so the SET is never confirmed, stays
+	-- pending, and every send in the run is gap-governed.
 	local function min_gap_ticks(model, reply)
 		local cp, sock, _, timer = started(model)
+		timer.EventHandler()                     -- handshake out
+		sock.lines = { reply } sock.Data()       -- ...answered: now ready
+		cp:Action("fader", 9.9)                  -- a value no reply ever confirms
+
 		local last, smallest = nil, math.huge
 		for t = 1, 200 do
 			local before = #sock.writes
@@ -318,6 +330,52 @@ do
 	h.check(saw(events, "ready") ~= nil,
 		"CP 850: unlike CP650, a line equal to what was sent is processed normally, firing readiness")
 	cp:Stop()
+end
+
+h.section("poll interval")
+do
+	-- The spec rate-limits ASKING the device for state (poll_interval, 1s),
+	-- never TELLING it about a user action -- the reference implementation
+	-- runs its poll loop and its command drain loop separately, the latter
+	-- gap-limited only. Both halves are checked here, since rate-limiting
+	-- the wrong one would make a fader move take up to a second to leave.
+	local TICK = 0.02
+
+	local function spacings(model, reply, keepPending)
+		local cp, sock, _, timer = started(model)
+		timer.EventHandler()
+		sock.lines = { reply } sock.Data()        -- ready
+		if keepPending then cp:Action("fader", 9.9) end   -- never confirmed by the reply
+
+		local at = {}
+		for t = 1, 300 do
+			local before = #sock.writes
+			timer.EventHandler()
+			if #sock.writes > before then at[#at + 1] = t end
+			sock.lines = { reply } sock.Data()
+		end
+		cp:Stop()
+		local mn, mx = math.huge, 0
+		for i = 2, #at do
+			local d = at[i] - at[i - 1]
+			if d < mn then mn = d end
+			if d > mx then mx = d end
+		end
+		return #at, mn, mx
+	end
+
+	local n, mn, mx = spacings("CP 850", "sys.fader 42", false)
+	h.check(mn == mx and math.abs(mn * TICK - 1.0) < 0.05,
+		"idle polling settles at 1s between queries (got " ..
+		string.format("%.2f", mn * TICK) .. "s.." .. string.format("%.2f", mx * TICK) .. "s)")
+	h.check(n <= 8, "300 ticks of idle polling is a handful of queries, not one per tick (got " .. n .. ")")
+
+	local n2, mn2 = spacings("CP 850", "sys.fader 42", true)
+	h.check(math.abs(mn2 * TICK - 0.10) < 0.01,
+		"a pending local change is NOT rate-limited, it goes at gap rate (got " ..
+		string.format("%.2f", mn2 * TICK) .. "s)")
+	h.check(n2 > n * 5,
+		"which means far more sends than idle polling (" .. n2 .. " vs " .. n .. ")")
 end
 
 h.section("query timeout")

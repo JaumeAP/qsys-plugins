@@ -85,6 +85,23 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.11 - idle poll interval, completing the spec's four separated
+--        timers. The loop used to query the processor on every tick the gap
+--        allowed -- ~10 queries/s, or ~4 on a CP650 -- where the spec asks
+--        for one per second. Queries are now rate-limited to POLL_INTERVAL.
+--        Deliberately queries ONLY: a pending local change (fader, mute,
+--        format) still goes out at gap rate, mirroring how the reference
+--        implementation keeps its poll loop (1s) separate from its command
+--        drain loop (continuous). Rate-limiting both would have put up to a
+--        second of latency on every fader move. The check sits before
+--        pollAction() so a held tick doesn't consume a rotation slot, and
+--        gates the whole send block rather than individual messages --
+--        holding only the query slots would stall the rotation on a held
+--        slot and never reach the one carrying the SET.
+--        Consequence worth knowing on the bench: state changed at the
+--        processor's own front panel is now reflected in Q-SYS within a
+--        couple of seconds rather than a couple of hundred milliseconds.
+--        That is the spec's own trade, not an accident of this change.
 -- v4.0.0.10 - query timeout, the last of the spec's four separated timers
 --        the poll loop was missing. A response lost in transit used to be
 --        indistinguishable from a dead link: nothing was retransmitted, so

@@ -37,6 +37,13 @@
 		-- for a lost poll/query response"); only if that also draws nothing
 		-- does the watchdog eventually declare the connection dead.
 		local QUERY_TIMEOUT = 1.5
+		-- Idle poll interval. This rate-limits QUERIES only. A pending local
+		-- change (a fader move, a mute, a format press) is still delivered
+		-- at gap rate, mirroring how the reference implementation separates
+		-- its poll loop (poll_interval, 1.0s) from its command drain loop
+		-- (continuous, gap-limited): the spec rate-limits asking the device
+		-- for state, never telling it about a user action.
+		local POLL_INTERVAL = 1.0
 
 		-- Poll runs off a POLLTIME timer and counts ticks, so both live here
 		-- as tick counts. Rounded up: rounding down would sit just under the
@@ -45,6 +52,7 @@
 		local GAP_TICKS_DEFAULT = math.ceil(GAP_DEFAULT / POLLTIME)
 		local WATCHDOG_TICKS = math.ceil(WATCHDOG / POLLTIME)
 		local QUERY_TIMEOUT_TICKS = math.ceil(QUERY_TIMEOUT / POLLTIME)
+		local POLL_INTERVAL_TICKS = math.ceil(POLL_INTERVAL / POLLTIME)
 
 		-- private.cache's own guarantee, per the same spec: a single FIFO
 		-- queue of pending outbound messages ahead of the regular poll
@@ -128,6 +136,9 @@
 			private.cache = {}
 			private.echopending = nil   -- no outbound message sent yet on this connection
 			private.lastmsg = nil       -- nothing in flight to retransmit yet
+			-- Start with the poll interval already elapsed, so the first
+			-- poll after a connect is immediate rather than a second late.
+			private.sincepoll = POLL_INTERVAL_TICKS
  			private.sock = Sock
  		    private.sock.Data = function(sock,data) readData(self) end
   			private.time.EventHandler = function(timer) Poll(self) end
@@ -379,6 +390,20 @@
  			if (watchdog) then private.waiting = 0 end
  		end
 
+		-- True while any action carries a locally-set value the device has
+		-- not confirmed yet -- i.e. a user action still on its way out.
+		-- While that is the case the poll interval is bypassed, so a fader
+		-- move is never held back by the idle polling rate. Gating the whole
+		-- send block rather than the individual message keeps the action
+		-- rotation intact: holding only the query slots would stall the
+		-- rotation on a held slot and never reach the one carrying the SET.
+		local function hasPendingSet(self)
+			for _,elem in ipairs(Actions) do
+				if getState(self,elem) then return true end
+			end
+			return false
+		end
+
 		local function pollAction(self)
 			local private = privates[self]
   			local action = nil
@@ -404,6 +429,7 @@
     		if private.waiting > WATCHDOG_TICKS then
   				doClose(self) return end
 			private.sincesend = private.sincesend + 1
+			private.sincepoll = private.sincepoll + 1
 			-- Query timeout: the in-flight command has gone unanswered this
 			-- long, so retransmit it ONCE. Deliberately not resetting the
 			-- waiting counter -- it keeps running toward the watchdog, so a
@@ -424,6 +450,15 @@
 				if private.sincesend < private.gapticks then return end
   			  	local updated = false
   		    	if #private.cache == 0 then
+					-- Idle polling runs at POLL_INTERVAL, not at tick rate.
+					-- Checked before pollAction() so a held tick doesn't
+					-- consume a rotation slot. Queued messages (the branch
+					-- below) and the retransmit above are deliberately not
+					-- rate-limited -- neither is idle polling.
+					if not hasPendingSet(self) and private.sincepoll < POLL_INTERVAL_TICKS then
+						return
+					end
+					private.sincepoll = 0
   					local result = '?'
 					local action = pollAction(self)
   					local param = CPServices[action.index][private.model.index]
