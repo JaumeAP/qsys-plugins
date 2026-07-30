@@ -604,3 +604,17 @@ history actually matters.)
     mirror-image case of a repo overriding the skill's default: here the
     environment overrides it instead) rather than kept repo-local, since
     nothing about it is specific to this repo.
+
+- **Open Threads item 1 corrected: "all four .qplugx stale" was wrong,
+  DolbyFader's isn't (2026-07-30).** Checked by comparing each root
+  `.qplug`/`.qplugx` pair's last-touching commit. `f8eb707` ("Regenerate
+  all four .qplugx from the rebuilt .qplug sources", 2026-07-29 09:06:55)
+  built `DolbyFader.qplugx` from `DolbyFader.qplug`@`0604fb4` (08:39:50,
+  the same day, earlier) -- nothing has touched `DolbyFader.qplug` since,
+  so `DolbyFader.qplugx` is current. Dolby Sweep, MultiFlip-Flop, and
+  Dolby CPSeries Control were all rebuilt again later that same day
+  (14:38, 14:38, 15:43) by the PLUGCC restructuring and its Button
+  `.Value`/`.Boolean` fixes, which is what actually left those three
+  `.qplugx` stale. The Open Threads item previously said "all four"
+  without checking; narrowed to the three that are actually stale, plus
+  SubharmonicSynth's still-missing one.
