@@ -12,7 +12,6 @@ using-git-worktrees -> obra/superpowers
 using-superpowers -> obra/superpowers
 verification-before-completion -> obra/superpowers
 writing-plans -> obra/superpowers
-writing-skills -> obra/superpowers
 firecrawl -> firecrawl/firecrawl-claude-plugin
 firecrawl-agent -> firecrawl/firecrawl-claude-plugin
 firecrawl-crawl -> firecrawl/firecrawl-claude-plugin

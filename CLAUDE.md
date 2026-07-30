@@ -180,7 +180,13 @@ manual edit (2026-07-20 standing rule). Mechanized best-effort by
 `.claude/hooks/skill-creation-reminder.sh` — a non-blocking reminder on
 every `Write`/`Edit` to a `SKILL.md`; it can't verify skill-creator was
 actually invoked, so it can't hard-block, same honest limitation as
-`config-ingest-reminder.sh`.
+`config-ingest-reminder.sh`. The `writing-skills` skill (from the
+`obra/superpowers` bundle) was installed 2026-07-30 alongside the rest
+of that bundle, then removed the same day (explicit user request) once
+it turned out to prescribe a competing TDD-based process for this same
+action, conflicting with `skill-creator`; also dropped from
+`recommended-skills.txt`. `skill-creator` remains the sole mandated
+process here.
 
 ## Session continuity
 
