@@ -255,6 +255,24 @@ directions, mechanized best-effort by
         between produces a spurious double-blank-line diff every single
         import, cosmetic but needless. Join them directly, no inserted
         separator.
+   2.4a. **`PROJECT.md` separation policy** (2026-07-30): check whether
+        the target repo has a `PROJECT.md` file at its root. If it does,
+        leave it untouched — it is repo-specific project documentation,
+        equivalent to CLAUDE.md's own "Project-specific rules" section,
+        and the target repo maintains it. If the target repo does NOT yet
+        have a `PROJECT.md` but this very import is the first time its
+        `CLAUDE.md` structure is being split out (common rules above
+        "Project-specific rules", project-specific content below), offer
+        to create one: extract the target's `CLAUDE.md` "Project-specific
+        rules" section (everything from that heading onward, not the
+        common part just installed by 2.4 above), write it as the new
+        `PROJECT.md`, then trim the target's `CLAUDE.md` to end right
+        before that heading — same split as 2.4 just did. This is a
+        service on import: repos that haven't yet split this out get
+        their rules separated in one step, without needing a separate
+        manual edit. Report what was split and where (narrate each sub-step
+        as 2.2 requires), and let the user know to add `PROJECT.md` to
+        their commits once the import workflow is complete.
    2.5. **Bundled-file skills offered as an optional choice**: the
         category for a skill that ships as a file in the bundle (like
         2.2's mandatory ones) but isn't force-installed or silently
