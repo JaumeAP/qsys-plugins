@@ -162,13 +162,13 @@ re-deriving or silently skipping it. Keep this list short and current:
 close an item by deleting its line here, and put the full story in
 `docs/continuity-notes.md`.
 
-1. Root builds needed, neither workflow run since either fix. `.qplugx`:
-   Sweep/MultiFlip-Flop/CPSeries stale, SubharmonicSynth has none
-   (DolbyFader's is current -- see continuity notes). `.qplug`: as of
-   2026-07-30 all four non-SubharmonicSynth are ALSO stale (the
-   `@elcine.com` email change only touched `Developer/`, never root, per
-   convention). Dispatch `build-qplug.yml` per plugin, then
-   `build-qplugx.yml` with `all` (both now list SubharmonicSynth too).
+1. `.qplugx` need a build: Dolby Sweep, MultiFlip-Flop, Dolby CPSeries
+   Control are stale, `SubharmonicSynth` has none (`DolbyFader.qplugx` is
+   current -- see continuity notes). `.qplug` for all four
+   non-SubharmonicSynth were rebuilt 2026-07-30 (dispatched
+   `build-qplug.yml`, wrote each job log's output to root, verified
+   diff = only the `@elcine.com` email change) and are current again.
+   Dispatch `build-qplugx.yml` with `all` to close the rest.
 2. 20 stale, merged `origin/claude/*` branches (17 audited + 3 found
    2026-07-30) can't be deleted from any session: git proxy 403s ref
    deletion, no delete-branch MCP tool, retried again 2026-07-30, still
