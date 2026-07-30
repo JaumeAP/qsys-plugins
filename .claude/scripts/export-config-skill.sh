@@ -94,6 +94,11 @@ repeated here.
   `.claude/settings.json`.
 - `references/hooks/*.sh` -- every mechanized hook, copied straight into
   the target's `.claude/hooks/`.
+- `references/hooks/lib/` -- `file-operations-enforcement.sh`'s classifier
+  and its regression test (2026-07-30, extracted out of that hook's own
+  inline heredoc so it's independently testable), copied straight into
+  the target's `.claude/hooks/lib/`. A runtime dependency of that hook,
+  not optional.
 - `references/recommended-skills.txt` -- optional skills/packs a target
   repo can offer to fetch live via `npx skills add` (see
   `references/config-export-import.md` step 2.7), not bundled as files.
@@ -249,6 +254,24 @@ EOF
 for hook in "${bundled_hooks[@]}"; do
   [ -f ".claude/hooks/$hook" ] && cp ".claude/hooks/$hook" "$skill_dir/references/hooks/"
 done
+
+# hooks/lib/ (2026-07-30): file-operations-enforcement.sh's classifier
+# was extracted out of its own inline heredoc into
+# .claude/hooks/lib/file_ops_classifier.py, with a regression test
+# (test_file_ops_classifier.py) alongside it -- both a runtime dependency
+# of that hook now, not optional. Not in bundled_hooks (that array is
+# top-level *.sh hooks copied flat into references/hooks/); this is a
+# whole subdirectory, copied recursively so it lands at
+# references/hooks/lib/ and gets restored to .claude/hooks/lib/ on
+# import, same relative path file-operations-enforcement.sh expects
+# ("$(dirname "${BASH_SOURCE[0]}")/lib/...").
+if [ -d ".claude/hooks/lib" ]; then
+  cp -r ".claude/hooks/lib" "$skill_dir/references/hooks/lib"
+  # __pycache__ is a local build artifact (already .gitignore'd), not
+  # part of the bundle -- cp -r isn't git-aware, so running the test
+  # suite right before exporting can leave one behind on disk to copy.
+  rm -rf "$skill_dir/references/hooks/lib/__pycache__"
+fi
 
 for skill in file-operations github-rules changelog-rules; do
   if [ -d ".claude/skills/$skill" ]; then
