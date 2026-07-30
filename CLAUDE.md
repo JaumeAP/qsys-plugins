@@ -1461,3 +1461,13 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   Designer verification of a wine-built `.qplugx` is still outstanding --
   this switch proceeds without it per explicit instruction, not because
   the gap was closed.
+  **Update, same day: reverted.** User asked to put everything back on
+  `windows-latest`/GitHub-hosted runners. Both `build-qplug.yml` and
+  `build-qplugx.yml` restored verbatim to their pre-mono/wine versions
+  (`windows-latest`, `pwsh` steps, PLUGCC.exe / plugin_tool_release.exe
+  invoked directly, no mono/wine install step). The mono and wine64
+  findings above stay recorded as-is -- both binaries were confirmed
+  runnable on Linux (mono for PLUGCC.exe, wine64 for
+  plugin_tool_release.exe, plain wine64 without Wine Mono canNOT run
+  PLUGCC.exe) -- in case a Linux-runner approach is wanted again later,
+  but neither workflow uses it now.

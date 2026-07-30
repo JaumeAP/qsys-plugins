@@ -2,28 +2,9 @@ name: Build .qplugx
 
 # Manual only: encrypting a plugin is a deliberate release step, not
 # something to run on every push. Uses QSC's own vendored
-# plugin_tool_release.exe (vendor/qsys-plugins/PluginEncryptionTool/release/).
-# Output is uploaded as a workflow artifact only -- this never commits the
-# .qplugx back to the repo.
-#
-# Runs on ubuntu-latest under wine64 (changed 2026-07-30, explicit user
-# request). plugin_tool_release.exe is a native PE32+ x86-64 Windows binary
-# (confirmed with `file`; links MSVC/OpenSSL DLLs), not a .NET assembly --
-# mono refuses it outright ("File does not contain a valid CIL image",
-# confirmed by running it), but wine64 runs it directly. Verified before
-# switching: `wine64 plugin_tool_release.exe version` returned "1.0.0.0",
-# and `encrypt` on MultiFlip-Flop.qplug produced a structurally correct
-# envelope (same data/iv/key JSON keys, iv_len=24, key_len=344 as a
-# windows-latest-built .qplugx). Two things NOT independently verifiable
-# outside Designer, worth remembering if this ever needs re-checking: the
-# tool has no `decrypt` command (only `version`/`encrypt`), so there is no
-# round-trip check available here, and each run emits a fresh random IV, so
-# a wine-built .qplugx can never be byte-compared against another build the
-# way build-qplug.yml's PLUGCC.exe output could. See CLAUDE.md continuity
-# notes for the full investigation, including why plain wine64 (no Wine
-# Mono installed) does NOT work for PLUGCC.exe's own .NET assembly --
-# build-qplug.yml stays on mono for that reason, this workflow is the one
-# exe wine64 actually runs.
+# plugin_tool_release.exe (vendor/qsys-plugins/PluginEncryptionTool/release/),
+# a Windows binary, hence windows-latest. Output is uploaded as a workflow
+# artifact only -- this never commits the .qplugx back to the repo.
 #
 # submodules: false + a manual, scoped submodule init (PluginEncryptionTool
 # only) deliberately avoids `submodules: recursive`, which would also try
@@ -46,68 +27,55 @@ on:
 
 jobs:
   encrypt:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: false
 
-      - name: Install wine64 (plugin_tool_release.exe is a native Windows binary)
-        run: |
-          sudo dpkg --add-architecture amd64
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends wine64
-          /usr/lib/wine/wine64 --version
-
       - name: Init only the PluginEncryptionTool submodule (plugin_tool_release.exe lives there)
+        shell: pwsh
         run: |
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git submodule update --init vendor/qsys-plugins/PluginEncryptionTool
 
       - name: Encrypt selected plugin(s)
-        env:
-          WINEDEBUG: "-all"
-          WINEPREFIX: ${{ github.workspace }}/.wineprefix
+        shell: pwsh
         run: |
-          set -euo pipefail
-          tool="$GITHUB_WORKSPACE/vendor/qsys-plugins/PluginEncryptionTool/release/plugin_tool_release.exe"
-          if [ ! -f "$tool" ]; then
-            echo "plugin_tool_release.exe not found at $tool -- submodule not initialized?" >&2
-            exit 1
-          fi
+          $tool = Join-Path $env:GITHUB_WORKSPACE "vendor\qsys-plugins\PluginEncryptionTool\release\plugin_tool_release.exe"
+          if (-not (Test-Path $tool)) {
+            throw "plugin_tool_release.exe not found at $tool -- submodule not initialized?"
+          }
 
-          all=(
-            "DolbyFader.qplug"
-            "Dolby Sweep V2.0.qplug"
-            "MultiFlip-Flop.qplug"
+          $all = @(
+            "DolbyFader.qplug",
+            "Dolby Sweep V2.0.qplug",
+            "MultiFlip-Flop.qplug",
             "Dolby CPSeries Control V4.0.qplug"
           )
-          if [ "${{ inputs.qplug }}" = "all" ]; then
-            selected=("${all[@]}")
-          else
-            selected=("${{ inputs.qplug }}")
-          fi
+          $selected = if ("${{ inputs.qplug }}" -eq "all") { $all } else { @("${{ inputs.qplug }}") }
 
-          mkdir -p out
-          for name in "${selected[@]}"; do
-            in_path="$GITHUB_WORKSPACE/$name"
-            if [ ! -f "$in_path" ]; then
-              echo "input file not found: $in_path" >&2
-              exit 1
-            fi
-            out_name="${name%.qplug}.qplugx"
-            out_path="out/$out_name"
-            /usr/lib/wine/wine64 "$tool" encrypt "$in_path" "$out_path"
-
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          foreach ($name in $selected) {
+            $inPath = Join-Path $env:GITHUB_WORKSPACE $name
+            if (-not (Test-Path $inPath)) {
+              throw "input file not found: $inPath"
+            }
+            $outName = [System.IO.Path]::ChangeExtension($name, "qplugx")
+            $outPath = Join-Path "out" $outName
+            & $tool encrypt $inPath $outPath
+            if ($LASTEXITCODE -ne 0) {
+              throw "plugin_tool_release.exe failed on $name (exit $LASTEXITCODE)"
+            }
             # Also echoed to the job log (not just uploaded as an artifact):
             # the artifact's blob-storage download URL isn't reachable
             # through this session's egress proxy, but job logs are (GitHub
             # API) -- same workaround as build-qplug.yml. .qplugx is a JSON
             # envelope (text), safe to print.
-            echo "----- BEGIN $out_name -----"
-            cat "$out_path"
-            echo "----- END $out_name -----"
-          done
+            Write-Host "----- BEGIN $outName -----"
+            Get-Content $outPath | Write-Host
+            Write-Host "----- END $outName -----"
+          }
 
       - uses: actions/upload-artifact@v4
         with:
