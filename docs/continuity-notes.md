@@ -430,6 +430,22 @@ history actually matters.)
   undocumented mechanism (PR #48) that doesn't match this repo's own
   `.claude/skills/` convention; the `.claude/` copy was kept. No other
   file referenced any of the four removed paths.
+  **Correction (2026-07-30): item (3) was wrong and broke the skill for a
+  day.** `.claude/skills/karpathy-guidelines` was never "the copy that was
+  kept" -- it was a *symlink* (`-> ../../.agents/skills/karpathy-guidelines`)
+  pointing into the directory that audit deleted. Deleting the target left a
+  dangling link, so the skill stopped loading entirely: it was absent from
+  the Skill tool's available list for every session after that audit, which
+  is what eventually gave it away. Fixed by removing the dead link and
+  reinstalling from its recorded source
+  (`npx skills add forrestchang/andrej-karpathy-skills --skill
+  karpathy-guidelines --agent claude-code`), which lands a real directory
+  this time; confirmed by the skill reappearing in the available list.
+  Lesson worth keeping: `ls` on a symlinked skill directory looks identical
+  to a real one, so a de-duplication audit has to check `-xtype l` (or just
+  `test -e <dir>/SKILL.md`) before deciding which of two paths is the real
+  copy. A `find .claude/skills -maxdepth 1 -xtype l` sweep at the same time
+  found no other broken links.
 - **Remote branch deletion blocked, cleanup left half-done (2026-07-29):**
   18 stale `origin/claude/*` branches were audited against their PRs;
   17 were confirmed safe to delete (PR merged, PR closed-without-merge,
