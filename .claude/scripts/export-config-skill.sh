@@ -18,7 +18,7 @@
 # explicit user request -- github-rules first, file-operations shortly
 # after -- see config-export-import.md step 2.2). `find-skills` is NOT
 # among them any more -- after its own long mandatory/optional history
-# (see CLAUDE.md's "Portable skills" section), it moved a final time on
+# (see `.claude/skills-history.md`), it moved a final time on
 # 2026-07-28 (explicit user request) to fetch-on-demand only, listed in
 # `recommended-skills.txt` like any other unbundled recommendation
 # instead of travelling as a file -- a state it had already passed
@@ -28,7 +28,7 @@
 # restored and put back as optional on 2026-07-28) but ended
 # differently: removed from the bundle a second and final time, also
 # 2026-07-28, explicit user request -- see `removed-files.txt` and
-# CLAUDE.md's "Portable skills" section for the full history. Each
+# `.claude/skills-history.md` for the full history. Each
 # remaining bundled skill has its
 # own SKILL.md -- those get renamed to
 # <name>.md under references/skills/<name>/ inside the package, so the
@@ -140,15 +140,30 @@ sed '/^## Project-specific rules/,$d' CLAUDE.md > "$skill_dir/references/CLAUDE.
 cp .claude/config-export-import.md "$skill_dir/references/"
 cp .claude/recommended-skills.txt "$skill_dir/references/"
 [ -f .claude/removed-files.txt ] && cp .claude/removed-files.txt "$skill_dir/references/"
+# skills-history.md carries the bundled/optional/removed reasoning that the
+# common CLAUDE.md's "Portable skills" section points at rather than
+# restates (split out 2026-07-30 to keep CLAUDE.md under ~200 lines). It has
+# to travel, or that pointer dangles in every target repo.
+[ -f .claude/skills-history.md ] && cp .claude/skills-history.md "$skill_dir/references/"
 
 # bundled_hooks is the single source of truth for which hooks are
 # portable -- reused below both to copy the hook files themselves and to
 # strip settings.json of registrations for any hook NOT in this list
 # (e.g. a project-specific SessionStart hook like ensure-lua53.sh, which
 # is deliberately excluded from this array further down).
-bundled_hooks=(check-reply-format.sh config-ingest-reminder.sh
+#
+# check-reply-format.sh and reply-format-preflight.sh were dropped from
+# this array 2026-07-30: the CLAUDE.md rules they enforced (mandatory
+# leading "Rebut:" line, Catalan-only, the bold/em-dash/ellipsis/header/
+# table ban, numbered-lists-only) were removed that day in favor of
+# deferring to the `caveman` skill, and both hooks were unregistered from
+# settings.json. They stay on disk here, dead, with their own retirement
+# notes -- but shipping them would put two scripts nothing registers into
+# every target repo, and re-registering them there would reimpose rules
+# the common CLAUDE.md no longer states.
+bundled_hooks=(config-ingest-reminder.sh
   init-submodules.sh no-commit-on-main.sh precompact-hygiene-flag.sh
-  reply-format-preflight.sh rule-check-reminder.sh
+  rule-check-reminder.sh
   skill-creation-reminder.sh submodule-clone-fixup.sh)
 
 # settings.json is NOT a blind copy: it can carry two kinds of

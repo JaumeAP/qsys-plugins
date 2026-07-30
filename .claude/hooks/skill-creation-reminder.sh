@@ -1,8 +1,15 @@
 #!/bin/bash
-# PreToolUse hook (matcher Write|Edit): mechanizes CLAUDE.md's Project-
-# specific convention 5 -- any skill creation or extension (a new SKILL.md,
-# or a content/frontmatter change to an existing one) must go through the
-# skill-creator skill's process, not a plain manual edit.
+# PreToolUse hook (matcher Write|Edit): mechanizes the "Skill creation/
+# extension" rule in CLAUDE.md's "Portable skills" section -- any skill
+# creation or extension (a new SKILL.md, or a content/frontmatter change to
+# an existing one) must go through the skill-creator skill's process, not a
+# plain manual edit.
+#
+# Citation fixed 2026-07-30: this said "Project-specific convention 5", and
+# both halves were wrong -- the rule has always lived under "Portable
+# skills", not "Project-specific rules", and no numbered convention 5 exists
+# anywhere in CLAUDE.md, so the pointer resolved to nothing. Cited by section
+# name only now; ordinals drift as soon as a list above them changes.
 #
 # Honest limitation, same shape as config-ingest-reminder.sh's: there is no
 # hook event for "the skill-creator skill is currently active in this
@@ -29,7 +36,7 @@ fi
 
 case "$file_path" in
   *SKILL.md)
-    msg="Recordatori de la convencio 5 (CLAUDE.md, Project-specific rules): tota creacio o extensio d'una skill (SKILL.md nou, o canvi de contingut/frontmatter en un existent) ha de passar pel proces de la skill skill-creator, no una edicio manual directa. Si aquesta escriptura no ve d'una invocacio de skill-creator, atura't i invoca-la primer."
+    msg="Recordatori de la regla 'Skill creation/extension' (CLAUDE.md, seccio 'Portable skills'): tota creacio o extensio d'una skill (SKILL.md nou, o canvi de contingut/frontmatter en un existent) ha de passar pel proces de la skill skill-creator, no una edicio manual directa. Si aquesta escriptura no ve d'una invocacio de skill-creator, atura't i invoca-la primer."
     jq -n --arg msg "$msg" '{hookSpecificOutput: {hookEventName: "PreToolUse", additionalContext: $msg}}'
     ;;
   *)

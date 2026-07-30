@@ -48,7 +48,21 @@ fi
 #
 # Bounded with `timeout` so a stuck submodule fetch (dead remote, auth
 # prompt with no TTY, etc.) can't hang the session start indefinitely.
-timeout 60s git submodule update --init --recursive >/dev/null 2>&1 || true
+# Raised from 60s to 180s 2026-07-30: a cold container cloning several
+# submodules at once, one of which carries Windows binaries and DLLs, can
+# plausibly exceed a minute, and the failure mode is silent -- `|| true`
+# swallows it and the tree is left partially initialized.
+#
+# The exit status is captured rather than discarded (2026-07-30). Found by
+# hitting the consequence: a whole session ran with both nested
+# PluginCompile submodules uninitialized, so PLUGCC.exe -- the compiler the
+# documented build workflow depends on -- was simply absent, while
+# CLAUDE.md asserted a fresh clone gets it automatically. Re-running the
+# very same command by hand fixed it in about a second, so the automatic
+# attempt had failed or been cut short at session start without anything
+# saying so.
+init_rc=0
+timeout 180s git submodule update --init --recursive >/dev/null 2>&1 || init_rc=$?
 
 status="$(git submodule status --recursive 2>/dev/null || true)"
 
@@ -57,14 +71,25 @@ if ! grep -q '^-' <<<"$status"; then
   exit 0
 fi
 
-msg="Alguns submoduls encara no estan inicialitzats despres de l'intent automatic (sovint un repo privat encara fora de l'abast d'aquesta sessio):"
+# The old message assumed one cause -- a private repo needing add_repo --
+# and led with that remedy. That is the wrong first move for a public
+# submodule whose clone merely got cut short, which is the case actually
+# observed here. Lead with the plain retry, name add_repo only as the
+# fallback for a genuinely inaccessible repo, and say which of the two the
+# exit status points at.
+case "$init_rc" in
+  0)   why="l'ordre automatica ha retornat OK pero han quedat sense inicialitzar igualment" ;;
+  124) why="l'ordre automatica ha superat el timeout de 180s i s'ha tallat a mitges" ;;
+  *)   why="l'ordre automatica ha fallat (codi $init_rc)" ;;
+esac
+msg="Submoduls sense inicialitzar despres de l'intent automatic ($why). Prova primer el reintent directe, que sol ser suficient si nomes es va tallar: 'git submodule update --init --recursive'. Si un path concret segueix fallant, aleshores si que apunta a un repo inaccessible per aquesta sessio:"
 while IFS= read -r line; do
   [ -z "$line" ] && continue
   path="$(awk '{print $2}' <<<"$line")"
   name="$(git config -f .gitmodules --get-regexp '\.path$' 2>/dev/null | awk -v p="$path" '$2==p {print $1}' | sed -E 's/^submodule\.(.*)\.path$/\1/')"
   url="$(git config -f .gitmodules --get "submodule.$name.url" 2>/dev/null || echo "")"
   msg="$msg
-- $path ($url): crida add_repo amb l'owner/repo d'aquesta URL, i despres 'git submodule update --init $path'."
+- $path ($url): si el reintent no l'arregla, crida add_repo amb l'owner/repo d'aquesta URL i despres 'git submodule update --init $path'."
 done < <(grep '^-' <<<"$status")
 
 jq -n --arg msg "$msg" '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $msg}}'
