@@ -11,7 +11,7 @@ test-driven-development -> obra/superpowers
 using-git-worktrees -> obra/superpowers
 using-superpowers -> obra/superpowers
 verification-before-completion -> obra/superpowers
-writing-plans -> obra/superpowers
+verification-before-completion -> obra/superpowers
 frontend-design -> anthropics/claude-code
 karpathy-guidelines -> forrestchang/andrej-karpathy-skills
 caveman -> JuliusBrussee/caveman
@@ -26,8 +26,6 @@ dataviz -> anthropics/skills
 webapp-testing -> anthropics/skills
 simplify -> anthropics/skills
 static-analysis -> anthropics/skills
-supabase-postgres-best-practices -> supabase/supabase-agent-skills
-postgresql-best-practices -> anthropics/skills
 remotion -> remotion/remotion
 hookdeck-webhook-skills -> hookdeck/claude-skills
 skill-security-auditor -> anthropics/skills
