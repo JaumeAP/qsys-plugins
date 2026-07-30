@@ -1397,3 +1397,77 @@ it's a worse fit for exactly this purpose — `HANDOFF.md` deleted.)
   existing missing-Rebut-only scoped message is unchanged. Format/list
   violations were extended the same way -- the offending line (with its
   line number in the joined turn text) is now quoted too, not just named.
+- **`check-reply-format.sh` re-demanded a fresh 'Rebut:' line even when it
+  was already present and correct, fixed (2026-07-29, explicit user
+  request, reported live as "Doble missatge" after hitting it in this
+  exact session).** The quoted-fragment retry branch (added in the fix
+  right above) unconditionally appended "Comenca igualment per 'Rebut:
+  ...'" to the repair instruction, regardless of whether `missing_rebut`
+  was actually set. Real case: a reply's first block already opened with
+  a correct "Rebut: ..." line; a later block had a lone em-dash violation.
+  The hook still told the retry to prepend a fresh 'Rebut: ...' line to
+  the correction, so the user saw two separate "Rebut: ..."-opening
+  blocks in the same turn -- reading as a duplicated second reply, the
+  exact symptom the block-scoping fix above was meant to eliminate. Fixed:
+  the "Comenca per 'Rebut: ...'" instruction is now conditional on
+  `missing_rebut=1`; when Rebut was already fine, the fix text instead
+  says explicitly not to repeat it ("La linia 'Rebut: ...' ja hi era i ja
+  era correcta -- NO la repeteixis"). Verified against three synthetic
+  transcripts (no real session data): Rebut-already-correct +
+  format-only violation no longer demands a new Rebut line; Rebut-missing
+  + format violation still correctly demands one; the pre-existing
+  Rebut-missing-only path is unchanged. Same file, same day as the fix
+  above it -- this is the second bug found in the same retry-instruction
+  logic, both from actually hitting them live rather than from review.
+- **`build-qplug.yml` moved off `windows-latest` onto `ubuntu-latest` +
+  mono (2026-07-30, explicit user request).** PLUGCC.exe is a PE32
+  Mono/.NET assembly (`file` reports "Mono/.Net assembly"), so mono runs
+  it natively on Linux -- no Windows runner needed. Verified before
+  switching, not assumed: installed `mono-runtime`, built MultiFlip-Flop
+  with `mono PLUGCC.exe MultiFlip-Flop plugin.lua` from the plugin's own
+  directory, and `cmp`'d the result against the root
+  `MultiFlip-Flop.qplug` produced by the old windows-latest job --
+  byte-identical, line endings included. The `cd` into the plugin
+  directory stays load-bearing (PLUGCC resolves relative `#include`s
+  against its cwd), same role the old job's `Push-Location` had.
+  **This does NOT generalize to `build-qplugx.yml`.** Its
+  `plugin_tool_release.exe` is a PE32+ native x86-64 Windows binary
+  linking MSVC/OpenSSL DLLs, not a .NET assembly: mono refuses it
+  outright (`File does not contain a valid CIL image`, confirmed by
+  running it, not inferred). `wine64` DOES run it -- `version` returns
+  `1.0.0.0` and `encrypt` produces a structurally correct envelope
+  (same `data`/`iv`/`key` keys, `iv_len=24`, `key_len=344` as the
+  committed windows-built `.qplugx`) -- but that was deliberately NOT
+  adopted, for two reasons worth keeping if this is revisited: the tool
+  has no `decrypt` command (only `version`/`encrypt`), so there is no
+  round-trip check available, and each run emits a fresh random IV, so a
+  wine-built `.qplugx` cannot be byte-compared against a Windows-built
+  one either. That leaves Q-SYS Designer as the only way to confirm a
+  wine-built `.qplugx` actually loads.
+  **Update, same day: superseded.** User explicitly asked to always use
+  wine64, accepting the no-round-trip/no-byte-compare caveats above as a
+  known, accepted gap rather than a blocker. Before switching,
+  double-checked whether wine64 could also replace mono for
+  `build-qplug.yml` (for one consistent runtime instead of two) -- it
+  cannot: plain `wine64 PLUGCC.exe ...` fails with "Application could
+  not be started, or no application associated with the specified
+  file", since running a .NET assembly under Wine needs the separate
+  Wine Mono package, not available via `apt-cache search wine-mono` on
+  this runner. So the two workflows stay on two different runtimes by
+  necessity, not oversight: `build-qplug.yml` on `ubuntu-latest` + native
+  `mono` (the only thing that runs PLUGCC.exe here), `build-qplugx.yml`
+  now also on `ubuntu-latest` + `wine64` (the only thing that runs
+  plugin_tool_release.exe here) instead of `windows-latest`. Manual
+  Designer verification of a wine-built `.qplugx` is still outstanding --
+  this switch proceeds without it per explicit instruction, not because
+  the gap was closed.
+  **Update, same day: reverted.** User asked to put everything back on
+  `windows-latest`/GitHub-hosted runners. Both `build-qplug.yml` and
+  `build-qplugx.yml` restored verbatim to their pre-mono/wine versions
+  (`windows-latest`, `pwsh` steps, PLUGCC.exe / plugin_tool_release.exe
+  invoked directly, no mono/wine install step). The mono and wine64
+  findings above stay recorded as-is -- both binaries were confirmed
+  runnable on Linux (mono for PLUGCC.exe, wine64 for
+  plugin_tool_release.exe, plain wine64 without Wine Mono canNOT run
+  PLUGCC.exe) -- in case a Linux-runner approach is wanted again later,
+  but neither workflow uses it now.
