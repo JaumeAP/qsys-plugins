@@ -31,3 +31,13 @@ caveman-compress -> JuliusBrussee/caveman
 caveman-help -> JuliusBrussee/caveman
 caveman-review -> JuliusBrussee/caveman
 caveman-stats -> JuliusBrussee/caveman
+skill-creator -> anthropics/skills
+claude-security -> anthropics/skills
+dataviz -> anthropics/skills
+webapp-testing -> anthropics/skills
+simplify -> anthropics/skills
+static-analysis -> anthropics/skills
+supabase-postgres-best-practices -> supabase/supabase-agent-skills
+postgresql-best-practices -> anthropics/skills
+remotion -> remotion/remotion
+hookdeck-webhook-skills -> hookdeck/claude-skills
