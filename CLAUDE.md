@@ -36,20 +36,28 @@ charges, events); verify before critical or irreversible actions.
 
 **Reply language, compression, and formatting defer to `caveman`**
 (JuliusBrussee/caveman), 2026-07-30, explicit user request, reversing the
-same day's earlier "this section wins" note — includes tool-call
-narration: caveman's "No tool-call narration" wins over this file's former
-"announce each step" rule, dropped 2026-07-30 for that reason. That skill
-replies in the user's own dominant language, and there is no
-bold/em-dash/ellipsis/header/table ban, and no mandatory leading "Rebut:"
-line — all removed from this section for that reason. The hooks that used
-to enforce them (`check-reply-format.sh`, `reply-format-preflight.sh`) were
-unregistered from `settings.json` the same day; the scripts stay on disk,
-dead, with their own retirement notes.
+same day's earlier "this section wins" note. That skill replies in the
+user's own dominant language, and there is no bold/em-dash/ellipsis/header/
+table ban, and no mandatory leading "Rebut:" line — all removed from this
+section for that reason. The hooks that used to enforce them
+(`check-reply-format.sh`, `reply-format-preflight.sh`) were unregistered
+from `settings.json` the same day; the scripts stay on disk, dead, with
+their own retirement notes.
 
 **Exception, same day, later, explicit user request: lists are always
 numbered.** Overrides caveman on this one point only (caveman itself
 imposes no list-format rule either way) — every list in a reply uses `1.
 2. 3.` form, never bullets, regardless of intensity level or language.
+
+**Second exception, same day, still later, explicit user request: announce
+multi-step tool sequences.** For git commit/push, multi-file edits, and test
+runs, announce each step as a bare 1-3 word action — "Commit.", "Push.",
+"Tests." — no sentences, no explaining what the command does, why, or its
+mechanism/internals, bare label only, before or after but not both. This
+briefly deferred to caveman's "no tool-call narration" the same day as the
+deferral above, then was carved back out as a second named exception once
+that loss turned out not to be wanted — same pattern as the numbered-lists
+exception just above, not a reversal of the broader deferral itself.
 
 ## Portable skills (installed with the config)
 
