@@ -53,13 +53,13 @@ imposes no list-format rule either way) — every list in a reply uses `1.
 
 ## Portable skills (installed with the config)
 
-These travel with this file and the rest of `.claude/`. Four skills are
-bundled as files — `file-operations`, `github-rules`, `caveman`, and
-`karpathy-guidelines` — import mechanics (blind-copy, merge rules,
-everything else in that process) live solely in `.claude/config-export-import.md`,
-not restated here. Pointers only here, never summaries — each skill is the
-authority on its own topic, and a summary in this file just drifts out of
-sync with it:
+These travel with this file and the rest of `.claude/`. Two skills are
+bundled as files — `file-operations` and `github-rules`. Two additional
+mandatory skills — `caveman` and `karpathy-guidelines` — fetch on-demand
+from remote (not bundled locally). Import mechanics (blind-copy, merge
+rules, everything else in that process) live solely in
+`.claude/config-export-import.md`, not restated here. Pointers only here,
+never summaries — each skill is the authority on its own topic:
 
 1. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
    PR conventions: workflow shape, reading `pull_request_read` results, merge
@@ -71,11 +71,13 @@ sync with it:
    that imports the bundle, which is the thing to refuse.
 2. `file-operations` — triggers by context on any file I/O; no pointer needed
    beyond its own description.
-3. `caveman` (`.claude/skills/caveman/SKILL.md`) — compression, terseness,
-   and token economy in replies; applies to any project regardless of
-   language or domain.
-4. `karpathy-guidelines` (`.claude/skills/karpathy-guidelines/SKILL.md`) —
-   thinking principles and behavioral guidelines applicable to any project.
+
+Mandatory fetch-on-demand (listed in `.claude/recommended-skills.txt`):
+
+3. `caveman` (JuliusBrussee/caveman) — compression, terseness, and token
+   economy in replies; applies to any project regardless of language or domain.
+4. `karpathy-guidelines` (forrestchang/andrej-karpathy-skills) — thinking
+   principles and behavioral guidelines applicable to any project.
 
 Everything else installed locally is listed by name/source in
 `.claude/recommended-skills.txt` (fetch-on-demand, updated by hand). What

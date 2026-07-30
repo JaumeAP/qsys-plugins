@@ -110,21 +110,21 @@ repeated here.
   installed into the target's own `.claude/scripts/` too, so the target
   repo can export its own bundle later instead of only ever being an
   import destination.
-- `references/skills/<name>/<name>.md` -- four generic skills,
-  `file-operations`, `github-rules`, `caveman`, and `karpathy-guidelines`,
-  all mandatory/blind-copy (step 2.2). `file-operations` and `github-rules`
-  were each briefly made optional on 2026-07-27, moved back the same day.
-  `caveman` and `karpathy-guidelines` added as mandatory 2026-07-30.
-  `find-skills` and `changelog-rules` both used to be bundled here too and
-  no longer are: `find-skills` moved to fetch-on-demand only (see
-  `recommended-skills.txt` above), `changelog-rules` removed entirely
-  (2026-07-28, see `removed-files.txt`) after its own long optional
-  history. Each remaining one's entry point is named `<name>.md` here
-  instead of `SKILL.md`, because a `.skill` package may only contain one
-  `SKILL.md` (this one) -- nesting more would fail validation on upload.
-  **When actually installing one of these into a target repo's
-  `.claude/skills/<name>/`, rename `<name>.md` back to `SKILL.md`** --
-  that rename is what turns it back into a real, loadable skill.
+- `references/skills/<name>/<name>.md` -- two bundled mandatory skills,
+  `file-operations` and `github-rules` (step 2.2). Both were each briefly
+  made optional on 2026-07-27, moved back the same day. `caveman` and
+  `karpathy-guidelines` are also mandatory (2026-07-30) but fetch-on-demand
+  remote only (see `recommended-skills.txt` above — listed there for remote
+  installation). `find-skills` and `changelog-rules` both used to be bundled
+  here too and no longer are: `find-skills` moved to fetch-on-demand only,
+  `changelog-rules` removed entirely (2026-07-28, see `removed-files.txt`)
+  after its own long optional history. Each bundled skill's entry point is
+  named `<name>.md` here instead of `SKILL.md`, because a `.skill` package
+  may only contain one `SKILL.md` (this one) -- nesting more would fail
+  validation on upload. **When actually installing one of these into a
+  target repo's `.claude/skills/<name>/`, rename `<name>.md` back to
+  `SKILL.md`** -- that rename is what turns it back into a real, loadable
+  skill.
 
 ## What to do
 
@@ -224,7 +224,7 @@ for hook in "${bundled_hooks[@]}"; do
   [ -f ".claude/hooks/$hook" ] && cp ".claude/hooks/$hook" "$skill_dir/references/hooks/"
 done
 
-for skill in file-operations github-rules caveman karpathy-guidelines; do
+for skill in file-operations github-rules; do
   if [ -d ".claude/skills/$skill" ]; then
     cp -r ".claude/skills/$skill" "$skill_dir/references/skills/$skill"
     mv "$skill_dir/references/skills/$skill/SKILL.md" "$skill_dir/references/skills/$skill/$skill.md"
