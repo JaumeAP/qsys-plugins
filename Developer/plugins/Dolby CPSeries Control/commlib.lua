@@ -470,11 +470,25 @@
   			    			result = getButtonName(private.model,result)
   			    			if result == nil then result = '?' end -- invalid format value: query instead of a bad SET
   			   		 	end
-  			    		if action == Actions.fader then
-  			    			result = string.format('%.0f',result * 10)
-  			    		end
-  			    		if action == Actions.mute then
-  			    			result = string.format('%.0f',result)
+  			    		if action == Actions.fader or action == Actions.mute then
+  			    			-- The stored value can be a Lua boolean, not a
+  			    			-- number: runtime.lua pushes Controls.Mute.Boolean
+  			    			-- straight through Action(). Both string.format
+  			    			-- and arithmetic reject a boolean outright, so the
+  			    			-- first Mute press used to throw out of the poll
+  			    			-- timer. Normalize to 0/1 exactly the way isEqual()
+  			    			-- already does for the same reason, and fall back
+  			    			-- to a query for anything still not numeric rather
+  			    			-- than crash or put garbage on the wire -- the same
+  			    			-- rule the format branch above already applies.
+  			    			result = normalize(result)
+  			    			if type(result) ~= "number" then
+  			    				result = '?'
+  			    			elseif action == Actions.fader then
+  			    				result = string.format('%.0f',result * 10)
+  			    			else
+  			    				result = string.format('%.0f',result)
+  			    			end
   			    		end
   			    		updated = getState(self,action)
   			    	end

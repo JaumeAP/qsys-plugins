@@ -332,6 +332,54 @@ do
 	cp:Stop()
 end
 
+h.section("boolean mute from the Controls layer")
+do
+	-- runtime.lua wires the Mute button straight through as
+	-- DolbyCP:Action("mute", Controls.Mute.Boolean) -- a Lua boolean, not a
+	-- number. The poll loop then formats that value for the wire, and both
+	-- string.format and arithmetic reject a boolean outright, so the first
+	-- Mute press threw out of the poll timer. No test covered the boolean
+	-- path, which is why it survived.
+	local function press(model, reply, wireParam, sep, deviceSaysMuted, value)
+		local cp, sock, _, timer = started(model)
+		timer.EventHandler()
+		sock.lines = { reply } sock.Data()
+		if deviceSaysMuted then
+			sock.lines = { wireParam .. sep .. "1" } sock.Data()
+		end
+		cp:Action("mute", value)
+
+		local threw, found
+		for t = 1, 200 do
+			local ok, err = pcall(timer.EventHandler)
+			if not ok then threw = err break end
+			for _, w in ipairs(sock.writes) do
+				if w:match("^" .. wireParam:gsub("%p", "%%%0") .. sep:gsub("%p", "%%%0"))
+					and not w:match("%?$") then found = w end
+			end
+			if found then break end
+			sock.lines = { reply } sock.Data()
+		end
+		cp:Stop()
+		return threw, found
+	end
+
+	local threw, sent = press("CP 850", "sys.fader 42", "sys.mute", " ", false, true)
+	h.check(threw == nil, "CP 850: a boolean mute does not throw (" .. tostring(threw) .. ")")
+	h.check(sent == "sys.mute 1", "CP 850: boolean true goes on the wire as 1 (got " .. tostring(sent) .. ")")
+
+	-- Unmute only travels when the plugin believes the device IS muted --
+	-- from the default state it is already 0, so isEqual() correctly drops
+	-- it as a no-op. Let the device report muted first, then unmute.
+	local threw2, sent2 = press("CP 850", "sys.fader 42", "sys.mute", " ", true, false)
+	h.check(threw2 == nil, "CP 850: a boolean unmute does not throw (" .. tostring(threw2) .. ")")
+	h.check(sent2 == "sys.mute 0", "CP 850: boolean false goes on the wire as 0 (got " .. tostring(sent2) .. ")")
+
+	local threw3, sent3 = press("CP 650", "fader_level=42", "mute", "=", false, true)
+	h.check(threw3 == nil, "CP 650: a boolean mute does not throw (" .. tostring(threw3) .. ")")
+	h.check(sent3 == "mute=1", "CP 650: boolean true goes on the wire as 1 (got " .. tostring(sent3) .. ")")
+end
+
 h.section("poll interval")
 do
 	-- The spec rate-limits ASKING the device for state (poll_interval, 1s),

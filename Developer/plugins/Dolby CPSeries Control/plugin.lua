@@ -85,6 +85,21 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.12 - crash fix, long-standing and unrelated to the timer work
+--        above: pressing Mute threw out of the poll timer. runtime.lua
+--        wires the button through as Action("mute", Controls.Mute.Boolean),
+--        a Lua boolean, and the poll loop fed that straight to
+--        string.format('%.0f', ...), which rejects a boolean outright --
+--        "bad argument #2 to 'format' (number expected, got boolean)". The
+--        value is now normalized to 0/1 first, exactly the way isEqual()
+--        already did for the same boolean-vs-number reason, and anything
+--        still not numeric falls back to a query rather than crashing or
+--        putting garbage on the wire, matching the rule the format branch
+--        already applied. Found while testing the poll-interval change; no
+--        test had ever driven the boolean path, which is how it survived.
+--        Unmute from the default state remains a deliberate no-op: the
+--        mirror already reads 0, so isEqual() drops it -- it only travels
+--        once the device has reported itself muted.
 -- v4.0.0.11 - idle poll interval, completing the spec's four separated
 --        timers. The loop used to query the processor on every tick the gap
 --        allowed -- ~10 queries/s, or ~4 on a CP650 -- where the spec asks
