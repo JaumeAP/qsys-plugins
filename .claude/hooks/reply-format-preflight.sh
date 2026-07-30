@@ -1,4 +1,10 @@
 #!/bin/bash
+# RETIRED 2026-07-30 (explicit user request): unregistered from the
+# UserPromptSubmit hook in settings.json, same reason and same day as
+# check-reply-format.sh's retirement note (see that file) -- CLAUDE.md no
+# longer mandates the leading "Rebut:" line or the format ban this
+# reminder existed to prevent violating. Left on disk, unregistered.
+#
 # UserPromptSubmit hook: fires BEFORE any assistant text of the turn exists,
 # which is the only moment a reminder about the turn's FIRST text block can
 # still change the outcome.
