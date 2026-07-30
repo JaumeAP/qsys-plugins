@@ -178,6 +178,11 @@ close an item by deleting its line here, and put the full story in
    confirmed against an official source — they mirror the numbered-pin
    convention and match what SubharmonicSynth ships. Re-verify these first
    if a real host ever disagrees about wiring.
+4. Root cause of item 2 (2026-07-30 investigation, see continuity notes),
+   needs the user via GitHub web UI, no session can do it: enable
+   "Automatically delete head branches" in Settings > General > Pull
+   Requests. Server-side, applies on every merge regardless of proxy
+   restrictions -- without it, item 2 keeps growing by ~1 branch/session.
 
 ### Git
 
