@@ -102,18 +102,21 @@ if (( count == 1 || count % 15 == 0 )); then
   msg="${msg} -- no et fiïs d'un resum en cache d'aquest o d'un torn anterior, els fitxers reals poden haver canviat des d'aleshores dins la mateixa sessio. Els skills sota .claude/skills/ NO entren en aquesta llista: son molts i es carreguen sols per descripcio quan toca; llegeix el que calgui per la tasca actual, no tots. Un cop rellegit, reverifica que la resposta compleix el que diguin ara mateix, no el que dèiem fa uns passos."
   # Exception carved out 2026-07-30, narrow and deliberate -- doesn't
   # revert the "skills self-trigger by description" call above. A
-  # full-session audit found the four skills CLAUDE.md itself calls
-  # "mandatory" (file-operations, github-rules, caveman, karpathy-
+  # full-session audit found the four skills CLAUDE.md called "mandatory"
+  # at the time (file-operations, github-rules, caveman, karpathy-
   # guidelines) were invoked exactly zero times across dozens of tool
   # calls that squarely matched their own trigger descriptions --
-  # "self-trigger by description" alone wasn't enough for these four
-  # specifically, unlike the 25 merely-recommended ones this hook
-  # correctly stopped enumerating. file-operations now also has a real
-  # mechanical gate (file-operations-enforcement.sh, PreToolUse/Bash,
-  # hard block) for its narrowest, most safety-relevant case; this
-  # reminder is what covers the other three, which have no equivalent
-  # tool-level chokepoint to gate on.
-  msg="${msg} Excepcio (nomes aquests 4, no els 25 recomanats): file-operations, github-rules, caveman i karpathy-guidelines son 'mandatory' segons CLAUDE.md -- invoca'ls de veritat amb el tool Skill quan la tasca hi encaixi (fitxers, treball amb PR/GitHub, o sempre per estil/compressio de resposta i principis de comportament), no nomes com a referencia de fons."
+  # "self-trigger by description" alone wasn't enough for these
+  # specifically, unlike the merely-recommended ones this hook correctly
+  # stopped enumerating. file-operations now also has a real mechanical
+  # gate (file-operations-enforcement.sh, PreToolUse/Bash, hard block) for
+  # its narrowest, most safety-relevant case; this reminder is what
+  # covers the rest, which have no equivalent tool-level chokepoint to
+  # gate on. `changelog-rules` added to the named list the same day it
+  # was reinstated bundled+mandatory, later in this same 2026-07-30
+  # session -- same reasoning applies to it: matching a "## Changelog"
+  # trigger doesn't guarantee the Skill tool actually gets called.
+  msg="${msg} Excepcio (nomes els mandatory, no els recomanats): file-operations, github-rules, changelog-rules, caveman i karpathy-guidelines son 'mandatory' segons CLAUDE.md -- invoca'ls de veritat amb el tool Skill quan la tasca hi encaixi (fitxers, treball amb PR/GitHub, canvis a un fitxer amb ## Changelog, o sempre per estil/compressio de resposta i principis de comportament), no nomes com a referencia de fons."
 fi
 
 # Job 2: consume the PreCompact pending flag exactly once, if present.

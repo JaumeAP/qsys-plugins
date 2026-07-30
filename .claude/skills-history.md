@@ -95,6 +95,36 @@ local copy went one step further 2026-07-29, also explicit user
 request: deleted outright rather than kept disk-side and disabled, see
 above.)
 
+**`changelog-rules` reinstated, third time, now mandatory (2026-07-30,
+explicit user request).** Everything in the paragraph above stayed true
+of its own history up to that point — this is a new chapter, not a
+correction. Recovered from git history (`qsys-plugins` commit `3d66272`'s
+own parent, and confirmed byte-identical to the copy CPSeries still had
+under `b988959`'s parent before that repo's own bundle-cleanup deleted it
+the same day this session started) — the exact same 151-line `SKILL.md`
+that was removed in 2026-07-28's second and final deletion, unmodified,
+since the removal was a preference change, not a functional problem with
+the skill itself. This time it went straight into the mandatory
+blind-copy group (alongside `file-operations` and `github-rules`) rather
+than back through the optional group it occupied for part of its earlier
+history — the user's own framing was "recover as mandatory", not "make
+available again". `.claude/removed-files.txt`'s
+`skills/changelog-rules` entry removed accordingly (a target repo
+importing the current bundle should install it, not prune it).
+`rule-check-reminder.sh` (see the mandatory-skills entry two paragraphs
+below the "Portable skills" pointer in `CLAUDE.md`) now names it
+alongside the other mandatory skills. Verified operative before
+committing: frontmatter and body checked against the skill discovery
+mechanism (picked up and listed as available immediately after being
+written to `.claude/skills/changelog-rules/`), content re-read in full
+for stale references to anything since removed (none found — the skill
+is self-contained, its only external references are to "the repo
+`CLAUDE.md` Git rules" and "Critical Rules", both generic pointers every
+repo satisfies in some form), and a real bundle was rebuilt and unzipped
+to confirm the skill travels correctly as
+`references/skills/changelog-rules/changelog-rules.md` inside the
+package.
+
 **Find Skills**: `find-skills`, imported from `vercel-labs/skills`
 (`skills/find-skills/SKILL.md`) — discovers and installs third-party
 skills via the `npx skills` CLI, #1 by install count on skills.sh at
