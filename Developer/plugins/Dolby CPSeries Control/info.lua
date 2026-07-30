@@ -6,5 +6,5 @@ PluginInfo =
 	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
 	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
 	Manufacturer = "Dolby",
-	Author = "James Puig - james.puig@dolby.com",
+	Author = "James Puig - james.puig@elcine.com",
 }

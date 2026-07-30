@@ -1,5 +1,5 @@
 -- CP Series Control Plugin for Q-SYS
--- by James Puig / james.puig@dolby.com
+-- by James Puig / james.puig@elcine.com
 -- Febr '20
 --
 -- v3.0 - adds CP950 and CP950A. Wire communication now goes through the

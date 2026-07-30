@@ -120,8 +120,8 @@ regressions before the bench, and `wire_trace.lua` diffs two builds by the
 bytes they put on the wire, which is the tool to reach for after any
 refactor.
 
-Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
-(Barcelona).
+Author/contact history in the sources: `james.puig@elcine.com` / Jaume Puig
+(Barcelona) -- changed from `@dolby.com` 2026-07-30, see Open Threads item 1.
 
 ### Where the detail lives
 
@@ -162,13 +162,13 @@ re-deriving or silently skipping it. Keep this list short and current:
 close an item by deleting its line here, and put the full story in
 `docs/continuity-notes.md`.
 
-1. Four `.qplugx` need a build: Dolby Sweep, MultiFlip-Flop, Dolby
-   CPSeries Control are stale relative to their `.qplug` (`DolbyFader.qplugx`
-   is NOT stale, corrected 2026-07-30 -- see continuity notes for why),
-   and `SubharmonicSynth` has none yet. Dispatch
-   `.github/workflows/build-qplugx.yml` with `all` — both build workflows'
-   choice lists now include SubharmonicSynth (2026-07-30 fix), but neither
-   has actually been run since.
+1. Root builds needed, neither workflow run since either fix. `.qplugx`:
+   Sweep/MultiFlip-Flop/CPSeries stale, SubharmonicSynth has none
+   (DolbyFader's is current -- see continuity notes). `.qplug`: as of
+   2026-07-30 all four non-SubharmonicSynth are ALSO stale (the
+   `@elcine.com` email change only touched `Developer/`, never root, per
+   convention). Dispatch `build-qplug.yml` per plugin, then
+   `build-qplugx.yml` with `all` (both now list SubharmonicSynth too).
 2. 20 stale, merged `origin/claude/*` branches (17 audited + 3 found
    2026-07-30) can't be deleted from any session: git proxy 403s ref
    deletion, no delete-branch MCP tool, retried again 2026-07-30, still
