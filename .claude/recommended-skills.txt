@@ -19,12 +19,6 @@ caveman-compress -> JuliusBrussee/caveman
 caveman-help -> JuliusBrussee/caveman
 caveman-review -> JuliusBrussee/caveman
 caveman-stats -> JuliusBrussee/caveman
-claude-security -> anthropics/skills
 dataviz -> anthropics/skills
 webapp-testing -> anthropics/skills
-simplify -> anthropics/skills
-static-analysis -> anthropics/skills
 remotion -> remotion/remotion
-skill-security-auditor -> anthropics/skills
-docker-best-practices -> anthropics/skills
-documentation-handbook -> anthropics/skills
