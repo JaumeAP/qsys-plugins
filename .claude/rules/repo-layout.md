@@ -26,6 +26,30 @@ docs/continuity-notes.md (dated history). -->
 ├── README.md                         Short plugin catalog
 ├── .vscode/settings.json             Associates *.qplug with the Lua language
 │
+├── .claude/                          Claude Code tooling: CLAUDE.md's companion
+│   │                                 config, all of it version-controlled
+│   ├── rules/                        Path-scoped memory files, incl. this one
+│   ├── skills/                       Installed skills (2 bundled + the rest
+│   │                                 fetched per recommended-skills.txt)
+│   ├── hooks/                        Session/tool lifecycle scripts
+│   ├── scripts/                      export-config-skill.sh, merge-settings.sh
+│   ├── settings.json                 Hook registrations + permissions
+│   ├── recommended-skills.txt        Fetch-on-demand skill list
+│   ├── removed-files.txt             Paths an import should prune
+│   ├── skills-history.md             Why each skill is bundled/optional/removed
+│   └── config-export-import.md       The export/import procedure
+├── .agents/skills/                   Where `npx skills` installs; several
+│                                     .claude/skills/ entries are symlinks here
+├── skills-lock.json                  `npx skills` install manifest -- a restore
+│                                     source, so keep it matching what is really
+│                                     installed (never prune skills by hand
+│                                     without updating it)
+├── .github/workflows/                build-qplug.yml (PLUGCC .qplug builds) and
+│                                     build-qplugx.yml (encryption); both
+│                                     windows-latest, workflow_dispatch only
+├── docs/
+│   └── continuity-notes.md           Dated institutional memory, not auto-loaded
+│
 ├── *.qplug / *.qplugx                Distributable plugins (repo root), built by
 │   │                                 QSC's own PLUGCC.exe via
 │   │                                 .github/workflows/build-qplug.yml (see
