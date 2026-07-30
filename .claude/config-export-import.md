@@ -282,6 +282,48 @@ directions, mechanized best-effort by
         manual edit. Report what was split and where (narrate each sub-step
         as 2.2 requires), and let the user know to add `PROJECT.md` to
         their commits once the import workflow is complete.
+   2.4b. **Retire the old session-continuity and merge systems**
+        (2026-07-30, explicit user request: the new system travels with
+        the bundle and the import removes the old one). Two older
+        systems predate what the common part now states, and a blind
+        copy cannot remove either on its own — one lives in a root file
+        the deletion list cannot even name, the other in prose:
+        1. **`HANDOFF.md` → `docs/continuity-notes.md`.** The common
+           section names `docs/continuity-notes.md`; a target repo
+           still keeping a root `HANDOFF.md` is on the retired system.
+           **Migrate, never just delete**: a live `HANDOFF.md` holds
+           real state (standing work rules, open items, current-state
+           notes), so move that content into
+           `docs/continuity-notes.md` — creating it if absent, appending
+           under a dated heading if present — and only then delete
+           `HANDOFF.md`. Anything that is per-session narrative rather
+           than standing state can be dropped in the move; git log and
+           the changelog already hold it. The two hooks that mechanized
+           the old system (`hooks/require-handoff-read.sh`,
+           `hooks/check-handoff-pushed.sh`) are in
+           `removed-files.txt`, so 2.2 already prunes them and their
+           `settings.json` registrations — this step is only about the
+           content and the root file itself.
+        2. **Local-merge → pull request.** If the target's
+           `CLAUDE.md` (including its own Project-specific section) tells
+           a session to merge the working branch into the default branch
+           with plain local git and no PR, replace that with the
+           `github-rules` default the common part already carries: open a
+           PR and merge it. Reason it matters beyond consistency: a
+           calling environment can restrict pushes to the designated
+           working branch, which makes a local merge impossible, while a
+           PR merge lands the same work without pushing another branch.
+           Record the tradeoff rather than dropping it — the GitHub merge
+           API attributes the merge commit to the authenticated
+           integration account, not the session's git identity, which is
+           the reason the local-merge rule existed. The hooks for this
+           one (`hooks/local-merge-reminder.sh`,
+           `hooks/sync-command-reminder.sh`) are likewise already in
+           `removed-files.txt`.
+        Both sub-steps touch the target's own Project-specific section,
+        which 2.4 otherwise leaves alone — that is deliberate and is the
+        one sanctioned exception: these are retired systems, not repo
+        preferences. Narrate what was migrated and what was deleted.
    2.5. **Bundled-file skills offered as an optional choice**: the
         category for a skill that ships as a file in the bundle (like
         2.2's mandatory ones) but isn't force-installed or silently

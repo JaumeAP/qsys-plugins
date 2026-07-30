@@ -51,15 +51,22 @@ hooks/reply-format-preflight.sh
 # change with no entry -- an importer had no way to tell the handoff
 # rules were retired rather than merely missing from a partial bundle.
 #
-# NO PATHS ARE LISTED FOR IT ON PURPOSE. The system's two hooks
-# (hooks/require-handoff-read.sh, hooks/check-handoff-pushed.sh) were
-# never bundle content -- they do not exist in this repo and never
-# travelled on export. They exist only in CPSeries, which deliberately
-# KEEPS the handoff system as a project-specific choice, documented in
-# its own CLAUDE.md "Project-specific rules" section. Listing them would
-# make the next import delete a system that repo actively uses and has
-# hooks registered for -- exactly the failure that deleted its
-# cpx50-parser/cpx50-equalizer skills on 2026-07-30 (see
-# .claude/skills-history.md). If the handoff system should be retired
-# there too, that is a separate decision for that repo, and the paths go
-# in below this comment at that point -- not before.
+# The two hooks that mechanized it are listed below. Note they were
+# never bundle content in the first place -- they do not exist in this
+# repo and never travelled on export; only CPSeries has them. They are
+# listed anyway, which is a deliberate widening of what this file is
+# for: it now also retires a system the bundle itself moved on from,
+# not just files the bundle once shipped. Same 2026-07-30 user call that
+# added step 2.4b to config-export-import.md ("the new system travels
+# with the export and the import removes the old one").
+#
+# IMPORTANT, and the reason this file alone is not enough: a live
+# HANDOFF.md holds real state, and it sits at the repo ROOT, which this
+# list cannot even express (every path here is relative to .claude/).
+# Pruning these two hooks without migrating that content would leave a
+# repo with no continuity record at all. config-export-import.md step
+# 2.4b is the binding half -- migrate HANDOFF.md into
+# docs/continuity-notes.md FIRST, then delete it. Do not treat these two
+# lines as the whole job.
+hooks/require-handoff-read.sh
+hooks/check-handoff-pushed.sh
