@@ -85,6 +85,12 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.9 - Address defaults to "127.0.0.1" on first compile (one-time
+--        init block, same as the fader/mute/selector defaults already
+--        there) -- Text controls have no real GetControls DefaultValue
+--        key (same reason SubharmonicSynth's own defaults live in a
+--        one-time init rather than the control declaration, see
+--        qsys-plugin-development.md's "Key module patterns").
 -- v4.0.0.8 - disconnect(recon)'s recon=false branch documented as
 --        intentionally-unreachable-for-now (a future explicit "Disconnect"
 --        control that shouldn't auto-reconnect is a plausible caller),
@@ -123,7 +129,7 @@ PluginInfo =
 {
 	Name = "Dolby~CP Series Control",
 	Version = "4.0",
-	BuildVersion = "4.0.0.8",
+	BuildVersion = "4.0.0.9",
 	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
 	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
 	Manufacturer = "Dolby",
@@ -1294,6 +1300,7 @@ if Controls then
 			-- fired on first compile.
 			if Controls.Start.Value == 0 then
 				Controls.Start.Value = 1
+				Controls.Address.String = "127.0.0.1"
 				DKNob.Value = 7.0
 				DKNob.EventHandler(DolbyCP)
 				Controls.Mute.Boolean = false

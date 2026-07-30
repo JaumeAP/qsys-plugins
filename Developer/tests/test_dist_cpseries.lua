@@ -72,7 +72,11 @@ for _, model in ipairs(h.MODELS) do
 		trigger_controls = { "Refresh" },  -- ButtonType="Trigger" (see controls.lua)
 		selectors = (model == "CP 750") and 7 or 8,
 		properties = qsys.cpseries_properties(model),
-		emulating = true,          -- no address set, so take the emulation branch
+		emulating = true,          -- Address now defaults to 127.0.0.1 (v4.0.0.9,
+		                            -- one-time init), a valid address, so this no
+		                            -- longer reaches the "unset address" emulation
+		                            -- branch -- it takes the real connect path same
+		                            -- as a non-emulated run would.
 	})
 
 	local ok, err = pcall(assert(loadfile(DIST)))
@@ -81,7 +85,8 @@ for _, model in ipairs(h.MODELS) do
 		h.check(DKNob ~= nil, model .. ": DKNob built, so qknob was inlined before dolbyfader")
 		h.check(env.controls.Start.Value == 1, model .. ": one-time init ran")
 		h.check(env.controls.Selector[1].Value == 1, model .. ": init selected format 1")
-		h.check(env.controls.Status.Value == 0, model .. ": unset address in emulation reports status 0")
+		h.check(env.controls.Address.String == "127.0.0.1", model .. ": Address defaulted to 127.0.0.1")
+		h.check(env.controls.Status.Value == 5, model .. ": default address validates, connect attempted (status 5)")
 		h.check(math.abs(env.controls.Gain.Value) < 1e-9,
 			model .. ": the 7.0 reference level is 0 dB (got " .. tostring(env.controls.Gain.Value) .. ")")
 	end
