@@ -62,7 +62,7 @@ docs/continuity-notes.md (dated history). -->
 │   ├── MultiFlip-Flop.qplugx
 │   ├── Dolby CPSeries Control V4.0.qplug
 │   ├── Dolby CPSeries Control V4.0.qplugx   Packaged/encrypted (JSON envelope);
-│   │                                 all four .qplugx built 2026-07-27 via
+│   │                                 the original four .qplugx built 2026-07-27 via
 │   │                                 .github/workflows/build-qplugx.yml
 │   │                                 (GitHub Actions, windows-latest),
 │   │                                 replacing the old stale
@@ -71,9 +71,13 @@ docs/continuity-notes.md (dated history). -->
 │   │                                 Never hand-edited; regenerate via the
 │   │                                 workflow (or Designer's "Save as
 │   │                                 compiled plugin") after any .qplug rebuild.
-│   └── SubharmonicSynth.qplug        (v0.6, added 2026-07-29) No .qplugx yet --
-│                                     not run through build-qplugx.yml/the
-│                                     encryption tool since being incorporated.
+│   ├── SubharmonicSynth.qplug        (v0.6, added 2026-07-29)
+│   └── SubharmonicSynth.qplugx       All five .qplugx (including this one, for the
+│                                     first time) rebuilt together 2026-07-30 via
+│                                     the same workflow, once it was added to that
+│                                     workflow's own choice list -- corrected same
+│                                     day, this section previously said
+│                                     SubharmonicSynth had no .qplugx yet.
 │
 ├── Dolby CP Emulator/                Q-SYS User Components (.quc) that emulate
 │   ├── CP650 Emulator.quc            real Dolby processors for bench testing
