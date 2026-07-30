@@ -1,8 +1,8 @@
 # Config export/import (cross-repo `.claude/` propagation)
 
-This repo's `.claude/` tooling (`settings.json`, `hooks/`, the two
-generic skills — `file-operations` and
-`github-rules`, both under `.claude/skills/`, plus this file) is meant to be portable
+This repo's `.claude/` tooling (`settings.json`, `hooks/`, the four
+generic skills — `file-operations`, `github-rules`, `caveman`, and
+`karpathy-guidelines`, all under `.claude/skills/`, plus this file) is meant to be portable
 across all my repos, same as `CLAUDE.md`. Which additional skills also
 travel (if any) is defined in `.claude/scripts/export-config-skill.sh` — not
 repeated here. This file is deliberately plain, not a `SKILL.md`
@@ -71,9 +71,9 @@ directions, mechanized best-effort by
    bundled copy any more, see step 2.5.) A `.skill`
    package may
    contain only ONE `SKILL.md` (the claude.ai/Skills API upload path
-   rejects more than one), so the two bundled skills' own `SKILL.md`
-   files (`file-operations` and `github-rules`, both mandatory
-   blind-copies — see step
+   rejects more than one), so the four bundled skills' own `SKILL.md`
+   files (`file-operations`, `github-rules`, `caveman`, and
+   `karpathy-guidelines`, all mandatory blind-copies — see step
    2.2) are
    renamed to
    `references/skills/<name>/<name>.md` inside the
@@ -215,6 +215,13 @@ directions, mechanized best-effort by
         history-rewriting operations (those stay confirm-first) and still
         loses to any explicit merge policy the target repo's own
         `CLAUDE.md` states.
+        `caveman` and `karpathy-guidelines` (2026-07-30, explicit user
+        request): both added as mandatory bundled skills, blind-copied the
+        same way as `file-operations` and `github-rules`. `caveman` provides
+        compression/terseness rules (universally applicable); `karpathy-guidelines`
+        provides thinking principles applicable to any project. Both copy into
+        `.claude/skills/<name>/`, always overwritten with whatever the bundle
+        carries.
    2.3. **Contradiction check, mandatory on every import**: every
         imported hook/common rule always wins over a conflicting rule
         the target repo already has — the general principle 2.2 already
@@ -322,9 +329,10 @@ directions, mechanized best-effort by
         zero members since, though the mechanism stays defined here in
         case a future skill lands in it.)
    2.6. **Additional packs actually bundled as files, always offer,
-        optional to accept**: every skill beyond `file-operations`/
-        `github-rules` (mandatory per 2.2) and beyond whatever's
-        currently in 2.5 (empty right now, see there)
+        optional to accept**: every skill beyond `file-operations`,
+        `github-rules`, `caveman`, and `karpathy-guidelines` (all
+        mandatory per 2.2) and beyond whatever's currently in 2.5 (empty
+        right now, see there)
         that the bundle actually carries as files — the full list is
         open-ended and growing over time (see
         `.claude/scripts/export-config-skill.sh` for what it currently
