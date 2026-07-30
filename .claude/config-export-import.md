@@ -22,7 +22,9 @@ directions, mechanized best-effort by
    pack keeps its own license, carried along on
    export) — NOT `CLAUDE.md`'s own
    "Project-specific rules" section (that's THIS repo's content, not
-   portable — a new repo writes its own), NOT any other repo-specific
+   portable — a new repo writes its own), NOT `PROJECT.md` (this repo's
+   own project-specific documentation, conventions, and rules — the target
+   repo writes its own), NOT any other repo-specific
    skill/plugin/component, NOT project-specific hooks (a hook whose only
    job is installing/configuring
    something for THIS repo's own tooling, e.g. a hook that installs a
