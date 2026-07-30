@@ -84,8 +84,12 @@ docs/continuity-notes.md (dated history). -->
 │   │                                 `git submodule update --init --recursive` after
 │   │                                 cloning if empty; never edit contents, it's all
 │   │                                 upstream's
-│   ├── qsys-plugins/                  QSC's own org (confirmed: support contact
-│   │   │                             qsyscontrolfeedback@qsc.com in each README)
+│   ├── qsys-plugins/                  QSC's own org (support contact
+│   │   │                             qsyscontrolfeedback@qsc.com, confirmed in
+│   │   │                             BasePlugin's and PluginEncryptionTool's own
+│   │   │                             READMEs -- ExamplePlugin has no README.md
+│   │   │                             at all, corrected 2026-07-30, was wrongly
+│   │   │                             claimed "in each README")
 │   │   ├── BasePlugin/               Plugin template (added 2026-07-27); its own
 │   │   │   └── PluginCompile/         nested submodule, the VS Code compile-to-.qplug
 │   │   │                             tool -- compiles multiple Lua files into one

@@ -472,6 +472,18 @@ history actually matters.)
   GitHub UI (PR page's "Delete branch" button, or Settings > Branches),
   or investigating the proxy/connector side directly, not more retries
   from inside a session.
+  **Update (2026-07-30): three more accumulated since this audit, same
+  situation.** `git branch -r` now also lists `neteja-ot19wo` (PR #47-49),
+  `qsys-zyijbo` (PR #55), and `test-umx9nt` (PR #51-54) -- all three
+  confirmed merged into `main` (`git merge-base --is-ancestor` true for
+  each), never included in the 17-branch count above because those PRs
+  merged after that audit ran. Same blocker applies (proxy 403s on ref
+  deletion); not retried this session, just recorded so the pending count
+  stays accurate. `claude/next-vawkbf` (PR #41, the one branch the
+  original audit deliberately kept) no longer appears in `git branch -r`
+  at all -- PR #41 merged later the same day the audit ran, and the
+  branch is gone, most likely GitHub's own delete-on-merge, not anything
+  done from inside a session.
 - **`check-reply-format.sh`'s block reason made block-scoped, not just
   Rebut-scoped (2026-07-29, explicit user request, root-caused after a
   real recurrence in this exact session).** The 2026-07-28 fix above
@@ -604,3 +616,56 @@ history actually matters.)
     mirror-image case of a repo overriding the skill's default: here the
     environment overrides it instead) rather than kept repo-local, since
     nothing about it is specific to this repo.
+
+- **Open Threads item 1 corrected: "all four .qplugx stale" was wrong,
+  DolbyFader's isn't (2026-07-30).** Checked by comparing each root
+  `.qplug`/`.qplugx` pair's last-touching commit. `f8eb707` ("Regenerate
+  all four .qplugx from the rebuilt .qplug sources", 2026-07-29 09:06:55)
+  built `DolbyFader.qplugx` from `DolbyFader.qplug`@`0604fb4` (08:39:50,
+  the same day, earlier) -- nothing has touched `DolbyFader.qplug` since,
+  so `DolbyFader.qplugx` is current. Dolby Sweep, MultiFlip-Flop, and
+  Dolby CPSeries Control were all rebuilt again later that same day
+  (14:38, 14:38, 15:43) by the PLUGCC restructuring and its Button
+  `.Value`/`.Boolean` fixes, which is what actually left those three
+  `.qplugx` stale. The Open Threads item previously said "all four"
+  without checking; narrowed to the three that are actually stale, plus
+  SubharmonicSynth's still-missing one.
+
+- **Root-cause investigation: why stale branches keep accumulating
+  (2026-07-30, explicit user request).** Cross-referenced all 59 merged
+  PRs against their head branches (search_pull_requests is:merged for
+  merged_at, list_pull_requests for head.ref, joined by PR number) and
+  checked each unique branch name against `git branch -r` and
+  `git merge-base --is-ancestor origin/<branch> origin/main`. Pattern: a
+  branch name gets reused across many consecutive PRs while one session
+  is actively working (`revisio-iirycs` x10, `test-osx0oe` x13,
+  `qsc-qsys-a44799` x4, `neteja-ot19wo` x4, `test-umx9nt` x4, this
+  session's own `delete-old-pr-avxj9x` x5 and counting) via the
+  restart-same-branch-name pattern `github-rules` documents for
+  follow-up work. That pattern has no closing step: `github-rules`'
+  workflow section only ever says to restart a branch, never to delete
+  one once a session's work is genuinely finished. Combined with the git
+  proxy's HTTP 403 on `git push --delete` (see the entry above), every
+  branch a session finishes with is abandoned permanently -- not a one-
+  time cleanup gap, an ongoing rate of roughly one orphaned branch per
+  finished session.
+  Only 3 of the 20 stale branches have ever actually been deleted at any
+  point (`claude-md-docs-25dexu`, `next-vawkbf`, `test-s5crir`), with no
+  pattern that explains why those three and not the others -- notably
+  not "single-PR branches get cleaned up": `qsys-zyijbo` was also a
+  single-PR branch and is still present. No tool in this session's
+  toolset can read the repository's own settings (checked: no
+  get_repository/repo-settings equivalent among the github MCP tools),
+  so the setting itself couldn't be confirmed directly, but this
+  irregular pattern -- some merges deleting the branch, most not, with
+  no correlation to merge method, branch reuse, or timing -- is the
+  known signature of GitHub's per-repo "Automatically delete head
+  branches" setting being toggled on for only part of the repo's
+  history (on for a window, off the rest) rather than anything a
+  session did differently. Recommendation given to the user (CLAUDE.md
+  Open Threads item 4): turn it on permanently. Unlike branch deletion
+  itself, this setting change happens server-side on GitHub's end at
+  merge time, so it isn't subject to the git proxy's ref-deletion block
+  at all -- it would apply automatically to every future merge_pull_request
+  call from any session, closing the gap for good without needing any
+  new session-side capability.

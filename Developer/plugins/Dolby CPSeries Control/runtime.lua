@@ -19,11 +19,12 @@
 			end
 		end
 
-		-- TcpSocket.New() -- dot notation for construction, confirmed
-		-- against the Q-SYS Lua reference (colon notation is for instance
-		-- methods on the created socket: sock:Connect(), sock:Write()).
-		sock = TcpSocket.New()
-		sock.WriteTimeout = 2
+		-- sock wraps TcpSocket.New() via the shared SocketConn module
+		-- (Developer/shared/socket.lua) -- construction, address
+		-- validation, and Connect/Disconnect/IsConnected all go through
+		-- it; event-handler wiring stays here since it's plugin-specific
+		-- (SetStatus, DolbyCP). The raw TcpSocket is sock.Socket.
+		sock = SocketConn.New(2)
 
 		-- Custom functions
 
@@ -39,22 +40,9 @@
 			else Controls.Status.String = '' end
 		end
 
-		local function validateAddress(ip)
-			local chunks = { string.match(ip, "^(%d+)%.(%d+)%.(%d+)%.(%d+)$") }
-			if #chunks < 4 then
-				return false
-			end
-			for _, v in pairs(chunks) do
-				if tonumber(v) > 255 then
-					return false
-				end
-			end
-			return true
-		end
-
 		local function connect()
 			Controls.Refresh.IsDisabled = false
-			if validateAddress(Controls.Address.String) then
+			if SocketConn.ValidateAddress(Controls.Address.String) then
 				SetStatus(5, '')
 				-- port comes from the CPModels config (adds CP950 / CP950A)
 				local CPPort = CPModels.DefaultPort((Properties.Model.Value):gsub("%s", ""))
@@ -82,7 +70,7 @@
 		end
 
 		local function sockError(msg)
-			if sock.IsConnected then
+			if sock:IsConnected() then
 				sock:Disconnect()
 				Print(true, 'SOCK', msg)
 				Print(true, 'SOCK', "Closed")
@@ -94,27 +82,27 @@
 
 		-- Event handlers
 
-		sock.Connected = function()
+		sock.Socket.Connected = function()
 			Print(true, 'SOCK', "Connected")
-			DolbyCP:Start(sock)
+			DolbyCP:Start(sock.Socket)
 		end
 
-		sock.Closed = function()
+		sock.Socket.Closed = function()
 			Print(true, 'SOCK', 'Closed')
 			SetStatus(4, "Offline")
 		end
 
-		sock.Timeout = function()
+		sock.Socket.Timeout = function()
 			Print(true, 'SOCK', 'Timeout')
 			SetStatus(2, "Timeout")
 		end
 
-		sock.Error = function(_, err)
+		sock.Socket.Error = function(_, err)
 			Print(true, 'SOCK', "Remote Server Error " .. err)
 			SetStatus(2, err)
 		end
 
-		sock.Reconnect = function()
+		sock.Socket.Reconnect = function()
 			Print(true, 'SOCK', "Reconnecting")
 			SetStatus(5, "Attempt Reconnect")
 		end

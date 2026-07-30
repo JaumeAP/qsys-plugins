@@ -1,5 +1,5 @@
 -- Dolby Sweep Generator Plugin for Q-SYS
--- by James Puig / james.puig@dolby.com
+-- by James Puig / james.puig@elcine.com
 -- Jul '20
 -- v2.0: rebuilt to the plugin structure/naming convention confirmed against
 -- QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin} templates and the
@@ -51,7 +51,7 @@ PluginInfo = {
 	Id = "0e5ea38f-6c26-469b-aa3b-00503f1f263a",
 	Description = "Dolby Sweep Generator",
 	Manufacturer = "Dolby",
-	Author = "James Puig - james.puig@dolby.com",
+	Author = "James Puig - james.puig@elcine.com",
 	Type = Reflect and Reflect.Types.AudioIO or 0,
 }
 

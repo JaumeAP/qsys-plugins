@@ -1,5 +1,5 @@
 -- Dolby Fader for Q-SYS
--- by james.puig@dolby.com
+-- by james.puig@elcine.com
 -- Sept '20
 -- v2.0: rebuilt to the plugin structure/naming convention confirmed against
 -- QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin} templates and the

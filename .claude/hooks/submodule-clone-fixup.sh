@@ -9,8 +9,15 @@
 # .gitmodules. When it matches, fetches this repo's pinned gitlink commit
 # into the freshly cloned directory, checks it out, copies the tree into
 # the registered submodule path, and absorbs its .git dir into the
-# superproject -- the same manual sequence used to recover the
-# AES67-ddriver submodule via the add_repo tool.
+# superproject.
+#
+# "AES67-ddriver" example dropped 2026-07-30: swept the whole repo
+# (source, docs, continuity notes) for it and found nothing -- no
+# submodule of that name has ever existed here. This hook is written
+# generic on purpose (reads .gitmodules at runtime, not hardcoded), so
+# the specific example was never load-bearing; it just doesn't belong to
+# this repo's own history and risked being read as a false claim about
+# it.
 #
 # Generic: reads .gitmodules at runtime, not hardcoded to any one
 # submodule, so it keeps working if more submodules are added later.

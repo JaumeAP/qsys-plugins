@@ -1,5 +1,5 @@
 -- Dolby Sweep Generator Plugin for Q-SYS
--- by James Puig / james.puig@dolby.com
+-- by James Puig / james.puig@elcine.com
 -- Jul '20
 -- v2.0: rebuilt to the plugin structure/naming convention confirmed against
 -- QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin} templates and the

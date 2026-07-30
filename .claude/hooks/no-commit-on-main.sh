@@ -6,8 +6,14 @@
 # main` and no trailing checkout back to the branch, so the NEXT commit
 # in the same session landed on `main` directly instead of the branch.
 # A reminder-only hook wouldn't have caught it (nothing about that commit
-# looked unusual on its own) -- this needs a hard gate, same tier as
-# require-handoff-read.sh, not a nudge.
+# looked unusual on its own) -- this needs a hard gate, not a nudge.
+#
+# Citation fixed 2026-07-30: this used to say "same tier as
+# require-handoff-read.sh". No such hook exists in this repo -- likely a
+# leftover reference to the short-lived HANDOFF.md split, which was itself
+# reverted 2026-07-27 (see docs/continuity-notes.md) before this comment
+# was even written, so the hook it named may never have existed here at
+# all. Dropped rather than replaced with a guess.
 #
 # Exception: a `git commit` while a merge is in progress (MERGE_HEAD
 # exists) is legitimate even on `main` -- that's finishing a conflicted

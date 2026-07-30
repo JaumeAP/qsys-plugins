@@ -120,8 +120,9 @@ regressions before the bench, and `wire_trace.lua` diffs two builds by the
 bytes they put on the wire, which is the tool to reach for after any
 refactor.
 
-Author/contact history in the sources: `james.puig@dolby.com` / Jaume Puig
-(Barcelona).
+Author/contact history in the sources: `james.puig@elcine.com` / Jaume Puig
+(Barcelona) -- changed from `@dolby.com` 2026-07-30, all root `.qplug`/
+`.qplugx` rebuilt the same day, nothing left pending on this.
 
 ### Where the detail lives
 
@@ -149,7 +150,10 @@ session. Content is unchanged, only relocated.
 Native auto memory (`MEMORY.md`) does not substitute for any of this in this
 repo: it is machine-local under `~/.claude/projects/<project>/memory/`, and
 sessions here run in ephemeral containers that get reclaimed. Anything that
-must survive has to be committed.
+must survive has to be committed. Verify before trusting it:
+`ls ~/.claude/projects/*/memory/` (empty/absent = still unused) or `/context`
+in-session. Content there never survived from a prior session here — it's
+this session's own scratch state, not persistence.
 
 ### Open threads
 
@@ -159,31 +163,31 @@ re-deriving or silently skipping it. Keep this list short and current:
 close an item by deleting its line here, and put the full story in
 `docs/continuity-notes.md`.
 
-1. All four root `.qplugx` are stale relative to their `.qplug`, and
-   `SubharmonicSynth` has no `.qplugx` at all. Regenerate by dispatching
-   `.github/workflows/build-qplugx.yml` with `all` (2026-07-30: that
-   workflow, and `build-qplug.yml`, were both missing SubharmonicSynth from
-   their own `plugin`/`qplug` choice lists since its 2026-07-29
-   incorporation -- fixed, so `all` now actually covers it -- but nobody
-   has dispatched either workflow since, so both root `.qplug` and
-   `.qplugx` are still what they were).
-2. 17 stale `origin/claude/*` branches are audited and approved for
-   deletion but blocked: this session's git proxy returns HTTP 403 on ref
-   deletion specifically, and no delete-branch MCP tool exists. Names are
-   listed in the continuity notes. Retry the push-based delete first in
-   case the proxy policy changed; otherwise it needs the user deleting them
-   from the GitHub UI.
-3. `Developer/host-emulator/components/` pin lists for `gain`,
+1. 20 stale, merged `origin/claude/*` branches (17 audited + 3 found
+   2026-07-30) can't be deleted from any session: git proxy 403s ref
+   deletion, no delete-branch MCP tool, retried again 2026-07-30, still
+   blocked. Names in continuity notes. Needs the user, from the GitHub UI.
+2. `Developer/host-emulator/components/` pin lists for `gain`,
    `filter_lowpass`, and `equalizer_parametric` are NOT independently
    confirmed against an official source — they mirror the numbered-pin
    convention and match what SubharmonicSynth ships. Re-verify these first
    if a real host ever disagrees about wiring.
+3. Root cause of item 1 (2026-07-30 investigation, see continuity notes),
+   needs the user via GitHub web UI, no session can do it: enable
+   "Automatically delete head branches" in Settings > General > Pull
+   Requests. Server-side, applies on every merge regardless of proxy
+   restrictions -- without it, item 1 keeps growing by ~1 branch/session.
 
 ### Git
 
 - Commit submodule pointer changes deliberately; never bump one incidentally.
-  `vendor/` holds five read-only reference submodules (four from QSC's own
-  `qsys-plugins` org, one third-party `q-sys-community/q-sys-plugin-guide`).
+  `vendor/` holds four top-level read-only reference submodules per
+  `.gitmodules` (`BasePlugin`, `ExamplePlugin`, `PluginEncryptionTool`,
+  and third-party `q-sys-community/q-sys-plugin-guide`) -- corrected
+  2026-07-30, was miscounted as five/four before the top-level
+  `PluginCompile` duplicate below was removed. `BasePlugin` and
+  `ExamplePlugin` each also carry their own nested `PluginCompile`
+  submodule, six total counting those.
 - **No duplicate submodule vendoring.** `BasePlugin` and `ExamplePlugin` each
   declare their own nested `PluginCompile` submodule at the same commit, so
   there is no top-level copy; `.claude/hooks/init-submodules.sh` runs
