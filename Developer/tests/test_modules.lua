@@ -320,4 +320,80 @@ do
 	cp:Stop()
 end
 
+h.section("query timeout")
+do
+	-- A lost response is not a dead link. At QUERY_TIMEOUT (1.5s) the
+	-- in-flight message is retransmitted once; the watchdog keeps counting
+	-- underneath, so a link that really is dead still dies on schedule.
+	local TICK = 0.02
+	local cp, sock, _, timer = started("CP 850")
+	timer.EventHandler()
+	sock.lines = { "sys.fader 42" } sock.Data()   -- handshake answered, then silence
+
+	local closed
+	cp.EventHandler = function(service) if service == "close" and not closed then closed = true end end
+
+	local sendTick, retryTick, closeTick
+	for t = 1, 400 do
+		local before = #sock.writes
+		timer.EventHandler()
+		if #sock.writes > before then
+			if not sendTick then sendTick = t else retryTick = retryTick or t end
+		end
+		if closed then closeTick = t break end
+	end
+
+	h.check(retryTick ~= nil, "an unanswered message is retransmitted at all")
+	h.check(retryTick and math.abs((retryTick - sendTick) * TICK - 1.5) < 0.05,
+		"the retransmit lands ~1.5s after the send (got " ..
+		string.format("%.2f", ((retryTick or 0) - (sendTick or 0)) * TICK) .. "s)")
+	local n = #sock.writes
+	h.check(n >= 2 and sock.writes[n] == sock.writes[n - 1],
+		"the retransmit is byte-identical to the message it retries")
+	h.check(n == 3, "exactly one retransmit, not a retry storm (got " .. (n - 2) .. ")")
+	h.check(closeTick and closeTick * TICK >= 3.0 and closeTick * TICK < 3.5,
+		"the watchdog still closes at ~3s despite the retry (got " ..
+		string.format("%.2f", (closeTick or 0) * TICK) .. "s)")
+	cp:Stop()
+end
+do
+	-- The point of the retry, against a realistic request/response device:
+	-- it answers whatever it receives, except that ONE response goes
+	-- missing in transit. Without a retransmit there is no second request,
+	-- so no second answer, and the watchdog tears the link down; with one,
+	-- the device is asked again and the link recovers. Driving the replies
+	-- off the device's own Write side (rather than injecting them
+	-- unprompted) is what makes this discriminating -- an unprompted
+	-- injection would keep the link alive either way and prove nothing.
+	local cp, sock, _, timer = started("CP 850")
+	timer.EventHandler()
+	sock.lines = { "sys.fader 42" } sock.Data()   -- handshake answered by hand
+
+	-- Only now does the device start behaving as request/response, with the
+	-- very next request's answer lost. Hooking Write before the handshake
+	-- would spend the "lost" response on the handshake instead, and the
+	-- test would pass with or without the fix.
+	local dropped = false
+	local realWrite = sock.Write
+	sock.Write = function(s, m)
+		realWrite(s, m)
+		if not dropped then
+			dropped = true       -- this one's response never arrives
+		else
+			s.lines = { "sys.fader 55" }   -- every later request is answered
+		end
+	end
+
+	local closed
+	cp.EventHandler = function(service) if service == "close" then closed = true end end
+	for t = 1, 200 do
+		timer.EventHandler()
+		if #sock.lines > 0 then sock.Data() end
+		if closed then break end
+	end
+	h.check(not closed,
+		"a single lost response is recovered by the retransmit instead of killing the link")
+	cp:Stop()
+end
+
 h.report()

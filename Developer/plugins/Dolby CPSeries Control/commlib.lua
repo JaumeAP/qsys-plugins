@@ -31,6 +31,12 @@
 		local GAP_CP650 = 0.25
 		local GAP_DEFAULT = 0.10
 		local WATCHDOG = 3.0
+		-- Query timeout, deliberately separate from the watchdog above: a
+		-- single lost response is a lost response, not a dead link. At this
+		-- point the in-flight message is retransmitted ONCE ("fast recovery
+		-- for a lost poll/query response"); only if that also draws nothing
+		-- does the watchdog eventually declare the connection dead.
+		local QUERY_TIMEOUT = 1.5
 
 		-- Poll runs off a POLLTIME timer and counts ticks, so both live here
 		-- as tick counts. Rounded up: rounding down would sit just under the
@@ -38,6 +44,7 @@
 		local GAP_TICKS_CP650 = math.ceil(GAP_CP650 / POLLTIME)
 		local GAP_TICKS_DEFAULT = math.ceil(GAP_DEFAULT / POLLTIME)
 		local WATCHDOG_TICKS = math.ceil(WATCHDOG / POLLTIME)
+		local QUERY_TIMEOUT_TICKS = math.ceil(QUERY_TIMEOUT / POLLTIME)
 
 		-- private.cache's own guarantee, per the same spec: a single FIFO
 		-- queue of pending outbound messages ahead of the regular poll
@@ -120,6 +127,7 @@
 			local private = privates[self]
 			private.cache = {}
 			private.echopending = nil   -- no outbound message sent yet on this connection
+			private.lastmsg = nil       -- nothing in flight to retransmit yet
  			private.sock = Sock
  		    private.sock.Data = function(sock,data) readData(self) end
   			private.time.EventHandler = function(timer) Poll(self) end
@@ -329,6 +337,10 @@
 			-- expectation for readData() below; other models never set
 			-- this, so their read path is unchanged.
 			private.echopending = (private.model == Model.CP650) and msg or nil
+			-- Remember what is in flight, so a response lost in transit can
+			-- be retried at QUERY_TIMEOUT rather than only being noticed by
+			-- the watchdog, which kills the whole connection.
+			private.lastmsg = msg
 			Print(updated,'TX',msg)
 		end
 
@@ -392,6 +404,16 @@
     		if private.waiting > WATCHDOG_TICKS then
   				doClose(self) return end
 			private.sincesend = private.sincesend + 1
+			-- Query timeout: the in-flight command has gone unanswered this
+			-- long, so retransmit it ONCE. Deliberately not resetting the
+			-- waiting counter -- it keeps running toward the watchdog, so a
+			-- link that is genuinely dead still gets declared dead on time;
+			-- this only buys a lost single response a second chance first.
+			-- Exact equality, so it fires on one tick only, never a retry
+			-- storm.
+			if private.waiting == QUERY_TIMEOUT_TICKS and private.lastmsg then
+				writeSocket(self, private.lastmsg, false)
+			end
   			if private.waiting ==0 then
 				-- Hold the wire until the model's minimum gap has passed.
 				-- Returning before the waiting counter is bumped is what

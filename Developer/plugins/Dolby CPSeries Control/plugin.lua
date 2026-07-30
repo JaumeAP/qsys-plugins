@@ -85,6 +85,17 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.10 - query timeout, the last of the spec's four separated timers
+--        the poll loop was missing. A response lost in transit used to be
+--        indistinguishable from a dead link: nothing was retransmitted, so
+--        the connection simply sat idle until the 3s watchdog tore it down,
+--        losing the link over a single dropped packet. writeSocket() now
+--        remembers the message in flight and Poll() retransmits it once, at
+--        1.5s, byte-identical. The waiting counter deliberately keeps
+--        running underneath, so a link that really is dead is still
+--        declared dead on the same 3s schedule -- the retry buys a lost
+--        response a second chance, it does not extend the watchdog. Fires
+--        on exact tick equality, so it can never become a retry storm.
 -- v4.0.0.9 - CP650 echo fix ("Protocol Guarantees": expect RESPONSE, not
 --        echo). readData() had no way to tell the device's own raw echo of
 --        the sent line from a real reply. This was concretely wrong, not
