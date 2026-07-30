@@ -85,6 +85,12 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.9 - Address defaults to "127.0.0.1" on first compile (one-time
+--        init block, same as the fader/mute/selector defaults already
+--        there) -- Text controls have no real GetControls DefaultValue
+--        key (same reason SubharmonicSynth's own defaults live in a
+--        one-time init rather than the control declaration, see
+--        qsys-plugin-development.md's "Key module patterns").
 -- v4.0.0.8 - disconnect(recon)'s recon=false branch documented as
 --        intentionally-unreachable-for-now (a future explicit "Disconnect"
 --        control that shouldn't auto-reconnect is a plausible caller),

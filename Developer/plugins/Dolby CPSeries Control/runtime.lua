@@ -183,6 +183,7 @@
 		-- fired on first compile.
 		if Controls.Start.Value == 0 then
 			Controls.Start.Value = 1
+			Controls.Address.String = "127.0.0.1"
 			DKNob.Value = 7.0
 			DKNob.EventHandler(DolbyCP)
 			Controls.Mute.Boolean = false
