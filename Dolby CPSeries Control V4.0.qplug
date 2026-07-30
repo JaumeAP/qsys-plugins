@@ -85,6 +85,13 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.7 - SocketConn:IsConnected() removed (Developer/shared/socket.lua):
+--        a one-line wrapper around sock.Socket.IsConnected, used exactly
+--        once, when every other socket field is already read straight off
+--        sock.Socket elsewhere in this file (the event handlers). Caught
+--        by a karpathy-guidelines pass on the v4.0.0.6 diff as an
+--        unnecessary abstraction; sockError() now reads sock.Socket.IsConnected
+--        directly, matching the rest of the file.
 -- v4.0.0.6 - TcpSocket construction, IPv4 address validation, and
 --        Connect/Disconnect/IsConnected now go through the new shared
 --        Developer/shared/socket.lua module (SocketConn), so any future
@@ -111,7 +118,7 @@ PluginInfo =
 {
 	Name = "Dolby~CP Series Control",
 	Version = "4.0",
-	BuildVersion = "4.0.0.6",
+	BuildVersion = "4.0.0.7",
 	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
 	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
 	Manufacturer = "Dolby",
@@ -569,10 +576,6 @@ if Controls then
 	
 	function SocketConn:Disconnect()
 		self.Socket:Disconnect()
-	end
-	
-	function SocketConn:IsConnected()
-		return self.Socket.IsConnected
 	end
 	
 	   -- ##############################################################
@@ -1173,7 +1176,7 @@ if Controls then
 			end
 	
 			local function sockError(msg)
-				if sock:IsConnected() then
+				if sock.Socket.IsConnected then
 					sock:Disconnect()
 					Print(true, 'SOCK', msg)
 					Print(true, 'SOCK', "Closed")
