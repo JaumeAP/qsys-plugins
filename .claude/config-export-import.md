@@ -1,8 +1,9 @@
 # Config export/import (cross-repo `.claude/` propagation)
 
-This repo's `.claude/` tooling (`settings.json`, `hooks/`, three bundled
-generic skills — `file-operations`, `github-rules`, and `changelog-rules`,
-under `.claude/skills/`, plus this file) is meant to be portable
+This repo's `.claude/` tooling (`settings.json`, `hooks/`, two mandatory
+bundled generic skills — `file-operations` and `github-rules` — plus a
+third, `changelog-rules`, bundled the same way but optional per target repo
+(step 2.5), all under `.claude/skills/`, plus this file) is meant to be portable
 across all my repos, same as `CLAUDE.md`. Which additional skills also
 travel (if any) is defined in `.claude/scripts/export-config-skill.sh` — not
 repeated here. This file is deliberately plain, not a `SKILL.md`
@@ -72,8 +73,9 @@ directions, mechanized best-effort by
    package may
    contain only ONE `SKILL.md` (the claude.ai/Skills API upload path
    rejects more than one), so the three bundled skills' own `SKILL.md`
-   files (`file-operations`, `github-rules`, and `changelog-rules`, all
-   mandatory blind-copies — see step 2.2) are renamed to
+   files (`file-operations` and `github-rules`, mandatory blind-copies —
+   see step 2.2; `changelog-rules`, bundled but optional per repo — see
+   step 2.5) are renamed to
    `references/skills/<name>/<name>.md` inside the package — restore
    each one back to `SKILL.md` when actually installing it into a
    target repo's `.claude/skills/<name>/`, that rename is what makes
@@ -181,13 +183,15 @@ directions, mechanized best-effort by
         `github-rules` and `file-operations` (2026-07-27, explicit user
         request each time, both reverted the same day they were briefly
         moved into the optional group in 2.5 — `github-rules` first,
-        `file-operations` later that same day), plus `changelog-rules`
-        (reinstated here 2026-07-30, see below): all three blind-copied
+        `file-operations` later that same day): both blind-copied
         into
         `.claude/skills/<name>/`, same as the
         hooks above — always overwritten with whatever the bundle
         carries, even if the target already has its own copy, no
-        ask/offer step. `find-skills` joined them here briefly at one
+        ask/offer step. `changelog-rules` was here too, briefly, for part
+        of 2026-07-30 (see the history note below) but is back in the
+        optional group in 2.5, its current and settled state. `find-skills`
+        joined this mandatory group here briefly at one
         point on 2026-07-28 (explicit user request), during the longest
         road of
         any skill in this file: optional (2026-07-27) → deleted entirely
@@ -205,9 +209,20 @@ directions, mechanized best-effort by
         day → restored from git history as optional (2026-07-28) →
         deleted from the bundle a second time, also 2026-07-28, also
         explicit user request → reinstated a THIRD time on 2026-07-30
-        (explicit user request), this time straight into the mandatory
-        blind-copy group above rather than optional — its settled state,
-        at least so far. `.claude/skills-history.md` has the full
+        (explicit user request), straight into this mandatory blind-copy
+        group → reverted back to optional a FOURTH time, later the same
+        day (explicit user request again), this time into the 2.5 group
+        rather than deleted — see 2.5 for its current state. Two things
+        are new about this fourth turn, both explicit user requests: it
+        stays a locally-bundled file forever (never demoted to
+        fetch-on-demand-remote like `find-skills`, so "optional" here
+        means "ask before installing," not "fetch it live"), and its full
+        current `SKILL.md` content is now also embedded verbatim in this
+        file's own appendix (see the end of this document) — so a repo
+        that doesn't have it installed still has the complete skill
+        definition on hand locally, no git-history recovery needed the
+        way 2026-07-30's third reinstatement required.
+        `.claude/skills-history.md` has the full
         timeline with reasoning at each turn.
         **Call this out explicitly while narrating this step (2026-07-28,
         explicit user request):** the bundled `github-rules` now defaults
@@ -335,16 +350,19 @@ directions, mechanized best-effort by
         2.6 offering (same individual-selection UI, same
         already-installed/update-check treatment — see 2.6 for exactly
         what that means when already in the target's
-        `.claude/skills/`), rather than a separate step. Currently
-        empty: both skills that used to occupy this group are gone from
-        it, for two different reasons covered in the history note below
-        — `find-skills` moved to fetch-on-demand-only (see 2.7,
-        `recommended-skills.txt`), `changelog-rules` moved to the
-        mandatory blind-copy group instead (2026-07-30, see 2.2 and the
-        history note below for the reinstatement itself).
-        `file-operations`, `github-rules`, and `changelog-rules` are NOT
-        in this group either — all three are mandatory blind-copies, see
-        2.2.
+        `.claude/skills/`), rather than a separate step. Currently holds
+        one member: `changelog-rules` (moved back here 2026-07-30, its
+        fourth turn — see the history note below). Install it only where
+        the target repo actually maintains a changelog (has, or will
+        soon have, a file with a `## Changelog` section) — don't install
+        it reflexively just because it's offered. If the target repo
+        declines it, or the skill was never asked about at all (e.g. a
+        contradiction-check-only pass), its full current `SKILL.md`
+        content is still available locally: see this file's own appendix
+        at the end, which travels with every import regardless of
+        whether `changelog-rules` itself is installed. `file-operations`
+        and `github-rules` are NOT in this group — both are mandatory
+        blind-copies, see 2.2.
         (History: 2026-07-24 `find-skills` promoted from the then-optional
         group in 2.6 into the then-mandatory one — it was already always
         bundled by the export-side loop in what was then `export-config.sh`
@@ -377,16 +395,20 @@ directions, mechanized best-effort by
         user request — same treatment as `git-rules`. It stayed removed
         until 2026-07-30, when it was reinstated a third time (explicit
         user request) straight into the mandatory blind-copy group in
-        2.2 — this time skipping this optional group entirely, unlike
-        every earlier chapter of its history. This group has had zero
-        members since that reinstatement too, though the mechanism stays
-        defined here in case a future skill lands in it.)
+        2.2 — skipping this optional group entirely, unlike every earlier
+        chapter of its history — then reverted a fourth time, later the
+        same day (explicit user request again), back into this group,
+        which is where it now lives. Unlike `find-skills`, it never became
+        fetch-on-demand-remote at any point in its history — every state
+        it's occupied kept it as a locally-bundled file, only the
+        mandatory-vs-optional question ever changed. This group had zero
+        members between the third and fourth turns.)
    2.6. **Additional packs actually bundled as files, always offer,
-        optional to accept**: every skill beyond `file-operations`,
-        `github-rules`, and `changelog-rules` (all three bundled mandatory
-        per 2.2; `caveman` and `karpathy-guidelines` are mandatory but
-        fetch-on-demand, see 2.2)
-        and beyond whatever's currently in 2.5 (empty right now, see there)
+        optional to accept**: every skill beyond `file-operations` and
+        `github-rules` (both bundled mandatory per 2.2; `caveman` and
+        `karpathy-guidelines` are mandatory but fetch-on-demand, see 2.2)
+        and beyond `changelog-rules` (bundled but optional, offered
+        exactly like this step's own packs, per 2.5, its own step)
         that the bundle actually carries as files — the full list is
         open-ended and growing over time (see
         `.claude/scripts/export-config-skill.sh` for what it currently
@@ -486,3 +508,169 @@ directions, mechanized best-effort by
    is part of the mandatory portable bundle (see point 1 above) —
    exporting or importing a repo's config exports/imports this very
    file too, automatically, with no special-casing needed.
+
+## Appendix: `changelog-rules` full source (2026-07-30)
+
+`changelog-rules` is bundled but optional (step 2.5) — a target repo may
+not have it installed under `.claude/skills/changelog-rules/SKILL.md`.
+Because this file itself is part of the mandatory bundle (point 3 above)
+and travels to every repo regardless, its full current content is kept
+here too, verbatim, so a repo without the skill installed still has the
+complete definition on hand locally — no need to reinstall it just to read
+it, and no need for git-history archaeology if it was ever removed (the
+failure mode this appendix specifically exists to avoid, after exactly
+that happened once already this same day). Keep this copy in sync with
+`.claude/skills/changelog-rules/SKILL.md` whenever that file changes —
+they're meant to be identical. To actually install the skill in a repo
+that doesn't have it, copy the content below (everything between the
+four-backtick fences, unchanged) into
+`.claude/skills/changelog-rules/SKILL.md` in that repo.
+
+````markdown
+---
+name: changelog-rules
+description: MUST use whenever a file contains a "## Changelog" section or changelog work is requested. This is mandatory for all changelog work. Covers semantic versioning, entry format, the accumulate-in-memory-until-push workflow, retention/dedup rules, and which files are excluded (pure rule/prompt files defining behavior for other files, with no logic of their own).
+---
+
+# Changelog Rules
+
+Standard for maintaining changelog entries across all projects.
+
+## Scope
+
+- Auto-activate if file contains `## Changelog`. New files: ask once, remember.
+- Applies to all text files (`.md`, code comments, release notes, skill files).
+- Applies: functional code libraries, skills, and any file with real content/logic.
+- Excluded: files whose sole purpose is defining behavior/rules for OTHER files (e.g. project profile, prompts). No changelog there; history lives in version control.
+- This skill file (changelog-rules) is self-exempted: it is the standard's own reference implementation, so it carries a changelog to demonstrate the format it defines.
+
+## Format
+
+```
+## Changelog
+
+- **v0.0.0** (YYYY-MM-DD) - Summary
+  - type: Description
+```
+
+- **Version:** Semantic versioning `v0.0.0`
+- **Date:** ISO 8601 `YYYY-MM-DD`
+- **Summary:** One-line description of the release/set of changes
+- **Types:** `bugfix`, `feature`, `refactor`, `docs`, `chore`, `perf`, `security`
+- **Entries:** Short, action-focused descriptions per change type
+
+### Version Increment Logic
+
+Default: infer increment level (patch/minor/major) from number and importance of changes.
+
+- **Patch (v0.0.X):** Bug fixes, small docs updates, security patches
+- **Minor (v0.X.0):** New features, non-breaking refactors, performance improvements
+- **Major (vX.0.0):** Breaking changes, major rearchitecture, API changes
+
+Do not ask for increment level unless user specifies explicitly.
+
+## Workflow
+
+### Accumulation (In Memory)
+
+- Do not write changelog entries to disk mid-session; write the accumulated
+  entries just before each `git push` (push is autonomous — see the repo
+  `CLAUDE.md` Git rules). The old "wait for a save/desa/guarda keyword" gate
+  is removed (2026-07-14): the changelog is now written as part of the push
+  flow, not on a manual keyword.
+- Presenting file for verification does not count as writing it out
+- Confirm accumulation silently after each change
+- Keep entries in memory across multiple edits within a single session
+
+### On Push
+
+Just before each `git push`:
+
+1. **Verify:** Changelog entry accumulated, version incremented per logic above, no conflicts
+2. **Update file:** Add entry, maintain chronological order (newest first)
+3. **Present:** Only if file is renderable (`.md`, `.html`) and not excessively long; no inline text
+4. **Announce:** Version, date, entries added in active conversation language
+5. **Summary:** One-line summary of all changes made; if no changes, announce nothing
+
+### Maintenance
+
+- **Retention:** Keep 10 most recent entries. Remove older entries silently on each push.
+- **Deduplication:** Do not add duplicate entries for the same change.
+- **Coherence:** Each entry must trace to a verifiable change; do not add placeholders or "TBD" entries.
+
+## Placement
+
+- **If `## Changelog` at top:** Move to end before any operation
+- **If `## Changelog` at end or missing:** Append new entries at top of section, maintaining newest-first order
+- **Filename:** Rename with version suffix only if filename already contains a version suffix (e.g., `SKILL.md` -> `SKILL-v1.0.0.md` only if original had version)
+
+## Examples
+
+### Good
+
+```markdown
+- **v2.1.0** (2026-06-30) - Added async I/O support
+  - feature: Async file read/write via asyncio thread pool
+  - perf: Reduced I/O latency by 40% on large files
+  - docs: Updated README with streaming examples
+```
+
+### Avoid
+
+```markdown
+- **v2.0.999** (2026-06-30) - Various improvements  # Too vague
+  - TBD                                              # No content
+  - bugfix: Fixed stuff                              # Not specific
+```
+
+## Special Cases
+
+### First Changelog Entry
+
+If file has no existing `## Changelog` section:
+
+1. Create section at end of file
+2. Add initial entry with appropriate version (usually `v0.1.0` or `v1.0.0`)
+3. Ask once if adding changelog to new file types; remember preference
+
+### Breaking Changes
+
+Always bump major version. Note breaking change explicitly:
+
+```markdown
+- **v3.0.0** (2026-06-30) - Breaking API changes
+  - breaking: Removed deprecated `old_function()` -- use `new_function()` instead
+  - feature: New modular architecture for extensibility
+```
+
+### Pre-release Versions
+
+Optional; use only if explicitly requested:
+
+```markdown
+- **v2.0.0-beta.1** (2026-06-30) - Beta release for testing
+- **v2.0.0-rc.1** (2026-06-30) - Release candidate
+```
+
+## Changelog
+
+- **v1.1.1** (2026-07-30) - Lean editing pass (skill-creator review)
+  - docs: Removed "Integration with Coding Rules" section -- referenced
+    a "Critical Rules" doc that does not exist anywhere in the bundle,
+    dangling since genericization; no other content lost
+
+- **v1.1.0** (2026-07-06) - Converted standard to skill format
+  - refactor: Repackaged CHANGELOG-RULES.md as SKILL.md with frontmatter for auto-discovery
+  - docs: Merged "Scope of Applicability" into main Scope section
+  - docs: Self-exemption note moved into Scope
+
+- **v1.0.1** (2026-07-05) - Fixed self-contradiction in Scope of Applicability
+  - docs: Excluded clause now scoped to files defining rules for OTHER files
+  - docs: File explicitly self-exempted as the standard's own reference implementation
+
+- **v1.0.0** (2026-06-30) - Initial standalone release
+  - feature: Separated Changelog Rules from coding.md into dedicated file
+  - feature: Added format, workflow, examples, special cases sections
+  - docs: Clarified integration with Critical Rules; no contradiction
+  - docs: Added version increment logic and breaking change guidance
+````

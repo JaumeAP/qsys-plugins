@@ -61,14 +61,21 @@ exception just above, not a reversal of the broader deferral itself.
 
 ## Portable skills (installed with the config)
 
-These travel with this file and the rest of `.claude/`. Three skills are
-bundled as files — `file-operations`, `github-rules`, and `changelog-rules`.
-Two additional mandatory skills — `caveman` and `karpathy-guidelines` —
-fetch on-demand from remote (not bundled locally), but are obligatory for
-all target repos. Import mechanics (blind-copy, merge rules, everything
-else in that process) live solely in `.claude/config-export-import.md`, not
-restated here. Pointers only here, never summaries — each skill is the
-authority on its own topic:
+These travel with this file and the rest of `.claude/`. Two skills are
+bundled+mandatory as files — `file-operations` and `github-rules`. A third,
+`changelog-rules`, is also bundled as a file (never fetch-on-demand remote)
+but is OPTIONAL to install per repo (2026-07-30, explicit user request,
+reversing that same day's earlier "mandatory" call) — see
+`.claude/config-export-import.md` step 2.5 for the install mechanics. When a
+repo does NOT have it installed, its full current content still lives
+verbatim in `.claude/config-export-import.md`'s own appendix, so nothing is
+lost to git archaeology the way it was earlier this same day. Two additional
+mandatory skills — `caveman` and `karpathy-guidelines` — fetch on-demand
+from remote (not bundled locally), but are obligatory for all target repos.
+Import mechanics (blind-copy, merge rules, everything else in that process)
+live solely in `.claude/config-export-import.md`, not restated here.
+Pointers only here, never summaries — each skill is the authority on its own
+topic:
 
 1. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
    PR conventions: workflow shape, reading `pull_request_read` results, merge
@@ -78,13 +85,14 @@ authority on its own topic:
    one authorization still needs its own named source and date — a policy
    written into a portable file without one silently applies to every repo
    that imports the bundle, which is the thing to refuse.
-2. `changelog-rules` (`.claude/skills/changelog-rules/SKILL.md`) — how to
-   write and maintain changelog entries: format, semantic versioning,
-   accumulate-in-memory-until-push workflow, retention/dedup, which files
-   are exempt. Reinstated bundled+mandatory 2026-07-30 (explicit user
-   request) after being fully removed 2026-07-28 — third and (so far)
-   final reversal on this skill; `.claude/skills-history.md` has the whole
-   back-and-forth.
+2. `changelog-rules` (`.claude/skills/changelog-rules/SKILL.md`, where
+   installed) — how to write and maintain changelog entries: format,
+   semantic versioning, accumulate-in-memory-until-push workflow,
+   retention/dedup, which files are exempt. Optional per repo, not
+   mandatory — install only where a repo actually maintains a changelog
+   (e.g. `CPSeries` keeps it; `Eines` doesn't, no file there has a
+   `## Changelog` section). `.claude/skills-history.md` has the whole
+   back-and-forth on this skill's status.
 3. `file-operations` — triggers by context on any file I/O; no pointer needed
    beyond its own description.
 
@@ -104,10 +112,12 @@ optional to a session: `.claude/hooks/file-operations-enforcement.sh`
 against a repo file outside `/tmp/` — narrower than the skill's full "MUST"
 scope (doesn't catch e.g. a `python3 -c` file write, deliberately, to avoid
 blocking legitimate reads); `rule-check-reminder.sh` names every mandatory
-skill by name every firing (first call + every 15th, `changelog-rules` added
-to that list the same day it was reinstated), a deliberate narrow exception
-to its own "don't enumerate skills" rule for the merely-recommended ones.
-Full rationale in both hooks' own comments — not restated here.
+skill by name every firing (first call + every 15th) — a deliberate narrow
+exception to its own "don't enumerate skills" rule for the merely-recommended
+ones. `changelog-rules` was briefly added to that named list the same day it
+was briefly mandatory; removed again the same day once it went back to
+optional, since an optional skill isn't part of this enforcement. Full
+rationale in both hooks' own comments — not restated here.
 
 Everything else installed locally is listed by name/source in
 `.claude/recommended-skills.txt` (fetch-on-demand, updated by hand). What

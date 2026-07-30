@@ -142,6 +142,61 @@ instead.
 — its own description triggers it by context when there's file I/O to
 do.)
 
+**`changelog-rules` reverted a fourth time, back to optional (2026-07-30,
+same session, explicit user request).** Barely settled as mandatory (see
+the entry above) before this reversal — the user's own framing this time:
+"opcional, però sempre local; quan no estigui instal·lat, seguirà vivint
+dintre del fitxer d'importació/exportació." Three concrete decisions:
+1. **Mandatory → optional.** Moved from `config-export-import.md` step
+   2.2 (mandatory blind-copy) to step 2.5 (bundled-file, offered as an
+   individual choice, same UI as step 2.6's packs) — its fourth distinct
+   home in this file's own history, after 2.5 → deleted → 2.5 (from git
+   history) → deleted → 2.2 → 2.5 again.
+2. **Always local, never fetch-on-demand.** Explicit user instruction:
+   unlike `find-skills`, this skill never becomes a `recommended-skills.txt`
+   remote-fetch entry. Every state it has occupied — mandatory or
+   optional — kept it as a file physically bundled in the export; only
+   whether installation is forced or offered has ever changed.
+3. **Survives non-installation.** New this turn, explicit user request:
+   the skill's full current `SKILL.md` content is now embedded verbatim
+   in `config-export-import.md`'s own appendix (added 2026-07-30). Since
+   that file is itself part of the mandatory bundle and travels
+   everywhere regardless of whether `changelog-rules` is installed, a
+   repo without the skill installed still has the complete definition
+   sitting locally on disk. This directly answers the failure mode from
+   the third reinstatement earlier the same day, which needed a specific
+   commit's parent from `qsys-plugins`' own git history to recover the
+   skill's exact prior content — that recovery path only worked because
+   the reinstating session happened to have GitHub access to search commit
+   history; a repo without it, or a session further removed from the
+   deletion, would not have been able to reconstruct it. The appendix
+   removes that dependency going forward.
+
+Applied per-repo on this same turn: `CPSeries` keeps it installed (real,
+active use — a 236-entry `CHANGELOG.md`, called out explicitly in that
+repo's own `PROJECT.md` as an override of this skill's default retention
+policy). `qsys-plugins` keeps its own copy too, as the bundle's canonical
+source (needed for both step 2.2's neighbors and step 2.5's offering
+mechanism, regardless of whether this repo itself keeps a `CHANGELOG.md`
+— it doesn't). `Eines` had it uninstalled (explicit user request,
+weighed against "no file in that repo has ever needed a `## Changelog`
+section" — confirmed earlier the same session) — its
+`.claude/skills/changelog-rules/` directory removed; if a tool under
+`tools/` in that repo ever grows real changelog needs, it installs cleanly
+from `config-export-import.md`'s appendix, no git archaeology required.
+Removal from `Eines` did NOT add an entry to that repo's
+`removed-files.txt` — that file's semantics are "prune this and keep
+pruning it on every future import," which is wrong for an optional skill
+a repo has simply chosen not to install this time; a future import there
+still offers it fresh via step 2.5, same as any repo that never had it.
+
+`rule-check-reminder.sh`'s named mandatory-skill exception (see the
+"'Mandatory' wasn't actually enforced" entry below) dropped
+`changelog-rules` from its list again, back to the original four
+(`file-operations`, `github-rules`, `caveman`, `karpathy-guidelines`) —
+an optional skill has no place in a list whose whole point is nagging
+about skills CLAUDE.md calls mandatory.
+
 **Which additional skills travel on export is defined in
 `.claude/scripts/export-config-skill.sh`** — not repeated here, to avoid
 two places that can drift out of sync. Anything installed here but not in

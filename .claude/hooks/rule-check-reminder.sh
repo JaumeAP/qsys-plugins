@@ -112,11 +112,13 @@ if (( count == 1 || count % 15 == 0 )); then
   # gate (file-operations-enforcement.sh, PreToolUse/Bash, hard block) for
   # its narrowest, most safety-relevant case; this reminder is what
   # covers the rest, which have no equivalent tool-level chokepoint to
-  # gate on. `changelog-rules` added to the named list the same day it
-  # was reinstated bundled+mandatory, later in this same 2026-07-30
-  # session -- same reasoning applies to it: matching a "## Changelog"
-  # trigger doesn't guarantee the Skill tool actually gets called.
-  msg="${msg} Excepcio (nomes els mandatory, no els recomanats): file-operations, github-rules, changelog-rules, caveman i karpathy-guidelines son 'mandatory' segons CLAUDE.md -- invoca'ls de veritat amb el tool Skill quan la tasca hi encaixi (fitxers, treball amb PR/GitHub, canvis a un fitxer amb ## Changelog, o sempre per estil/compressio de resposta i principis de comportament), no nomes com a referencia de fons."
+  # gate on. `changelog-rules` briefly joined this named list the same
+  # day it was briefly reinstated bundled+mandatory, then was removed
+  # from it again later the same 2026-07-30 session once it went back to
+  # optional per repo (config-export-import.md step 2.5) -- an optional
+  # skill doesn't belong in a list of things this hook insists get
+  # invoked "for real" every time its trigger matches.
+  msg="${msg} Excepcio (nomes els mandatory, no els recomanats): file-operations, github-rules, caveman i karpathy-guidelines son 'mandatory' segons CLAUDE.md -- invoca'ls de veritat amb el tool Skill quan la tasca hi encaixi (fitxers, treball amb PR/GitHub, o sempre per estil/compressio de resposta i principis de comportament), no nomes com a referencia de fons."
 fi
 
 # Job 2: consume the PreCompact pending flag exactly once, if present.
