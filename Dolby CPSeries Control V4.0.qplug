@@ -85,6 +85,17 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.6 - TcpSocket construction, IPv4 address validation, and
+--        Connect/Disconnect/IsConnected now go through the new shared
+--        Developer/shared/socket.lua module (SocketConn), so any future
+--        plugin needing a TCP client can reuse them instead of duplicating
+--        this boilerplate -- per an explicit request to put socket
+--        operations in a module other plugins can call. Connection
+--        orchestration (when to reconnect, what status to show) stays in
+--        this plugin's own runtime.lua, since that part is plugin-specific.
+--        sock is now a SocketConn instance; the raw TcpSocket is
+--        sock.Socket (needed by CPSeries:Start(sock.Socket), which still
+--        wants the raw socket object). No functional change.
 -- v4.0.0.5 - commlib.lua's isEqual() compared a stored value against an
 --        incoming one with plain '==', so a value stored as a Lua boolean
 --        (Actions.reset's `value or true`, Mute's .Boolean writes) never
@@ -100,7 +111,7 @@ PluginInfo =
 {
 	Name = "Dolby~CP Series Control",
 	Version = "4.0",
-	BuildVersion = "4.0.0.5",
+	BuildVersion = "4.0.0.6",
 	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
 	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
 	Manufacturer = "Dolby",
@@ -513,6 +524,56 @@ if Controls then
 			DolbyFaderEventHandler = nil
 	
 		end
+	-- Generic TcpSocket construction + IPv4 address validation, factored out of
+	-- Dolby CPSeries Control's own runtime.lua so any future plugin needing a
+	-- TCP client can reuse it instead of duplicating this boilerplate. Kept as
+	-- a plain global table with no require/return (PLUGCC.exe inlines
+	-- #include'd files as plain source, not loadable modules), same pattern as
+	-- qknob.lua/dolbyfader.lua.
+	
+	SocketConn = {}
+	SocketConn.__index = SocketConn
+	
+	-- IPv4 dotted-quad validator.
+	function SocketConn.ValidateAddress(ip)
+		local chunks = { string.match(ip, "^(%d+)%.(%d+)%.(%d+)%.(%d+)$") }
+		if #chunks < 4 then
+			return false
+		end
+		for _, v in pairs(chunks) do
+			if tonumber(v) > 255 then
+				return false
+			end
+		end
+		return true
+	end
+	
+	-- Wraps TcpSocket.New(): sets WriteTimeout (default 2s) and exposes the raw
+	-- socket as .Socket for the caller to wire event handlers (.Connected,
+	-- .Closed, .Timeout, .Error, .Reconnect) and to pass to code that needs the
+	-- raw TcpSocket instance itself (e.g. CPSeries:Start(sock.Socket)). The
+	-- returned instance must stay global, never local -- same GC-safety
+	-- convention as a bare TcpSocket (see qsys-plugin-development.md's "Q-SYS
+	-- runtime globals" section): a local one can be collected once nothing else
+	-- references it, silently killing the connection.
+	function SocketConn.New(writeTimeout)
+		local self = setmetatable({}, SocketConn)
+		self.Socket = TcpSocket.New()
+		self.Socket.WriteTimeout = writeTimeout or 2
+		return self
+	end
+	
+	function SocketConn:Connect(address, port)
+		self.Socket:Connect(address, port)
+	end
+	
+	function SocketConn:Disconnect()
+		self.Socket:Disconnect()
+	end
+	
+	function SocketConn:IsConnected()
+		return self.Socket.IsConnected
+	end
 	
 	   -- ##############################################################
 	   --			CPSeries Models
@@ -1061,11 +1122,12 @@ if Controls then
 				end
 			end
 	
-			-- TcpSocket.New() -- dot notation for construction, confirmed
-			-- against the Q-SYS Lua reference (colon notation is for instance
-			-- methods on the created socket: sock:Connect(), sock:Write()).
-			sock = TcpSocket.New()
-			sock.WriteTimeout = 2
+			-- sock wraps TcpSocket.New() via the shared SocketConn module
+			-- (Developer/shared/socket.lua) -- construction, address
+			-- validation, and Connect/Disconnect/IsConnected all go through
+			-- it; event-handler wiring stays here since it's plugin-specific
+			-- (SetStatus, DolbyCP). The raw TcpSocket is sock.Socket.
+			sock = SocketConn.New(2)
 	
 			-- Custom functions
 	
@@ -1081,22 +1143,9 @@ if Controls then
 				else Controls.Status.String = '' end
 			end
 	
-			local function validateAddress(ip)
-				local chunks = { string.match(ip, "^(%d+)%.(%d+)%.(%d+)%.(%d+)$") }
-				if #chunks < 4 then
-					return false
-				end
-				for _, v in pairs(chunks) do
-					if tonumber(v) > 255 then
-						return false
-					end
-				end
-				return true
-			end
-	
 			local function connect()
 				Controls.Refresh.IsDisabled = false
-				if validateAddress(Controls.Address.String) then
+				if SocketConn.ValidateAddress(Controls.Address.String) then
 					SetStatus(5, '')
 					-- port comes from the CPModels config (adds CP950 / CP950A)
 					local CPPort = CPModels.DefaultPort((Properties.Model.Value):gsub("%s", ""))
@@ -1124,7 +1173,7 @@ if Controls then
 			end
 	
 			local function sockError(msg)
-				if sock.IsConnected then
+				if sock:IsConnected() then
 					sock:Disconnect()
 					Print(true, 'SOCK', msg)
 					Print(true, 'SOCK', "Closed")
@@ -1136,27 +1185,27 @@ if Controls then
 	
 			-- Event handlers
 	
-			sock.Connected = function()
+			sock.Socket.Connected = function()
 				Print(true, 'SOCK', "Connected")
-				DolbyCP:Start(sock)
+				DolbyCP:Start(sock.Socket)
 			end
 	
-			sock.Closed = function()
+			sock.Socket.Closed = function()
 				Print(true, 'SOCK', 'Closed')
 				SetStatus(4, "Offline")
 			end
 	
-			sock.Timeout = function()
+			sock.Socket.Timeout = function()
 				Print(true, 'SOCK', 'Timeout')
 				SetStatus(2, "Timeout")
 			end
 	
-			sock.Error = function(_, err)
+			sock.Socket.Error = function(_, err)
 				Print(true, 'SOCK', "Remote Server Error " .. err)
 				SetStatus(2, err)
 			end
 	
-			sock.Reconnect = function()
+			sock.Socket.Reconnect = function()
 				Print(true, 'SOCK', "Reconnecting")
 				SetStatus(5, "Attempt Reconnect")
 			end
