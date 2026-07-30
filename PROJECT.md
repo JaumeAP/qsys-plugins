@@ -69,13 +69,7 @@ close an item by deleting its line here, and put the full story in
    confirmed against an official source — they mirror the numbered-pin
    convention and match what SubharmonicSynth ships. Re-verify these first
    if a real host ever disagrees about wiring.
-3. `Dolby CPSeries Control V4.0.qplug` at the repo root is stale as of
-   2026-07-30: `Developer/plugins/Dolby CPSeries Control/` carries the
-   v4.0.0.7 command-gap/watchdog fix, the built artifact does not. Needs a
-   `.github/workflows/build-qplug.yml` dispatch (deliberately deferred by
-   the user, not forgotten). Until then `test_dist_cpseries.lua` exercises
-   the old timing, and only `test_modules.lua` covers the new.
-4. Root cause of item 1 (2026-07-30 investigation, see continuity notes),
+3. Root cause of item 1 (2026-07-30 investigation, see continuity notes),
    needs the user via GitHub web UI, no session can do it: enable
    "Automatically delete head branches" in Settings > General > Pull
    Requests. Server-side, applies on every merge regardless of proxy
