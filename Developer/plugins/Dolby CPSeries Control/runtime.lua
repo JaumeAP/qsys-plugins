@@ -70,7 +70,7 @@
 		end
 
 		local function sockError(msg)
-			if sock:IsConnected() then
+			if sock.Socket.IsConnected then
 				sock:Disconnect()
 				Print(true, 'SOCK', msg)
 				Print(true, 'SOCK', "Closed")

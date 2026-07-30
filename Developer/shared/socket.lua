@@ -44,7 +44,3 @@ end
 function SocketConn:Disconnect()
 	self.Socket:Disconnect()
 end
-
-function SocketConn:IsConnected()
-	return self.Socket.IsConnected
-end

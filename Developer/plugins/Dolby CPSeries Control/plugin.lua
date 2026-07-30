@@ -85,6 +85,13 @@
 --        .Boolean -- not a bug (.Value is always numeric and valid on any
 --        control type), just inconsistent with the .Boolean idiom the rest
 --        of this codebase already settled on; switched for consistency.
+-- v4.0.0.7 - SocketConn:IsConnected() removed (Developer/shared/socket.lua):
+--        a one-line wrapper around sock.Socket.IsConnected, used exactly
+--        once, when every other socket field is already read straight off
+--        sock.Socket elsewhere in this file (the event handlers). Caught
+--        by a karpathy-guidelines pass on the v4.0.0.6 diff as an
+--        unnecessary abstraction; sockError() now reads sock.Socket.IsConnected
+--        directly, matching the rest of the file.
 -- v4.0.0.6 - TcpSocket construction, IPv4 address validation, and
 --        Connect/Disconnect/IsConnected now go through the new shared
 --        Developer/shared/socket.lua module (SocketConn), so any future
