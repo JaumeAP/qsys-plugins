@@ -211,12 +211,6 @@
       "skillPath": ".pi/skills/planning-with-files/SKILL.md",
       "computedHash": "be609fd3a9564b411e68f70d1ddb2180ab062779a3b8b3768a5c4262184c5c38"
     },
-    "planning-with-files": {
-      "source": "OthmanAdi/planning-with-files",
-      "sourceType": "github",
-      "skillPath": "skills/planning-with-files/SKILL.md",
-      "computedHash": "a351509011a3357f1015c91c4a25179a27f0c6ba126c39d49d1048d1d525ccbf"
-    },
     "planning-with-files-ar": {
       "source": "OthmanAdi/planning-with-files",
       "sourceType": "github",
@@ -342,12 +336,6 @@
       "sourceType": "github",
       "skillPath": "skills/writing-plans/SKILL.md",
       "computedHash": "a8a8b0d07b744173079b25d26c6a189a0b5e7ddd80444ce92055b974dab7352b"
-    },
-    "writing-skills": {
-      "source": "obra/superpowers",
-      "sourceType": "github",
-      "skillPath": "skills/writing-skills/SKILL.md",
-      "computedHash": "19a1223c9c174f1b4daf807417f13d53886cdc79feeb05c978129a17592f51d7"
     }
   }
 }

@@ -12,7 +12,6 @@ using-git-worktrees -> obra/superpowers
 using-superpowers -> obra/superpowers
 verification-before-completion -> obra/superpowers
 writing-plans -> obra/superpowers
-writing-skills -> obra/superpowers
 firecrawl -> firecrawl/firecrawl-claude-plugin
 firecrawl-agent -> firecrawl/firecrawl-claude-plugin
 firecrawl-crawl -> firecrawl/firecrawl-claude-plugin
@@ -34,4 +33,3 @@ caveman-review -> JuliusBrussee/caveman
 caveman-stats -> JuliusBrussee/caveman
 mem-search -> thedotmack/claude-mem
 how-it-works -> thedotmack/claude-mem
-planning-with-files -> OthmanAdi/planning-with-files

@@ -190,6 +190,16 @@ this structurally (direct commits to `main` are blocked) in any repo
 carrying this bundle's hooks -- but that hook alone doesn't cover every
 destructive case, so the confirm-first rule above still applies on its own.
 
+**Precedence over `finishing-a-development-branch` (2026-07-30, explicit
+user request).** The `finishing-a-development-branch` skill (obra/
+superpowers) includes a "Present options" step that stops and waits for
+the user to pick how to integrate the branch, conflicting with this
+section's no-ask default once a PR is clean. On that specific question --
+ask first vs. merge automatically -- this section wins: don't wait for a
+menu choice on a routine, clean merge. The rest of that skill's steps
+(running the test suite first, detecting a worktree vs. a normal repo,
+worktree cleanup after merge) remain useful and aren't affected by this.
+
 One non-obvious mechanical fact: a draft PR needs `draft: false` (via
 `mcp__github__update_pull_request` or equivalent) before merging will
 succeed -- the merge method itself (`merge`/`squash`/`rebase`) is usually

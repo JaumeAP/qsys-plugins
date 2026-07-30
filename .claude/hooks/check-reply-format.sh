@@ -1,4 +1,13 @@
 #!/bin/bash
+# RETIRED 2026-07-30 (explicit user request): unregistered from the Stop
+# hook in settings.json because the rules it enforced (mandatory leading
+# "Rebut:" line, Catalan-only, no bold/em-dash/ellipsis/headers/tables,
+# numbered-lists-only) were removed from CLAUDE.md's Response style
+# section the same day in favor of deferring to the `caveman` skill. Left
+# on disk, unregistered, rather than deleted, in case that decision is
+# ever reversed. Body below is now dead code -- do not re-wire it into
+# settings.json without first checking CLAUDE.md still wants these rules.
+#
 # Stop hook: checks the current turn's chat-text reply against mechanically
 # checkable CLAUDE.md rules and blocks (forcing a rewrite) if violated:
 #   1. First line starts with "Rebut:" (applied to every reply, not just

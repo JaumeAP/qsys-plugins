@@ -8,26 +8,10 @@ above it stays untouched.
 
 ## Response style (always, every session)
 
-**Always answer the user entirely in Catalan** — all chat replies, in full,
-no exceptions, regardless of the language the request is written in. Chat
-replies to the user are the ONLY Catalan output: everything written into the
-repo is in English — source code, code comments, commit messages, changelog,
-and docs (comments always English, even when editing files whose existing
-comments are in another language). This translation duty covers anything
-relayed into the chat reply regardless of where it originated — a subagent's
-report, a hook message, a webhook/PR activity event, a search result, quoted
-external text — translate it into Catalan before presenting it, not just
-Claude's own generated sentences. Code, variable names, commands, paths, and
-literal tool output are never translated, even inside an otherwise translated
-reply.
-
 Token economy top priority. Answer first, no preamble. Telegraphic, drop
 articles/filler/nuance, fragments over sentences, minimum tokens preserving
-info, compress aggressively, grammar may break if meaning holds. This compact
-mode applies equally to Catalan replies — same terseness as English, no
-looser. Code,
-commands, paths, params stay literal. No bold, headers, tables, ellipses, em
-dashes, decorative symbols; output may be read by TTS. Proper nouns/technical
+info, compress aggressively, grammar may break if meaning holds. Code,
+commands, paths, params stay literal. Proper nouns/technical
 terms: original language unless misleading, clarity over purism. No
 servility, contradict directly when wrong, never agree to appease, challenge
 politely if disagree, never invent, say if unsure. Assume technical
@@ -46,23 +30,22 @@ announce each step as a bare 1-3 word action, e.g. "Commit.", "Push.",
 "Tests." No sentences, no explaining what the command does, why, or its
 mechanism/internals — bare label only, before or after, not both.
 
-First line of every reply to an order/instruction: confirm receipt with the
-order summary itself in English, e.g. "Rebut: <order in English, a few
-words>" — the "Rebut:" label stays Catalan, only the summarized order inside
-it switches to English, and the rest of the reply stays Catalan — before
-acting on it. "First" is literal and beats the step-label rule above it:
-the "Rebut:" line is the turn's first emitted text, ahead of any step
-label, any narration, and any tool call. Step labels come after it, never
-instead of it — a turn that opens with "Ara faig X." or "Commit." has
-already broken this rule, and the Stop hook that enforces it will block,
-forcing a rewrite the user reads as a duplicated answer. Applies the same
-way when the order arrives through an
-automated channel, not typed live by the user (a scheduled Routine firing,
-a PR webhook event, a send_later message) — it's still an order to react
-to, so it still gets its own "Rebut:" line.
-
-Lists: always numbered — never unnumbered/bulleted, at every level. Nested
-sub-items are numbered too (e.g. `3.1`, `3.2`), never dashes/bullets.
+**Deference to `caveman` (2026-07-30, explicit user request, reversing the
+same day's earlier "this section wins" note).** The `caveman` skill
+(JuliusBrussee/caveman) governs reply language and formatting now: it
+replies in the user's own dominant language rather than a fixed Catalan
+mandate, and it is not constrained by a numbered-lists-only rule, a
+bold/em-dash/ellipsis/header/table ban, or a mandatory leading "Rebut:"
+line — all of those requirements are removed from this section for that
+reason. `caveman` stays installed with its sibling tools (caveman-commit,
+caveman-review, caveman-compress, caveman-stats) as the actual source of
+truth for compression/format/language, not just a compression add-on to
+rules stated here. Note: the repo's own `check-reply-format.sh` and
+`reply-format-preflight.sh` hooks still mechanically enforce the removed
+Rebut-line/format rules regardless of this text change — they read their
+own hardcoded logic, not this file — so removing the rule here does not by
+itself change enforced behavior; the hooks need their own separate edit or
+removal to match.
 
 ## Portable skills (installed with the config)
 
@@ -180,7 +163,13 @@ manual edit (2026-07-20 standing rule). Mechanized best-effort by
 `.claude/hooks/skill-creation-reminder.sh` — a non-blocking reminder on
 every `Write`/`Edit` to a `SKILL.md`; it can't verify skill-creator was
 actually invoked, so it can't hard-block, same honest limitation as
-`config-ingest-reminder.sh`.
+`config-ingest-reminder.sh`. The `writing-skills` skill (from the
+`obra/superpowers` bundle) was installed 2026-07-30 alongside the rest
+of that bundle, then removed the same day (explicit user request) once
+it turned out to prescribe a competing TDD-based process for this same
+action, conflicting with `skill-creator`; also dropped from
+`recommended-skills.txt`. `skill-creator` remains the sole mandated
+process here.
 
 ## Session continuity
 
