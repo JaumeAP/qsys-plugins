@@ -472,6 +472,18 @@ history actually matters.)
   GitHub UI (PR page's "Delete branch" button, or Settings > Branches),
   or investigating the proxy/connector side directly, not more retries
   from inside a session.
+  **Update (2026-07-30): three more accumulated since this audit, same
+  situation.** `git branch -r` now also lists `neteja-ot19wo` (PR #47-49),
+  `qsys-zyijbo` (PR #55), and `test-umx9nt` (PR #51-54) -- all three
+  confirmed merged into `main` (`git merge-base --is-ancestor` true for
+  each), never included in the 17-branch count above because those PRs
+  merged after that audit ran. Same blocker applies (proxy 403s on ref
+  deletion); not retried this session, just recorded so the pending count
+  stays accurate. `claude/next-vawkbf` (PR #41, the one branch the
+  original audit deliberately kept) no longer appears in `git branch -r`
+  at all -- PR #41 merged later the same day the audit ran, and the
+  branch is gone, most likely GitHub's own delete-on-merge, not anything
+  done from inside a session.
 - **`check-reply-format.sh`'s block reason made block-scoped, not just
   Rebut-scoped (2026-07-29, explicit user request, root-caused after a
   real recurrence in this exact session).** The 2026-07-28 fix above
