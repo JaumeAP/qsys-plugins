@@ -149,7 +149,10 @@ session. Content is unchanged, only relocated.
 Native auto memory (`MEMORY.md`) does not substitute for any of this in this
 repo: it is machine-local under `~/.claude/projects/<project>/memory/`, and
 sessions here run in ephemeral containers that get reclaimed. Anything that
-must survive has to be committed.
+must survive has to be committed. Verify before trusting it:
+`ls ~/.claude/projects/*/memory/` (empty/absent = still unused) or `/context`
+in-session. Content there never survived from a prior session here — it's
+this session's own scratch state, not persistence.
 
 ### Open threads
 
