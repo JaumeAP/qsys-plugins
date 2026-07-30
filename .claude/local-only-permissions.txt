@@ -23,7 +23,15 @@ Bash(apt-get update *)
 Bash(apt-get install *)
 Bash(apt-get remove *)
 
-# Instance-specific: an MCP connector ID unique to this particular
-# session/environment, not to this repo -- meaningless (and likely
-# invalid) in any other session that imports the bundle.
-mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__add_repo
+# mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__add_repo -- removed 2026-07-30
+# (found during a config audit, explicit user request), not just from this
+# file but from settings.json's own permissions.allow too. This comment
+# already called it "instance-specific... likely invalid in any other
+# session" when it was still meant to travel-exclude; turns out it was
+# already invalid in THIS session too. The connector this session actually
+# uses grants add_repo as `mcp__Claude_Code_Remote__add_repo` (see the
+# entry right above this one in settings.json), which was already present
+# alongside it -- the UUID-suffixed form is some earlier session's
+# connector instance ID and can never match a real tool-call name again.
+# Dead permission grant, not a security-relevant one (it only ever widened
+# what could match, never narrowed it), just clutter.
