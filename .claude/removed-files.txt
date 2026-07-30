@@ -41,3 +41,32 @@ skills/changelog-rules
 # own retirement notes; this list is only about target repos.
 hooks/check-reply-format.sh
 hooks/reply-format-preflight.sh
+
+# The HANDOFF.md session-continuity system -- removed from the common
+# CLAUDE.md in two steps (2026-07-27: HANDOFF.md deleted here and its
+# rules folded back into CLAUDE.md; 2026-07-30: split out again as
+# docs/continuity-notes.md, which is what the common section names now).
+# Recorded here because this file is the bundle's record of what the
+# common part dropped, and until now that removal was the one such
+# change with no entry -- an importer had no way to tell the handoff
+# rules were retired rather than merely missing from a partial bundle.
+#
+# The two hooks that mechanized it are listed below. Note they were
+# never bundle content in the first place -- they do not exist in this
+# repo and never travelled on export; only CPSeries has them. They are
+# listed anyway, which is a deliberate widening of what this file is
+# for: it now also retires a system the bundle itself moved on from,
+# not just files the bundle once shipped. Same 2026-07-30 user call that
+# added step 2.4b to config-export-import.md ("the new system travels
+# with the export and the import removes the old one").
+#
+# IMPORTANT, and the reason this file alone is not enough: a live
+# HANDOFF.md holds real state, and it sits at the repo ROOT, which this
+# list cannot even express (every path here is relative to .claude/).
+# Pruning these two hooks without migrating that content would leave a
+# repo with no continuity record at all. config-export-import.md step
+# 2.4b is the binding half -- migrate HANDOFF.md into
+# docs/continuity-notes.md FIRST, then delete it. Do not treat these two
+# lines as the whole job.
+hooks/require-handoff-read.sh
+hooks/check-handoff-pushed.sh
