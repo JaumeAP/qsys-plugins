@@ -10,6 +10,12 @@ name: Build .qplugx
 # only) deliberately avoids `submodules: recursive`, which would also try
 # to clone vendor/qsc-q-sys and fail on this runner's default token (same
 # fix already applied to build-qplug.yml -- see CLAUDE.md continuity notes).
+#
+# SubharmonicSynth.qplug added to both the `qplug` choice list and the
+# `$all` array 2026-07-30 -- it was built at the repo root since its
+# 2026-07-29 incorporation but was never added to either, so this workflow
+# could not have produced its .qplugx even if asked to, and `all` silently
+# would not have included it either.
 on:
   workflow_dispatch:
     inputs:
@@ -24,6 +30,7 @@ on:
           - Dolby Sweep V2.0.qplug
           - MultiFlip-Flop.qplug
           - Dolby CPSeries Control V4.0.qplug
+          - SubharmonicSynth.qplug
 
 jobs:
   encrypt:
@@ -51,7 +58,8 @@ jobs:
             "DolbyFader.qplug",
             "Dolby Sweep V2.0.qplug",
             "MultiFlip-Flop.qplug",
-            "Dolby CPSeries Control V4.0.qplug"
+            "Dolby CPSeries Control V4.0.qplug",
+            "SubharmonicSynth.qplug"
           )
           $selected = if ("${{ inputs.qplug }}" -eq "all") { $all } else { @("${{ inputs.qplug }}") }
 
