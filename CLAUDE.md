@@ -95,7 +95,9 @@ uncommitted/unpushed. Also check whether the current branch has an open PR at
 `mergeable_state: clean` and merge it as part of the same routine, per
 `github-rules`' merge-automation default — don't leave it for the user to ask
 separately. Unfinished work or an open question worth a future session
-picking up gets a dated entry in `docs/continuity-notes.md` first.
+picking up gets a dated entry in this repo's continuity notes first —
+`docs/continuity-notes.md`, created there if the repo doesn't have one yet
+(this section is portable, so don't assume the file already exists).
 
 ## Project-specific rules
 

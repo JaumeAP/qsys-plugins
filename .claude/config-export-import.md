@@ -57,7 +57,12 @@ directions, mechanized best-effort by
    root, `SKILL.md`): a top-level `SKILL.md` documents the bundle itself
    and is the one entry point; every other file — `CLAUDE.md`,
    `settings.json`, `hooks/*.sh`, this file, `recommended-skills.txt`,
-   `00-START-HERE.md`, `removed-files.txt` — lives under `references/`.
+   `00-START-HERE.md`, `removed-files.txt`, `skills-history.md` — lives
+   under `references/`. (`skills-history.md` joined the bundle 2026-07-30,
+   when the common CLAUDE.md's "Portable skills" section was cut down to
+   pointers and the bundled/optional/removed reasoning moved into it;
+   install it to the target's `.claude/skills-history.md`, or that
+   pointer dangles there.)
    (`skills-lock.json` no longer travels here either, 2026-07-28: it
    existed specifically to carry `find-skills`' own installation
    provenance alongside its bundled copy, and `find-skills` isn't a
