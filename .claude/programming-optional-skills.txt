@@ -1,0 +1,28 @@
+# Programming-focused optional skills
+# Install via: npx skills add <source>
+# These skills are available optionally during config import
+
+# Core development & architecture
+brainstorming -> obra/superpowers
+dispatching-parallel-agents -> obra/superpowers
+executing-plans -> obra/superpowers
+finishing-a-development-branch -> obra/superpowers
+receiving-code-review -> obra/superpowers
+requesting-code-review -> obra/superpowers
+subagent-driven-development -> obra/superpowers
+systematic-debugging -> obra/superpowers
+test-driven-development -> obra/superpowers
+using-git-worktrees -> obra/superpowers
+using-superpowers -> obra/superpowers
+verification-before-completion -> obra/superpowers
+writing-plans -> obra/superpowers
+
+# Code quality & security
+claude-security -> anthropics/skills
+simplify -> anthropics/skills
+static-analysis -> anthropics/skills
+skill-security-auditor -> anthropics/skills
+
+# Development tools & practices
+docker-best-practices -> anthropics/skills
+documentation-handbook -> anthropics/skills
