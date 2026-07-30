@@ -72,29 +72,77 @@ def looks_like_path(tok):
     # bare filename with a dotted extension, no flag prefix
     return bool(re.search(r"\.[A-Za-z0-9]{1,8}$", tok)) or tok not in {"", "|", "&&", "||", ";"}
 
+def split_subcommands(cmd):
+    # Quote-aware scan of the RAW command string, splitting on ;, &&, ||,
+    # | and bare newlines wherever they occur -- INCLUDING glued directly
+    # onto a word with no surrounding whitespace (2026-07-30 bugfix: the
+    # original version below split shlex.split(cmd)'s tokens looking for
+    # ";"/"&&"/"||"/"|" as an exact, standalone token. shlex only splits
+    # on whitespace, so an operator with no space before it -- "Eines;" in
+    # `for r in CPSeries Eines; do`, "hi;" in `echo hi; cp a b` -- stays
+    # glued to the preceding word and was never recognized as a boundary
+    # at all. That's the ordinary, idiomatic way people write shell
+    # loops and one-liners, so in practice this hook was blind to almost
+    # every multi-command script all session -- confirmed by an actual
+    # audit finding dozens of `cp`/`rm` calls this exact hook exists to
+    # catch, all inside `for ...; do ... done` loops, none blocked).
+    # Scanning the raw string ourselves, quote-aware, catches the glued
+    # form and the spaced form identically, and a bare newline is treated
+    # the same as `;` since that's how multi-line heredoc scripts (this
+    # session's dominant shape) actually separate commands.
+    # Known, accepted limitation: this doesn't understand heredoc
+    # (`<<'EOF' ... EOF`) syntax specifically, so a heredoc BODY still
+    # gets split line-by-line like any other text -- a body line whose
+    # very first bare word happens to exactly match a DANGEROUS verb
+    # would misclassify. Judged an acceptable, narrow tradeoff: this hook
+    # already documents itself as "conservative... block rather than
+    # silently let something unparseable slip through", and the
+    # alternative (a real heredoc-aware parser) is a much bigger,
+    # riskier change for a rare edge case.
+    subs = []
+    buf = []
+    quote = None
+    i, n = 0, len(cmd)
+    while i < n:
+        ch = cmd[i]
+        if quote:
+            buf.append(ch)
+            if ch == quote:
+                quote = None
+            i += 1
+            continue
+        if ch in ("'", '"'):
+            quote = ch
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == "\\" and i + 1 < n:
+            buf.append(ch)
+            buf.append(cmd[i + 1])
+            i += 2
+            continue
+        if cmd[i:i + 2] in ("&&", "||"):
+            subs.append("".join(buf))
+            buf = []
+            i += 2
+            continue
+        if ch in (";", "|", "\n"):
+            subs.append("".join(buf))
+            buf = []
+            i += 1
+            continue
+        buf.append(ch)
+        i += 1
+    subs.append("".join(buf))
+    return [s for s in subs if s.strip()]
+
 try:
-    tokens = shlex.split(cmd)
+    subcommands = [shlex.split(s) for s in split_subcommands(cmd)]
 except ValueError:
     # Unbalanced quotes or similar -- can't safely classify, block rather
     # than silently let something unparseable slip through.
     print("BLOCK: could not parse the command to check its file targets")
     sys.exit(0)
-
-# Split on shell operators (;, &&, ||, and pipe |) into independent
-# sub-commands (shlex.split already tokenized quoting correctly; operators
-# survive as their own tokens since they aren't inside quotes in any real
-# invocation). Pipe matters here specifically because `echo x | tee
-# repo-file` is exactly the shape file-operations exists to replace.
-subcommands, current = [], []
-for tok in tokens:
-    if tok in (";", "&&", "||", "|"):
-        if current:
-            subcommands.append(current)
-        current = []
-    else:
-        current.append(tok)
-if current:
-    subcommands.append(current)
 
 for sub in subcommands:
     if not sub:
