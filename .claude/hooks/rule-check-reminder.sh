@@ -19,13 +19,25 @@
 #      the real files -- read the real files instead of repeating a frozen
 #      claim). Counts Claude's own steps (tool calls), not user turns -- a
 #      single user turn can chain many tool calls, so this catches drift
-#      mid-turn instead of only at the next user message. Covers whatever
-#      check-reply-format.sh's Stop hook does NOT mechanically enforce
-#      (that hook only covers language/format/Rebut/lists -- economy of
-#      tokens, tone, conditional length, verification-before-facts, and
-#      multi-step action labels have no script check, this reminder is
-#      their only remaining carrier, and re-reading the source files keeps
-#      that carrier accurate instead of drifting).
+#      mid-turn instead of only at the next user message.
+#
+#      Scope narrowed 2026-07-30, for two reasons that both landed the same
+#      day. First, this used to enumerate every SKILL.md under
+#      .claude/skills/; that list went from 3 entries to 29 when the
+#      recommended-skills set was installed, and an instruction to re-read
+#      29 files every 15 tool calls is one nobody follows -- it reads as
+#      noise and takes the genuinely load-bearing part (CLAUDE.md) down
+#      with it. Skills self-trigger by description anyway, so they are
+#      explicitly excluded now. Second, it used to describe itself as
+#      covering "whatever check-reply-format.sh's Stop hook does not
+#      mechanically enforce"; that hook was retired the same day, so the
+#      division of labor it named no longer exists. What this reminder
+#      carries now: CLAUDE.md's own always-on rules (token economy, tone,
+#      conditional length, verify-before-asserting, multi-step action
+#      labels), the always-loaded .claude/rules/*.md files, and the hooks
+#      actually registered in settings.json. Nothing mechanically checks
+#      any of those, which is exactly why re-reading the source is the
+#      whole point.
 #   2. Long-session-hygiene nudge, delivered ONCE per context compaction
 #      (CLAUDE.md's "Long-session hygiene" rule). Detection is now event-
 #      based, NOT a tool-call count: the count heuristic (previously "first
@@ -57,9 +69,37 @@ echo "$count" > "$counter_file"
 
 msg=""
 if (( count == 1 || count % 15 == 0 )); then
-  skill_files="$(find "$project_dir/.claude/skills" -mindepth 2 -maxdepth 2 -name 'SKILL.md' 2>/dev/null | sed "s|^$project_dir/||" | sort | paste -sd ',' -)"
-  hook_files="$(find "$project_dir/.claude/hooks" -maxdepth 1 -name '*.sh' 2>/dev/null | sed "s|^$project_dir/||" | sort | paste -sd ',' -)"
-  msg="Recordatori automatic (pas #${count}): torna a llegir CLAUDE.md sencer, cada skill llistat (${skill_files:-cap skill trobat}), i cada hook llistat (${hook_files:-cap hook trobat}) -- no et fiïs d'un resum en cache d'aquest o d'un torn anterior, els fitxers reals poden haver canviat des d'aleshores dins la mateixa sessio. Un cop rellegit, reverifica que la resposta compleix el que diguin ara mateix, no el que dèiem fa uns passos."
+  # Always-loaded rule files: CLAUDE.md plus any .claude/rules/*.md. These
+  # are the ones a stale cached summary actually misleads about.
+  # paste -sd ', ' would alternate the two delimiter chars, not use both;
+  # join with an explicit ", " instead.
+  # The trailing `|| true` is load-bearing under `set -euo pipefail`: with
+  # no .claude/rules/ directory, find exits 1, pipefail propagates that
+  # through the pipeline, and the assignment itself then fails and takes
+  # the whole hook down -- silently, since a hook that dies prints nothing.
+  # (The same latent trap predates this rewrite: the old skill_files line
+  # had the identical shape and would have died the same way in a repo with
+  # no .claude/skills/.) 2>/dev/null only hides find's stderr, not its
+  # status, which is what made this easy to miss.
+  rule_files="$(find "$project_dir/.claude/rules" -maxdepth 1 -name '*.md' 2>/dev/null | sed "s|^$project_dir/||" | sort | paste -sd ',' - | sed 's/,/, /g' || true)"
+  # Hooks are read from settings.json, not globbed off disk: a retired hook
+  # can sit unregistered in .claude/hooks/ (check-reply-format.sh and
+  # reply-format-preflight.sh both do, as of 2026-07-30), and telling
+  # Claude to re-read dead scripts is worse than saying nothing.
+  hook_files="$(jq -r '[.hooks // {} | .[][]?.hooks[]?.command | split("/") | last] | unique | join(", ")' "$project_dir/.claude/settings.json" 2>/dev/null || echo "")"
+  msg="Recordatori automatic (pas #${count}): torna a llegir CLAUDE.md sencer"
+  # if/then, NOT `[ -n ... ] && msg=...`: under `set -e` a failing test as
+  # the head of an AND-list takes the whole script down with it. Caught by
+  # actually running this in a scratch repo with no .claude/rules/ -- the
+  # source repo has one, so the bug was invisible here and would only have
+  # fired after the hook travelled somewhere else.
+  if [ -n "$rule_files" ]; then
+    msg="${msg}, els fitxers de regles sempre carregats (${rule_files})"
+  fi
+  if [ -n "$hook_files" ]; then
+    msg="${msg}, i els hooks registrats a settings.json (${hook_files})"
+  fi
+  msg="${msg} -- no et fiïs d'un resum en cache d'aquest o d'un torn anterior, els fitxers reals poden haver canviat des d'aleshores dins la mateixa sessio. Els skills sota .claude/skills/ NO entren en aquesta llista: son molts i es carreguen sols per descripcio quan toca; llegeix el que calgui per la tasca actual, no tots. Un cop rellegit, reverifica que la resposta compleix el que diguin ara mateix, no el que dèiem fa uns passos."
 fi
 
 # Job 2: consume the PreCompact pending flag exactly once, if present.
