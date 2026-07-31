@@ -939,3 +939,22 @@ history actually matters.)
   table. No `.qplugx` built yet (same state CP Series Emulator shipped in
   initially -- workflow choice list updated, `build-qplugx.yml` not yet
   dispatched for this one).
+
+- **`StateTrigger` given a `Channels` property (1-256), same session,
+  right after the entry above.** Explicit user request, "following
+  standard conventions... like Gain does" -- matched to the convention
+  already in this repo (`MultiFlip-Flop`'s own `InputCount`, same 1-256
+  range) rather than inventing a new one. Single `State`/`Out` renamed to
+  `State_n`/`Out_n`, looped `Channels` times in `GetControls`/
+  `GetControlLayout`/the runtime `EventHandler` block, `properties.lua`
+  added (previously had none). Property named `Channels`, not
+  `InputCount` -- the user asked specifically for "number of channels"
+  framing, closer to Gain's own Multi-Channel wording, after the first
+  pass already used `InputCount` and a CI build had already run against
+  it; that build's artifact was simply discarded, a second CI dispatch
+  (`build-qplug.yml`) produced the real `Channels`-based root
+  `StateTrigger.qplug` (v2.0.0.1, breaking bump per the rename
+  convention). `test_dist_statetrigger.lua` rewritten to match
+  (10 checks): control/layout count scales with `Channels`, and a
+  multi-instance check that triggering `State_2` only ever fires `Out_2`,
+  never `Out_1`/`Out_3`.

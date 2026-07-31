@@ -83,10 +83,11 @@ docs/continuity-notes.md (dated history). -->
 │   │                                 processor for bench-testing Dolby CPSeries
 │   │                                 Control. No .qplugx built yet (workflow
 │   │                                 choice list updated, not yet dispatched).
-│   └── StateTrigger.qplug            (v1.0, added 2026-07-31) -- inverse of
-│                                     MultiFlip-Flop: one Boolean State input,
-│                                     one Trigger Out output, fires Out once
-│                                     per State change either direction. No
+│   └── StateTrigger.qplug            (v2.0, added 2026-07-31) -- inverse of
+│                                     MultiFlip-Flop: Channels property
+│                                     (1-256) for N independent State_n/Out_n
+│                                     pairs, each firing its own Out once per
+│                                     State change either direction. No
 │                                     .qplugx built yet.
 │
 ├── Dolby CP Emulator/                Once held 3 hand-written .quc Control
@@ -196,13 +197,13 @@ docs/continuity-notes.md (dated history). -->
     │                                 Control's own private models.lua/protocol.lua --
     │                                 this plugin keeps its own copy of the same wire
     │                                 tables, kept in sync by hand.
-    │   └── StateTrigger/             Inverse of MultiFlip-Flop: Boolean State in,
-    │       ├── plugin.lua            Trigger Out out (added 2026-07-31). No
-    │       ├── info.lua              properties.lua -- GetProperties() returns {}
-    │       ├── controls.lua          directly in plugin.lua, same as SubharmonicSynth/
-    │       ├── layout.lua            DolbyFader. Runtime is a single EventHandler:
-    │       └── runtime.lua           State changes (either direction) call
-    │                                 Controls.Out:Trigger(), nothing else.
+    │   └── StateTrigger/             Inverse of MultiFlip-Flop: Boolean State_n in,
+    │       ├── plugin.lua            Trigger Out_n out (added 2026-07-31, given
+    │       ├── info.lua              a Channels property the same day, 1-256, same
+    │       ├── properties.lua        convention as MultiFlip-Flop's own InputCount).
+    │       ├── controls.lua          Runtime loops Channels times, one EventHandler
+    │       ├── layout.lua            per pair: State_n changes (either direction)
+    │       └── runtime.lua           call Controls["Out_"..n]:Trigger(), nothing else.
     ├── shared/                       Code #include'd by more than one plugin
     │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua
     │   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
@@ -247,8 +248,9 @@ docs/continuity-notes.md (dated history). -->
         │                             plugin's own server/Status wiring end to end
         ├── test_dist_statetrigger.lua Root StateTrigger distributable (added
         │                             2026-07-31): definition pass, control/layout
-        │                             count, and a runtime check that a State
-        │                             change fires Out exactly once each direction
+        │                             count for a given Channels, and a runtime
+        │                             check that each State_n only ever fires its
+        │                             own Out_n, in either direction
         ├── test_stress.lua           Stress/fuzz over all five plugins: asserts invariants
         │                             (nothing throws, nothing publishes nil, every written
         │                             value stays in range) rather than exact values. Fixed

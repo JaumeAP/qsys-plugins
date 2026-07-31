@@ -8,11 +8,16 @@
 -- against QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin}
 -- templates (see .claude/rules/qsys-plugin-development.md).
 -- v1.0.0.1: initial release.
+-- v2.0.0.1: added Channels property (1-256, same range as MultiFlip-Flop's
+-- own InputCount), for N independent State/Out pairs in one instance, same
+-- convention as Gain's Multi-Channel property. Breaking: State/Out renamed
+-- to State_N/Out_N -- a design already wired to the old single-instance
+-- names needs those pins reconnected.
 
 PluginInfo = {
 	Name = "Utility~State Trigger",
-	Version = "1.0",
-	BuildVersion = "1.0.0.1",
+	Version = "2.0",
+	BuildVersion = "2.0.0.1",
 	Id = "8b93d00a-5281-4dd9-b963-4d5f6d6ec6cc",
 	Author = "Jaume Puig",
 	Description = "Fires a Trigger pulse whenever a Boolean state input changes -- the inverse of the Flip-Flop component",
@@ -27,7 +32,15 @@ function GetPrettyName(props)
 end
 
 function GetProperties()
-	return {}
+	local props = {}
+	table.insert(props, {
+		Name = "Channels",
+		Type = "integer",
+		Value = 1,
+		Min = 1,
+		Max = 256,
+	})
+	return props
 end
 
 function RectifyProperties(props)
@@ -37,34 +50,38 @@ end
 
 function GetControls(props)
 	local ctrls = {}
-	table.insert(ctrls, {
-		Name = "State",
-		ControlType = "Button",
-		ButtonType = "Toggle",
-		UserPin = true,
-		PinStyle = "Input",
-	})
+	for t = 1, props["Channels"].Value do
+		table.insert(ctrls, {
+			Name = "State_" .. t,
+			ControlType = "Button",
+			ButtonType = "Toggle",
+			UserPin = true,
+			PinStyle = "Input",
+		})
 
-	table.insert(ctrls, {
-		Name = "Out",
-		ControlType = "Button",
-		ButtonType = "Trigger",
-		UserPin = true,
-		PinStyle = "Output",
-	})
+		table.insert(ctrls, {
+			Name = "Out_" .. t,
+			ControlType = "Button",
+			ButtonType = "Trigger",
+			UserPin = true,
+			PinStyle = "Output",
+		})
+	end
 	return ctrls
 end
 
 function GetControlLayout(props)
 	local layout = {}
 	local graphics = {}
+	local top = 20
+
 	table.insert(graphics, {
 		Type = "Label",
 		Text = "State",
 		StrokeWidth = 0,
 		VTextAlign = "Center",
-		Position = { 0, 0 },
-		Size = { 64, 32 },
+		Position = { 36 * 1, top },
+		Size = { 36, 32 },
 	})
 
 	table.insert(graphics, {
@@ -72,17 +89,29 @@ function GetControlLayout(props)
 		Text = "Out",
 		StrokeWidth = 0,
 		VTextAlign = "Center",
-		Position = { 96, 0 },
-		Size = { 64, 32 },
+		Position = { 36 * 2 + 4, top },
+		Size = { 36, 32 },
 	})
 
-	layout["State"] = { PrettyName = "State", Position = { 0, 32 } }
-	layout["Out"] = { PrettyName = "Out", Position = { 96, 32 } }
+	for t = 1, props["Channels"].Value do
+		table.insert(graphics, {
+			Type = "Label",
+			Text = tostring(t),
+			StrokeWidth = 0,
+			Position = { 0, top + (t + 1) * 16 },
+			Size = { 32, 16 },
+		})
+
+		layout["State_" .. t] = { PrettyName = tostring(t) .. "~State", Position = { 36 * 1, top + (t + 1) * 16 } }
+		layout["Out_" .. t] = { PrettyName = tostring(t) .. "~Out", Position = { 36 * 2 + 16, top + (t + 1) * 16 } }
+	end
 	return layout, graphics
 end
 
 if Controls then
-	Controls.State.EventHandler = function(ctrl)
-		Controls.Out:Trigger()
+	for t = 1, Properties["Channels"].Value do
+		Controls["State_" .. t].EventHandler = function(ctrl)
+			Controls["Out_" .. t]:Trigger()
+		end
 	end
 end
