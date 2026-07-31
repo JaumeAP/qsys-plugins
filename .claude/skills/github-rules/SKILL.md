@@ -1,6 +1,6 @@
 ---
 name: github-rules
-description: MUST consult whenever opening, updating, merging, or reasoning about PRs, or whenever GitHub conventions matter — mandatory background for all PR/GitHub work. Covers workflow shape, reading pull_request_read results (status, mergeable_state, CI), and merge automation defaults. Explicit user instructions always override this.
+description: MUST consult whenever opening, updating, merging, or reasoning about PRs, or whenever GitHub conventions matter — mandatory background for all PR/GitHub work. Covers choosing between direct-to-default-branch and branch+PR workflows, reading pull_request_read results (status, mergeable_state, CI), and merge automation defaults. Explicit user instructions always override this.
 ---
 
 # GitHub conventions
@@ -9,7 +9,17 @@ Portable reference for GitHub workflows across repos. General context, not a ste
 
 **Precedence:** Explicit user instructions always override anything here.
 
-## Typical workflow
+## Choosing a workflow
+
+Two shapes exist. Pick based on the repo's actual risk profile, not habit — the point of a branch+PR cycle is a review gate, and it's only worth paying for when something is actually being gated.
+
+**Default: push straight to the default branch.** `git push -u origin <default>`, no task branch, no PR. This is the right default for solo/personal repos, low-risk config or documentation edits, and sessions doing many small iterative changes — a branch+PR cycle costs roughly 8 extra steps per change, and that overhead buys nothing when there's no second contributor and nothing to gate.
+
+**Exception: branch + PR** (see "Branch+PR workflow" below). Reach for this when any of the following actually apply: multiple contributors who'd otherwise collide, CI/tests that should gate a merge, production code where a review step catches real risk, or the calling environment restricts direct pushes to the default branch.
+
+If it's genuinely unclear which shape fits, ask once at the start of the session rather than assuming — cheap up front, expensive to discover mid-session after work has already landed the wrong way.
+
+## Branch+PR workflow (when the exception applies)
 
 1. Work lands on task-specific branch: `git push -u origin <branch>`
 2. Open PR via GitHub MCP tools when available (prefer over `gh` CLI)
