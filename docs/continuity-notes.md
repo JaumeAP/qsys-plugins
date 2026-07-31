@@ -1001,9 +1001,19 @@ history actually matters.)
   `Type` strings for a plugin -- that remains unconfirmed for all of them
   except `mixer`/`sine`/`stepper`, already in real use here. Five confirmed
   and added: `Selector`, `Control Router`, `Flip-Flop` (already known),
-  `Control Delay`, `Blinking LED`. Two left open, explicitly flagged rather
-  than guessed: `LFO` (pin names/waveform options not pinned down) and
-  `Control Function` (logic-gate component, confirmed it can't take Text
-  directly but its own pin list isn't confirmed). Resume by the same
-  methodology if/when picked back up -- see "Simple/Advanced/Even More
-  Control Components" as the next candidates.
+  `Control Delay`, `Blinking LED`.
+
+- **`LFO` and `Control Function` added, same session, right after** ("Sí,
+  continua amb LFO i Control Function"). `LFO`: behavior confirmed (Position-
+  style output modulated within a `Minimum`/`Maximum` window, `Period`
+  property in seconds not Hz, `Sine`/`Square`/`Triangle` waveforms, continuous
+  vs. one-shot run mode) but exact pin *names* still not pinned down -- kept
+  hedged in the table rather than invented. `Control Function`: `Input 1..N`
+  (2-512 depending on `Function`)/`Output` pins confirmed, plus the `Function`
+  property's ~30 choices (logic AND/OR/NOT, Trigger Combiner, Value
+  Greater/Less Than, Value Sum/Average/Max/Min/Product/Quotient/Divide/
+  Square/Square Root/Absolute Value, String Compare) and the
+  logic-vs-position-vs-value input-reading rule. All six "Control
+  Components" candidates from this sweep are now recorded; only the
+  "Advanced"/"Even More Control Components" categories remain open, still
+  blocked on the video-training-transcript problem noted above.

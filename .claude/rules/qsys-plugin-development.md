@@ -188,15 +188,13 @@ confirmations in "Repository layout"'s Continuity notes). Confirmed so far:
 | `Flip-Flop` | `Toggle`/`Set`/`Reset` (Trigger inputs), `Out` (Boolean output) | none (confirmed earlier this session, see `MultiFlip-Flop`'s own README entry) |
 | `Control Delay` | 1 input, up to 32 outputs (Output 1's own wiring determines all outputs' behavior) | `Max Delay` (1-60s, default 10), `Delay` per channel (0ms-60s, default 10s), `Bypass` per channel |
 | `Blinking LED` | one output (alternating signal) | `Enable`, `Period` (seconds, not Hz), `Duty Cycle` (10%-90%) |
+| `LFO` | Position-style output, modulated between a `Minimum`/`Maximum` window (e.g. Min=10%, Max=30% -> output sweeps only that 20% band); exact pin *names* (e.g. whether the output pin is literally called `Output`) still not confirmed, only its behavior | `Period` (waveform period in seconds, not Hz -- 100ms=10Hz, 60s=.016Hz), Waveform (`Sine`/`Square`/`Triangle` confirmed, list may not be exhaustive), run mode (continuous vs. one-shot single period) |
+| `Control Function` | `Input 1..N` (left side, 2-512 depending on the selected `Function`), `Output` (right side, one) | `Function` -- one property, ~30 choices, incl. `Logic AND`/`Logic OR`/`Logic NOT`, `Trigger Combiner` (N triggers -> 1, OR-gate for triggers), `Value Greater Than`/`Value Less Than` (2 inputs only), `Value Sum`/`Average`/`Maximum`/`Minimum`/`Product`/`Quotient`/`Divide`/`Square`/`Square Root`/`Absolute Value`, `String Compare` (2 inputs only, case-sensitive). Confirmed: logic-type functions read Boolean directly but position/value-type inputs are read via >/< midpoint; Text is NOT accepted directly by any function, needs an intermediate converter control first. |
 
-**Still unconfirmed, not yet added** (found via search but pin names/full
-property list not pinned down): `LFO` (output behaves like a Position
-control inside a `Minimum`/`Maximum` modulation window; exact pin names and
-waveform options not confirmed), `Control Function` (AND/OR-style logic;
-confirmed it does NOT accept Text directly, needs an intermediate converter
-control, but its own pin list isn't confirmed). Revisit these, and the rest
-of the "Simple/Advanced/Even More Control Components" Q-SYS training
-categories, only with the same real-fetch-or-crawled-index rigor as above —
+Revisit the rest of the "Simple/Advanced/Even More Control Components"
+Q-SYS training categories (list of names not extractable from this
+environment -- those training modules are video-based with no indexed
+transcript) only with the same real-fetch-or-crawled-index rigor as above —
 never guessed.
 
 ### Key module patterns
