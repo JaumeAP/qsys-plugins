@@ -18,6 +18,7 @@ M.DIST = {
 	subharmonic     = M.repo .. "/SubharmonicSynth.qplug",
 	cpseriesemulator = M.repo .. "/CP Series Emulator.qplug",
 	statetrigger    = M.repo .. "/StateTrigger.qplug",
+	dolbyknobtest   = M.repo .. "/DolbyKnobTest.qplug",
 }
 
 M.MODELS = { "CP 650", "CP 750", "CP 850", "CP 950", "CP 950A" }
