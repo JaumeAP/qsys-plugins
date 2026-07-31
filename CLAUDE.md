@@ -129,27 +129,28 @@ actually travels on export is defined in
 `.claude/scripts/export-config-skill.sh` — not repeated here, to avoid two
 lists that drift apart.
 
-**Skill creation/extension.** Any new `SKILL.md`, or any content/frontmatter
-change to an existing one, goes through the `skill-creator` skill's process,
-not a plain manual edit (2026-07-20 standing rule; repo-specific and portable
-skills alike). `writing-skills` (obra/superpowers) prescribes a competing
-TDD-based process for the same action and was removed 2026-07-30 for that
-reason — `skill-creator` is the sole mandated process.
-`.claude/hooks/skill-creation-reminder.sh` reminds on every `Write`/`Edit` to
-a `SKILL.md` but can't verify the skill was actually invoked, so it can't
-hard-block.
-
-**No shortcut clause (2026-07-31, explicit user request).** `skill-creator`'s
-own text allows skipping its eval/benchmark loop when "the user is like 'I
-don't need to run a bunch of evaluations, just vibe with me'" — that escape
-hatch requires the user's own explicit words in the moment, never an
-inference from something else the user said (e.g. a request for fewer
-tokens/interactions doesn't imply it, even when the full loop would cost
-more). Triggered by a session that skipped the eval-set/subagent-runs/
-benchmark/viewer steps on that inference for a reference-doc-style skill
-edit and was caught on it unprompted. Always run the full documented
-procedure end to end — cost accepted — unless the user invokes that exact
-escape hatch themselves, that session.
+**Skill creation/extension — mandatory skill-creator process RETIRED
+(2026-07-31, explicit user request).** From 2026-07-20 through 2026-07-31
+this section required every `SKILL.md` create/edit to go through
+`skill-creator`'s full interview/eval/benchmark process, never a plain
+manual edit. Reversed the same day it was tightened into a "no shortcuts,
+ever" clause: tested once for real on a content edit to `github-rules`
+(a reference-doc skill, no subjective/behavioral triggering to evaluate) —
+4 subagents, ~210k tokens, a real bug in the eval-viewer tooling itself,
+and a measured **0% behavioral difference** between the old and new skill
+content. The user's own verdict, directly: not spending that cost on
+something that doesn't work. Plain manual edits to any `SKILL.md` are fine
+again, repo-specific and portable alike. `skill-creator` itself is still
+available and still useful for what it's actually suited to — a new skill,
+or a change to one where trigger accuracy or behavioral output is the
+question — invoke it by choice when that's the situation, not by
+default. `writing-skills` (obra/superpowers) remains removed regardless
+(2026-07-30, unrelated reason — a competing TDD-based process for the same
+action).
+`.claude/hooks/skill-creation-reminder.sh` mechanized the retired mandate
+and is unregistered from `settings.json` as of this same reversal — see
+that script's own header for the retirement note (same pattern as
+`check-reply-format.sh`/`reply-format-preflight.sh`: left on disk, dead).
 
 ## Session continuity
 

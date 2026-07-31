@@ -1,4 +1,16 @@
 #!/bin/bash
+# RETIRED (2026-07-31, explicit user request) -- unregistered from
+# settings.json. The mandate this reminded about (every SKILL.md
+# create/edit must go through skill-creator's full process) was itself
+# reversed the same day: tried once for real on a doc-only skill edit, cost
+# ~210k tokens across 4 subagents plus a real tooling bug, measured 0%
+# behavioral difference. See CLAUDE.md's "Portable skills" section for the
+# full reversal note. Left on disk rather than deleted, same as
+# check-reply-format.sh/reply-format-preflight.sh before it -- dead, not
+# maintained, do not re-register without a fresh standing rule to mechanize.
+#
+# Everything below is the original script, preserved for the record only.
+#
 # PreToolUse hook (matcher Write|Edit): mechanizes the "Skill creation/
 # extension" rule in CLAUDE.md's "Portable skills" section -- any skill
 # creation or extension (a new SKILL.md, or a content/frontmatter change to
