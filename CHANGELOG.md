@@ -2,6 +2,10 @@
 
 ## Changelog
 
+- **v0.5.0** (2026-07-31) - Delete the three old single-model .quc emulators
+  - chore: `Dolby CP Emulator/CP650 Emulator.quc`, `CP750 Emulator.quc`, `CP850 Emulator.quc` deleted -- explicit user request, fully superseded by the `CP Series Emulator.qplug` plugin (all 5 models, one file)
+  - docs: `Dolby CP Emulator/README.md` rewritten as a pointer to the plugin (folder kept, only the README remains); `repo-layout.md` updated
+
 - **v0.4.0** (2026-07-31) - Fix CP Series Emulator duplication, then remove the Control Script entirely
   - refactor: extracted ~150 duplicated lines (constants, escape/isGet/trySet/macroName/macroIndex, SocketHandler) shared byte-for-byte between the Control Script and Plugin versions into one file, first as `Developer/shared/cp-series-emulator-protocol.lua`
   - chore: Control Script version (`Developer/cp-series-emulator/`, `Developer/tests/test_cp_series_emulator.lua`) removed entirely -- explicit user request, once the Plugin covered the same job with less to maintain

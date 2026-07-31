@@ -84,13 +84,11 @@ docs/continuity-notes.md (dated history). -->
 │                                     Control. No .qplugx built yet (workflow
 │                                     choice list updated, not yet dispatched).
 │
-├── Dolby CP Emulator/                Q-SYS User Components (.quc) that emulate
-│   ├── README.md                     real Dolby processors for bench testing --
-│   ├── CP650 Emulator.quc            explains the gap below and points at the
-│   ├── CP750 Emulator.quc            newer root CP Series Emulator.qplug (added
-│   └── CP850 Emulator.quc            2026-07-31). No CP950/CP950A .quc exists in
-│                                     this old hand-written format -- those two
-│                                     models never got one.
+├── Dolby CP Emulator/                Once held 3 hand-written .quc Control
+│   └── README.md                     Scripts (CP650/CP750/CP850, no CP950/CP950A)
+│                                     -- deleted 2026-07-31 (explicit user request),
+│                                     fully superseded by the root CP Series
+│                                     Emulator.qplug. README.md kept as a pointer.
 │
 ├── vendor/                            Read-only reference material (git submodules) —
 │   │                                 `git submodule update --init --recursive` after

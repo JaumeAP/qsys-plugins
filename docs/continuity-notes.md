@@ -841,3 +841,15 @@ history actually matters.)
   updated to match. The Plugin's own `plugin.lua` header keeps the full
   history (v1.0 -> v1.0.0.1 -> v1.0.0.2) rather than restating it here in
   full a second time.
+
+- **The three old single-model `.quc` emulators deleted too, same day
+  (explicit user request, after listing this repo's modules and asking
+  for the old ones to go).** `Dolby CP Emulator/CP650 Emulator.quc`,
+  `CP750 Emulator.quc`, `CP850 Emulator.quc` -- the ones the standalone
+  Control Script and then the Plugin were both built to replace, per the
+  history above. Nothing left referencing them any more (`README.md`'s
+  catalog was already plugin-only; `Dolby CP Emulator/README.md`
+  rewritten again, now describing them purely as history; the folder
+  itself kept, holding only that README). No test coverage existed for
+  the `.quc` binaries themselves (never testable outside Designer), so
+  deleting them doesn't touch `run.sh`.
