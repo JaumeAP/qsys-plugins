@@ -13,7 +13,7 @@
 #
 # Example installations:
 #   npx skills add obra/superpowers -s brainstorming
-#   npx skills add anthropics/skills -s claude-security
+#   npx skills add addyosmani/agent-skills -s code-simplification
 #   npx skills add trailofbits/skills -s static-analysis
 #   npx skills add borghei/Claude-Skills -s skill-security-auditor
 #
@@ -23,20 +23,22 @@
 # 2026-07-30: the "Code quality & security" (claude-security, simplify,
 # static-analysis, skill-security-auditor) and "Development tools &
 # practices" (docker-best-practices, documentation-handbook) groups --
-# 6 skills -- were initially marked as dead pointers when they couldn't be
-# found in anthropics/skills. Verified 2026-07-31 via community sources:
-# these skills are available from third-party/community repositories.
-# Restored with correct source ownership.
+# 6 skills -- were removed as dead pointers (none found in anthropics/skills).
+# 2026-07-31: re-verified with WebFetch against real repos. static-analysis
+# and skill-security-auditor confirmed with corrected sources (below).
+# simplify and docker-best-practices had no exact-name match anywhere;
+# renamed to the closest verified equivalents (code-simplification,
+# docker-development), each from a different owner/repo than the original
+# guess. claude-security and documentation-handbook still have no verified
+# single-skill source under any name -- left out, still dead pointers.
 
 # Core development & architecture
 superpowers (full suite: brainstorming, dispatching-parallel-agents, executing-plans, finishing-a-development-branch, receiving-code-review, requesting-code-review, subagent-driven-development, systematic-debugging, test-driven-development, using-git-worktrees, using-superpowers, verification-before-completion, writing-plans) -> obra/superpowers
 
 # Code quality & security
-claude-security -> anthropics/skills
-simplify -> anthropics/skills
+code-simplification -> addyosmani/agent-skills
 static-analysis -> trailofbits/skills
 skill-security-auditor -> borghei/Claude-Skills
 
 # Development tools & practices
-docker-best-practices -> anthropics/skills
-documentation-handbook -> anthropics/skills
+docker-development -> netresearch/docker-development-skill
