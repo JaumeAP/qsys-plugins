@@ -5,12 +5,13 @@ name: Build .qplug (PLUGCC)
 # (vendor/qsys-plugins/ExamplePlugin/PluginCompile/PLUGCC.exe), a Windows
 # binary -- hence windows-latest, same reasoning as build-qplugx.yml.
 # Replaces Developer/tools/build_distributable.sh for any plugin that has
-# been migrated onto this file-split convention (currently all five:
+# been migrated onto this file-split convention (currently all six:
 # MultiFlip-Flop, Dolby Sweep, DolbyFader, Dolby CPSeries Control,
-# SubharmonicSynth). SubharmonicSynth was missing from the `plugin` choice
-# list below from its 2026-07-29 incorporation until 2026-07-30 -- it has
-# had the same Developer/plugins/<name>/plugin.lua split as the other four
-# the entire time, it just could never be rebuilt through this workflow.
+# SubharmonicSynth, CP Series Emulator). SubharmonicSynth was missing from
+# the `plugin` choice list below from its 2026-07-29 incorporation until
+# 2026-07-30 -- it has had the same Developer/plugins/<name>/plugin.lua
+# split as the other four the entire time, it just could never be rebuilt
+# through this workflow.
 # Confirmed PLUGCC.exe #include rules (see
 # CLAUDE.md continuity notes): (1) a relative path always resolves against
 # plugin.lua's own directory, not the file containing the directive, so a
@@ -39,6 +40,7 @@ on:
           - DolbyFader
           - Dolby CPSeries Control
           - SubharmonicSynth
+          - CP Series Emulator
 
 jobs:
   build:

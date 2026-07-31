@@ -15,7 +15,8 @@ name: Build .qplugx
 # `$all` array 2026-07-30 -- it was built at the repo root since its
 # 2026-07-29 incorporation but was never added to either, so this workflow
 # could not have produced its .qplugx even if asked to, and `all` silently
-# would not have included it either.
+# would not have included it either. "CP Series Emulator.qplug" added
+# 2026-07-31 the same way, ahead of its own root .qplug existing yet.
 on:
   workflow_dispatch:
     inputs:
@@ -31,6 +32,7 @@ on:
           - MultiFlip-Flop.qplug
           - Dolby CPSeries Control V4.0.qplug
           - SubharmonicSynth.qplug
+          - CP Series Emulator.qplug
 
 jobs:
   encrypt:
@@ -59,7 +61,8 @@ jobs:
             "Dolby Sweep V2.0.qplug",
             "MultiFlip-Flop.qplug",
             "Dolby CPSeries Control V4.0.qplug",
-            "SubharmonicSynth.qplug"
+            "SubharmonicSynth.qplug",
+            "CP Series Emulator.qplug"
           )
           $selected = if ("${{ inputs.qplug }}" -eq "all") { $all } else { @("${{ inputs.qplug }}") }
 
