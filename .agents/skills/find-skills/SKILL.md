@@ -9,7 +9,7 @@ This skill helps you discover and install skills from the open agent skills ecos
 
 **Precedence vs using-superpowers:** `using-superpowers` governs first — check what's already installed under `.claude/skills/` before reaching for this skill. Invoke `find-skills` only once that check comes up empty (no installed skill covers the need) and the user's request calls for searching the wider ecosystem rather than just proceeding without one.
 
-**Pairs with skill-security-auditor:** anything this skill surfaces from an untrusted/community source should go through `skill-security-auditor` before installing it, not just Step 4's install-count/stars check — that step verifies popularity, not safety. Run the auditor on the candidate skill first when it's from a source outside official/well-known publishers.
+**Pairs with skill-security-auditor:** anything this skill surfaces from an untrusted/community source should go through `skill-security-auditor` before installing it, not just Step 4's install-count/stars check — that step verifies popularity, not safety. Run the auditor on the candidate skill first when it's from a source outside official/well-known publishers. If `skill-security-auditor` isn't installed in this repo, fall back to Step 4's manual check alone — this pairing is an enhancement, not a hard requirement to invoke a skill that may not exist here.
 
 ## When to Use This Skill
 
