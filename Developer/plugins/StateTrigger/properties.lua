@@ -5,3 +5,10 @@ table.insert(props, {
 	Min = 1,
 	Max = 256,
 })
+
+table.insert(props, {
+	Name = "Detection",
+	Type = "enum",
+	Choices = { "On", "Off", "Both" },
+	Value = "Both",
+})

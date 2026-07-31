@@ -13,6 +13,10 @@
 -- convention as Gain's Multi-Channel property. Breaking: State/Out renamed
 -- to State_N/Out_N -- a design already wired to the old single-instance
 -- names needs those pins reconnected.
+-- v2.0.0.2: added Detection property (enum: On/Off/Both, default Both).
+-- On fires Out_N only when State_N becomes true, Off only when it becomes
+-- false, Both (default, matches prior behavior) fires on either change.
+-- Non-breaking: no pin renamed, default preserves v2.0.0.1's behavior.
 
 --[[ #include "info.lua" ]]
 
