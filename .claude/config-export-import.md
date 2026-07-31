@@ -279,22 +279,39 @@ uninstall.
            are in `removed-files.txt`, so 2.2 already prunes them and
            their `settings.json` registrations — this step is only about
            the content and the root file itself.
-        2. **Local-merge → pull request.** If the target's `CLAUDE.md`
-           (including its own Project-specific section) tells a session
-           to merge the working branch into the default branch with
-           plain local git and no PR, replace that with the
-           `github-rules` default the common part already carries: open
-           a PR and merge it. Reason it matters beyond consistency: a
-           calling environment can restrict pushes to the designated
-           working branch, which makes a local merge impossible, while a
-           PR merge lands the same work without pushing another branch.
-           Record the tradeoff rather than dropping it — the GitHub merge
-           API attributes the merge commit to the authenticated
-           integration account, not the session's git identity, which is
-           the reason the local-merge rule existed. The hooks for this
-           one (`hooks/local-merge-reminder.sh`,
-           `hooks/sync-command-reminder.sh`) are likewise already in
-           `removed-files.txt`.
+        2. **`github-rules` is the sole, official mechanism for PR/merge
+           behavior, always, with total priority (2026-07-31, explicit
+           user call).** Broader than a "retire the old system" migration:
+           remove ANY target-repo restatement of PR/merge/commit-automation
+           behavior — in `CLAUDE.md`'s Project-specific section,
+           `PROJECT.md`, or any other repo-specific rules file — whether it
+           conflicts with `github-rules` or merely agrees with it. The
+           bundled skill's own file is the only place this behavior may be
+           stated; not even an agreeing pointer is left standing elsewhere.
+           This supersedes and subsumes the narrower "local-merge → PR"
+           case from before 2026-07-31:
+           - The old plain-local-merge convention (a `CLAUDE.md` telling a
+             session to merge the working branch into the default branch
+             with plain local git, no PR): removed outright, no
+             replacement text — 2.2 already installs the real behavior via
+             the bundled skill. Reason it mattered beyond consistency: a
+             calling environment can restrict pushes to the designated
+             working branch, which makes a local merge impossible, while a
+             PR merge lands the same work without pushing another branch.
+             The hooks for this case (`hooks/local-merge-reminder.sh`,
+             `hooks/sync-command-reminder.sh`) are likewise already in
+             `removed-files.txt`.
+           - A target's own dated, explicit-user-authorized override that
+             already agrees with `github-rules` (e.g. a "the PR always
+             wins" style rule): removed too — its own prior authorization
+             does not exempt it from this rule.
+           In both cases, record what was found and removed in the
+           target's own continuity notes (dated) rather than silently
+           erasing the reasoning — the GitHub merge API attributing merge
+           commits to the authenticated integration account rather than
+           the session's own git identity is one such tradeoff worth
+           keeping on record wherever it was the original stated reason
+           for a now-removed local-merge rule.
         Both sub-steps touch the target's own Project-specific section,
         which 2.4 otherwise leaves alone — that is deliberate and is the
         one sanctioned exception: these are retired systems, not repo

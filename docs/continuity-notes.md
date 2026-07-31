@@ -1041,3 +1041,25 @@ history actually matters.)
   full automation), same as before this entry's own change. Kept as a
   dated tried-and-reverted record here rather than erased, matching this
   repo's own convention for entries like this one.
+
+- **Every PR/merge restatement stripped from this repo's own `CLAUDE.md`,
+  `PROJECT.md`, and `session-close.md`, same session, several explicit
+  user requests in a row** -- the CLAUDE.md `github-rules` bullet trimmed
+  to a bare pointer, `PROJECT.md`'s "automation default lives in the
+  portable skill" bullet removed outright, `session-close.md`'s two
+  PR-merge sentences (the session-close check, then the multi-repo
+  batching one) both removed. End state: `github-rules`' own skill file is
+  the sole place in this repo that says anything about PR/merge behavior
+  -- zero restatement, not even an agreeing pointer, anywhere else.
+- **`config-export-import.md` step 2.4b.2 broadened to match, same
+  session (2026-07-31, explicit user call).** Was "local-merge -> PR"
+  only (retiring the OLD plain-git-merge convention on import); now reads
+  "`github-rules` is the sole, official mechanism for PR/merge behavior,
+  always, with total priority" -- on import, ANY target-repo restatement
+  of PR/merge/commit-automation is removed, whether it conflicts with
+  `github-rules` or merely agrees with it (explicitly including a
+  target's own dated, user-authorized override, e.g. something written
+  like CPSeries' own "the PR always wins" rule, 2026-07-30 there -- that
+  repo's own prior authorization would NOT exempt it if/when this bundle
+  is re-imported there). Not yet applied to any other repo -- this is the
+  import PROCEDURE being updated, no actual import ran this session.
