@@ -20,8 +20,9 @@ caveman (full suite: caveman, caveman-commit, caveman-compress, caveman-help, ca
 karpathy-guidelines -> forrestchang/andrej-karpathy-skills
 
 # Recommended optional skills
+# (Programming-specific skills, e.g. the obra/superpowers suite, live in
+# programming-optional-skills.txt instead -- no skill is listed in both.)
 find-skills -> vercel-labs/skills
-superpowers (full suite: brainstorming, dispatching-parallel-agents, executing-plans, finishing-a-development-branch, receiving-code-review, requesting-code-review, subagent-driven-development, systematic-debugging, test-driven-development, using-git-worktrees, using-superpowers, verification-before-completion) -> obra/superpowers
 frontend-design -> anthropics/claude-code
 dataviz -> anthropics/skills
 webapp-testing -> anthropics/skills
