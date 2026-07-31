@@ -1112,3 +1112,51 @@ history actually matters.)
   this one): rebuild via CI, rewrite the root `.qplug` from the job log,
   and rewrite the test for the single-native-Knob shape before trusting
   either as current.
+  **Closed (2026-07-31, later the same day, user asked to continue).**
+  `build-qplug.yml` dispatched for `DolbyKnobTest` on this session's own
+  branch (had to be pushed first -- it only existed locally, `add_repo`/
+  `run_workflow` both need the ref to exist on `origin`). Job log confirmed
+  no unexpanded `#include` markers (`info.lua`/`controls.lua`/`layout.lua`,
+  all depth-1 into `plugin.lua`, nothing nested) and matched the Developer
+  source exactly; root `DolbyKnobTest.qplug` rewritten from it (v1.0.0.3,
+  single `GainDb` native Knob). `test_dist_dolbyknobtest.lua` rewritten to
+  match -- no runtime logic left to drive (Min/Max clamping is host-side,
+  not plugin code), so its 13 checks are a definition pass over every
+  control/layout field plus a runtime-pass smoke check that the built file
+  still loads with no throw. Full `Developer/tests/run.sh` green afterward.
+  `.claude/rules/repo-layout.md`'s own `DolbyKnobTest.qplug` and
+  `test_dist_dolbyknobtest.lua` entries updated to match, both previously
+  still describing the old two-control v1.0.0.1 shape. No `.qplugx` built
+  yet, same as before this entry.
+
+- **`DolbyKnobTest` extended twice more the same session (2026-07-31,
+  explicit user requests), Developer source now ahead of the root
+  `.qplug` again.** (1) `GainDbText`, a plain editable `Text` control
+  bidirectionally linked to `GainDb` -- no `QKnob` wrapper, direct
+  `Controls.*` wiring in a new `runtime.lua` (`BuildVersion` 1.0.0.4).
+  (2) A native embedded `gain` component (`GainComponent`, same `Type`
+  SubharmonicSynth uses for `GainSub`/`GainDry`) with real `Input`/`Output`
+  audio pins via `GetComponents`/`GetPins`/`GetWiring` -- `GainDb`/
+  `GainDbText` now both drive `GainComponent`'s own `gain` control, a real
+  DSP gain stage instead of a UI-only test (`BuildVersion` 1.0.0.5).
+  Framed explicitly to the user as composition, not derivation: a native
+  component is an opaque host DSP block with no Lua class to subclass;
+  this plugin's `runtime.lua` just keeps the embedded component's exposed
+  control in sync with the plugin's own controls, the same pattern
+  `SubharmonicSynth` already uses for its `GainSub`/`GainDry`.
+  Both commits' source was pushed (`bcab129`, `477883b`), syntax-checked
+  locally (`luac5.3 -p` on every `Developer/plugins/DolbyKnobTest/*.lua`
+  file) -- **CI build deliberately NOT dispatched**, explicit user request
+  mid-session ("Fins a nou avís després de pus[h], para i no segueixis" --
+  standing instruction: after a push, stop, don't auto-continue to the
+  CI-build/rewrite-root-file/rewrite-test steps without being asked again).
+  **Open/stale as of this entry**: root `DolbyKnobTest.qplug` and
+  `Developer/tests/test_dist_dolbyknobtest.lua` still reflect v1.0.0.3
+  (single native Knob, no `GainDbText`, no `GainComponent`) -- two full
+  versions behind the Developer source. Next session (or later this one,
+  once asked): dispatch `build-qplug.yml` for `DolbyKnobTest`, rewrite the
+  root file from the job log, extend the test for the new control +
+  embedded component (add `GetComponents`/`GetPins`/`GetWiring` checks
+  following `test_dist_subharmonic.lua`'s own pattern, plus a runtime pass
+  driving `GainDb`/`GainDbText` and asserting `GainComponent["gain"].Value`
+  tracks both). No `.qplugx` built for any version of this plugin yet.

@@ -7,3 +7,9 @@ table.insert(ctrls, {
 	UserPin = true,
 	PinStyle = "Both",
 })
+
+table.insert(ctrls, {
+	Name = "GainDbText",
+	ControlType = "Text",
+	UserPin = false,
+})

@@ -9,6 +9,13 @@ layout["GainDb"] = {
 	Size = { 36, 36 },
 }
 
+layout["GainDbText"] = {
+	PrettyName = "GainDbText (editable Text, linked to GainDb)",
+	Style = "Text",
+	Position = { left + 12, top + 72 },
+	Size = { 64, 16 },
+}
+
 table.insert(graphics, {
 	Type = "GroupBox",
 	Text = "DolbyKnob Test",
@@ -17,11 +24,4 @@ table.insert(graphics, {
 	CornerRadius = 8,
 	Position = { left + 8, top + 8 },
 	Size = { 90, 100 },
-})
-
-table.insert(graphics, {
-	Type = "Label",
-	Text = "GainDb\n(dB)",
-	Position = { left + 12, top + 72 },
-	Size = { 64, 32 },
 })

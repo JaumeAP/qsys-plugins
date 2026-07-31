@@ -90,16 +90,14 @@ docs/continuity-notes.md (dated history). -->
 │   │                                 State change; Detection property
 │   │                                 (On/Off/Both, default Both) gates which
 │   │                                 direction fires. No .qplugx built yet.
-│   └── DolbyKnobTest.qplug           (v1.0, added 2026-07-31) -- scratch/test
-│                                     plugin, not production: clones
-│                                     DolbyFader's own DKNob mechanism
-│                                     (QKnob wrapping a Text control) with a
-│                                     plain linear dB range (-100..20)
-│                                     instead of Dolby's piecewise 0.0-10.0
-│                                     scale. Gain (native Knob) <-> GainDb
-│                                     (QKnob clone), bidirectionally synced.
-│                                     DolbyFader itself untouched. No
-│                                     .qplugx built yet.
+│   └── DolbyKnobTest.qplug           (v1.0.0.3, added 2026-07-31, rebuilt
+│                                     same day) -- scratch/test plugin, not
+│                                     production: a single GainDb control,
+│                                     native ControlType="Knob"
+│                                     (ControlUnit="dB", -90..10), no
+│                                     QKnob/Text wrapper, no runtime.lua --
+│                                     nothing left to run. DolbyFader itself
+│                                     untouched. No .qplugx built yet.
 │
 ├── Dolby CP Emulator/                Once held 3 hand-written .quc Control
 │   └── README.md                     Scripts (CP650/CP750/CP850, no CP950/CP950A)
@@ -277,10 +275,14 @@ docs/continuity-notes.md (dated history). -->
         │                             ever fires its own Out_n, gated by the
         │                             selected edge(s)
         ├── test_dist_dolbyknobtest.lua Root DolbyKnobTest distributable (added
-        │                             2026-07-31, 13 checks): definition pass,
-        │                             both-direction sync between Gain and
-        │                             GainDb, range clamping (-100..20), and a
-        │                             value-storm pass across/beyond the range
+        │                             2026-07-31, rewritten same day for the
+        │                             v1.0.0.3 single-native-Knob shape, 13
+        │                             checks): definition pass (control field
+        │                             values, layout entry) plus a runtime
+        │                             pass confirming the built distributable
+        │                             loads with no throw -- Min/Max clamping
+        │                             is host-enforced, nothing left in the
+        │                             plugin itself to drive
         ├── test_stress.lua           Stress/fuzz over all five plugins: asserts invariants
         │                             (nothing throws, nothing publishes nil, every written
         │                             value stays in range) rather than exact values. Fixed
