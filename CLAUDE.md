@@ -101,11 +101,13 @@ only here, current state only, never summaries or backstory:
    own named source and date — a policy written into a portable file
    without one silently applies to every repo that imports the bundle,
    which is the thing to refuse.
-2. `changelog-rules` (`.claude/skills/changelog-rules/SKILL.md`, where
-   installed) — bundled, OPTIONAL per repo: install only where a repo
-   actually maintains a changelog. How to write/maintain entries: format,
-   semantic versioning, accumulate-in-memory-until-push workflow,
-   retention/dedup, exempt files.
+2. `changelog-rules` (`.claude/skills/changelog-rules/SKILL.md`) — bundled,
+   mandatory again (2026-07-31, explicit user request — installed in all
+   three repos and back on the mandatory list after a stretch as optional;
+   `.claude/skills-history.md` has the full flip-flop history, not repeated
+   here). How to write/maintain entries: format, semantic versioning, the
+   accumulate-in-memory-until-commit workflow, retention/dedup, exempt
+   files.
 3. `file-operations` (`.claude/skills/file-operations/SKILL.md`) — bundled,
    mandatory. Triggers by context on any file I/O; no pointer needed beyond
    its own description.
