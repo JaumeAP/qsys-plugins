@@ -3,11 +3,11 @@
    --			CP Series Emulator Application
    -- ##############################################################
    --
-   -- Wires the shared protocol core (../../shared/cp-series-emulator-
-   -- protocol.lua, #include'd directly by plugin.lua before this file --
-   -- see its own header comment for why) to this plugin's own Status
-   -- controls and TcpSocketServer lifecycle. MODEL/PORT/SocketHandler
-   -- are already defined by the time this file runs.
+   -- Wires the protocol core (protocol.lua, #include'd directly by
+   -- plugin.lua before this file -- see its own header comment for why)
+   -- to this plugin's own Status controls and TcpSocketServer lifecycle.
+   -- MODEL/PORT/SocketHandler are already defined by the time this file
+   -- runs.
 
 	do
 
