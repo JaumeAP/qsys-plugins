@@ -15,6 +15,16 @@
 # Search available skills: npx skills find <query>
 # Browse at: https://skills.sh/
 
+# Mandatory fetch-on-demand (required for all projects)
+caveman -> JuliusBrussee/caveman
+caveman-commit -> JuliusBrussee/caveman
+caveman-compress -> JuliusBrussee/caveman
+caveman-help -> JuliusBrussee/caveman
+caveman-review -> JuliusBrussee/caveman
+caveman-stats -> JuliusBrussee/caveman
+karpathy-guidelines -> forrestchang/andrej-karpathy-skills
+
+# Recommended optional skills
 find-skills -> vercel-labs/skills
 brainstorming -> obra/superpowers
 dispatching-parallel-agents -> obra/superpowers
@@ -29,13 +39,6 @@ using-git-worktrees -> obra/superpowers
 using-superpowers -> obra/superpowers
 verification-before-completion -> obra/superpowers
 frontend-design -> anthropics/claude-code
-karpathy-guidelines -> forrestchang/andrej-karpathy-skills
-caveman -> JuliusBrussee/caveman
-caveman-commit -> JuliusBrussee/caveman
-caveman-compress -> JuliusBrussee/caveman
-caveman-help -> JuliusBrussee/caveman
-caveman-review -> JuliusBrussee/caveman
-caveman-stats -> JuliusBrussee/caveman
 dataviz -> anthropics/skills
 webapp-testing -> anthropics/skills
 remotion -> remotion/remotion
