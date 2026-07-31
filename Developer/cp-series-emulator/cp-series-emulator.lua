@@ -17,7 +17,10 @@
 -- Dolby CP Emulator/README.md). Edit MODEL below to the processor you want
 -- to emulate, one instance per model, same as the three existing .quc files.
 
+-- Variables and flags
 local MODEL = 'CP750'  -- CP650 / CP750 / CP850 / CP950 / CP950A
+
+-- Timers, tables, and constants
 
 -- Per-model TCP port and wire dialect. Mirrors Developer/plugins/
 -- Dolby CPSeries Control/models.lua's CPModels.CONFIG exactly. This script
@@ -54,6 +57,9 @@ local CP650_FORMAT_LIST = '01, 04, 05, 10, 93, 94, 95, 99'
 -- macro-list accumulator expects, one entry per line, no header line.
 local MACROS = { '3:7.1 + Dolby Atmos', '1:5.1 + Dolby Atmos', '4:Music', '11:RCA', '7:BNC 1', '6:BNC 2', '9:HDMI' }
 
+local endl = '\r\n'
+
+-- Resolved once per instance: which of PARAM's five rows this MODEL uses.
 local params = PARAM[MODEL]
 if not params then error("CP Series Emulator: unknown MODEL '" .. tostring(MODEL) .. "'") end
 
@@ -67,8 +73,7 @@ local state = {
 	version = '1.4.2',  -- CP750's handshake-only cp750.sysinfo.version reply
 }
 
-local endl = '\r\n'
-
+-- Helper functions
 local function escape(s) return (s:gsub('%p', '%%%0')) end
 
 local function isGet(msg, param)
@@ -99,12 +104,15 @@ local function macroIndex(name)
 	return nil
 end
 
--- TcpSocketServer objects must stay global, never local (the same
--- GC-safety requirement documented for Timer/TcpSocket in
--- qsys-plugin-development.md: a local one can be collected once nothing
--- else references it, silently killing the listener).
+-- Sockets and services
+
+-- Must stay global, never local (the same GC-safety requirement documented
+-- for Timer/TcpSocket in qsys-plugin-development.md: a local one can be
+-- collected once nothing else references it, silently killing the
+-- listener).
 server = TcpSocketServer.New()
 
+-- EventHandlers
 function SocketHandler(sock, event)
 	if event ~= TcpSocket.Events.Data then return end
 
@@ -202,4 +210,5 @@ server.EventHandler = function(SocketInstance)
 	SocketInstance.EventHandler = SocketHandler
 end
 
+-- Initialization
 server:Listen(PORT[MODEL])
