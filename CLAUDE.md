@@ -58,6 +58,12 @@ briefly deferred to caveman's "no tool-call narration" the same day as the
 deferral above, then was carved back out as a second named exception once
 that loss turned out not to be wanted — same pattern as the numbered-lists
 exception just above, not a reversal of the broader deferral itself.
+**Git-absent repos** (2026-07-31, explicit user request, auto-detected not
+assumed): if the working directory has no git at all, "Commit."/"Push."
+never apply — there is nothing to commit or push. Detect once per session
+(e.g. `git rev-parse --is-inside-work-tree`); if absent, skip straight to
+saving/writing files with no bare label for that non-step. Multi-file-edit
+and test-run announcements are unaffected, they don't depend on git.
 
 **Third exception, 2026-07-31, explicit user request (asked repeatedly
 before being made permanent): collapse a skill suite to one line.** When a
@@ -156,17 +162,27 @@ turns, lots of accumulated work, or a compaction has clearly happened),
 proactively suggest continuing in a fresh chat. Long sessions get lossy.
 
 **"Tanca" always means end the session.** A bare "tanca" (no other object
-attached) always means "tanca sessió" — never "drop this topic". Before
-signaling closed: run plain `git status` (not `--short`; it reports branch
-and clean/dirty together, so a separate `git branch --show-current` adds
-nothing), then `git log --oneline -1`. Say plainly what's left
-uncommitted/unpushed. Also check whether the current branch has an open PR at
-`mergeable_state: clean` and merge it as part of the same routine, per
-`github-rules`' merge-automation default — don't leave it for the user to ask
-separately. Unfinished work or an open question worth a future session
-picking up gets a dated entry in this repo's continuity notes first —
+attached) always means "tanca sessió" — never "drop this topic". Detect git
+once before running the routine (e.g. `git rev-parse --is-inside-work-tree`):
+
+- **Git present:** before signaling closed, run plain `git status` (not
+  `--short`; it reports branch and clean/dirty together, so a separate
+  `git branch --show-current` adds nothing), then `git log --oneline -1`.
+  Say plainly what's left uncommitted/unpushed. Also check whether the
+  current branch has an open PR at `mergeable_state: clean` and merge it as
+  part of the same routine, per `github-rules`' merge-automation default —
+  don't leave it for the user to ask separately.
+- **Git absent** (2026-07-31, explicit user request): skip the `git
+  status`/`git log`/PR-merge checks entirely, they don't apply. Instead
+  state plainly which files were created/edited this session, from your
+  own turn history — that's the closest equivalent of "what's left
+  unsaved," since there's no commit/push state to report.
+
+Unfinished work or an open question worth a future session picking up gets
+a dated entry in this repo's continuity notes first —
 `docs/continuity-notes.md`, created there if the repo doesn't have one yet
-(this section is portable, so don't assume the file already exists).
+(this section is portable, so don't assume the file already exists). This
+applies regardless of git presence — continuity notes are plain files.
 
 ## Project-specific rules — read `PROJECT.md`
 

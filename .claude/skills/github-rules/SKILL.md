@@ -9,6 +9,8 @@ Portable reference for GitHub workflows across repos. General context, not a ste
 
 **Precedence:** Explicit user instructions always override anything here.
 
+**Git-absent repos:** if the working directory isn't a git work tree at all (check once, e.g. `git rev-parse --is-inside-work-tree`), none of this file applies — skip it entirely. There's no commit, branch, push, or PR to reason about; save/write files directly, plain and simple, no git or GitHub language in the response. Detect this once per session rather than assuming either way.
+
 ## Choosing a workflow
 
 Two shapes exist. Pick based on the repo's actual risk profile, not habit — the point of a branch+PR cycle is a review gate, and it's only worth paying for when something is actually being gated.
