@@ -14,6 +14,26 @@ so it doesn't need to rely on being auto-invoked as a skill. Two
 directions, mechanized best-effort by
 `.claude/hooks/config-ingest-reminder.sh`:
 
+**Standing rule, 2026-07-31 (explicit user request, found after a real
+mistake): removing an installed skill from a repo is NOT the same action
+as removing its catalog entry.** "Treu/desinstal·la `<skill>`", said on its
+own, means uninstall it from the CURRENT repo only — delete
+`.claude/skills/<name>`/`.agents/skills/<name>` and its
+`skills-lock.json` entry. It does NOT mean touching
+`recommended-skills.txt`, `programming-optional-skills.txt`,
+`investigacio-optional-skills.txt`, or any other catalog file — those stay
+as they are, the skill just becomes "catalogued, not installed" (the same
+state `swift`/`cpp`/`swiftui-specialist` are already in, deliberately).
+Only remove a catalog entry when the user's instruction names the list
+explicitly ("treu-la de la llista", "elimina l'entrada de
+programming-optional-skills.txt") — and even then, confirm before doing it
+rather than inferring it from an uninstall request. The one exception: a
+catalog entry that's independently proven wrong on its own merits (dead
+pointer, structurally broken without a missing dependency, no real source)
+can be corrected/removed as part of that specific fix — that's a
+correctness edit to the catalog, not a side effect of an unrelated
+uninstall.
+
 1. **Export** (this repo → another repo, on request, e.g. "exporta la
    configuració"): run `.claude/scripts/export-config-skill.sh` — bundles
    `CLAUDE.md` + `.claude/settings.json` + `.claude/hooks/` + this file

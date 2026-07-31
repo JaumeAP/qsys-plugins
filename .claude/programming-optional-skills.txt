@@ -1,8 +1,9 @@
 # Programming-focused optional skills
 #
 # PURPOSE: Offer these skills as optional recommendations during config import
-# into target repos. This list mirrors the programming-related skills
-# currently installed in this repo.
+# into target repos. Not a strict mirror of what's currently installed
+# locally -- a catalogued entry can outlive an uninstall (see the
+# DO-NOT-remove note below).
 #
 # FORMAT: skill-name -> owner/repo
 #
@@ -13,6 +14,12 @@
 #
 # Search available skills: npx skills find <query>
 # Browse at: https://skills.sh/
+#
+# DO NOT remove an entry here just because a skill was uninstalled from a
+# repo -- "uninstall X" means the local .claude/skills/X only. Only edit
+# this file when told to explicitly (see config-export-import.md's
+# standing rule, 2026-07-31), or when an entry is independently proven
+# wrong (dead pointer, broken without a missing dependency).
 #
 # 2026-07-31: all entries below verified with WebFetch against their real
 # repos. Two names were corrected to their closest verified equivalent,
