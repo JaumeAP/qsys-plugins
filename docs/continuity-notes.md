@@ -985,3 +985,35 @@ history actually matters.)
   assert channel isolation (`State_1` changes never fire `Out_2`/`Out_3`),
   matching the isolation check `Detection=Both` already had. No source
   change needed -- v2.0.0.3 already passes all 19.
+
+- **Started a "public Control Components" external-reference sweep in
+  `qsys-plugin-development.md`, same session, explicit user request** ("agafa
+  la llista de components... pins... incorpora"). Triggered by the CPSeries
+  `Selector` control-array-vs-native-component question: before touching
+  that plugin's own code, confirm what the manufacturer's real Schematic
+  Library components (`Selector`, `Control Router`, `Flip-Flop`, `Control
+  Delay`, `Blinking LED`...) actually expose, via crawled-search-index
+  research only (every direct fetch to `q-syshelp.qsc.com`/`help.qsys.com`,
+  including the Developer Help "Embedded Components" page and
+  `web.archive.org`, still 403s from this environment). Explicitly scoped as
+  external reference (their pins/controls as independent design components),
+  NOT a claim that any of them are confirmed `GetComponents()`-embeddable
+  `Type` strings for a plugin -- that remains unconfirmed for all of them
+  except `mixer`/`sine`/`stepper`, already in real use here. Five confirmed
+  and added: `Selector`, `Control Router`, `Flip-Flop` (already known),
+  `Control Delay`, `Blinking LED`.
+
+- **`LFO` and `Control Function` added, same session, right after** ("Sí,
+  continua amb LFO i Control Function"). `LFO`: behavior confirmed (Position-
+  style output modulated within a `Minimum`/`Maximum` window, `Period`
+  property in seconds not Hz, `Sine`/`Square`/`Triangle` waveforms, continuous
+  vs. one-shot run mode) but exact pin *names* still not pinned down -- kept
+  hedged in the table rather than invented. `Control Function`: `Input 1..N`
+  (2-512 depending on `Function`)/`Output` pins confirmed, plus the `Function`
+  property's ~30 choices (logic AND/OR/NOT, Trigger Combiner, Value
+  Greater/Less Than, Value Sum/Average/Max/Min/Product/Quotient/Divide/
+  Square/Square Root/Absolute Value, String Compare) and the
+  logic-vs-position-vs-value input-reading rule. All six "Control
+  Components" candidates from this sweep are now recorded; only the
+  "Advanced"/"Even More Control Components" categories remain open, still
+  blocked on the video-training-transcript problem noted above.

@@ -171,6 +171,32 @@ all share the same "keep it global, never `local`" GC-safety requirement
 noted above for `Timer`/`TcpSocket` specifically — the same closure-chain
 reasoning applies to any of them if a future plugin uses one.
 
+### Schematic Library — public Control Components (external reference, started 2026-07-31)
+
+These are top-level Q-SYS Designer components (dragged into a design or
+referenced from a Control Script via `Component.New(name)`), **not**
+confirmed as `GetComponents()`-embeddable `Type` strings — that distinction
+matters and is deliberately kept separate. Direct fetch of their own Q-SYS
+Help pages 403s from this environment; everything below comes from a web
+search's own crawled index of those pages (same caveat as the audio pin
+confirmations in "Repository layout"'s Continuity notes). Confirmed so far:
+
+| Component | Pins/controls | Key properties |
+|---|---|---|
+| `Selector` | `Sel 1..N` (input, one Toggle per choice, mutually exclusive), `Value` (output, string of the active choice), `Selection` (input, combo-box alternative to clicking a `Sel`) | `Selection Count` (2-64); per-`Sel` `Label`+`Value` |
+| `Control Router` | `Input 1..N`, `Output 1..M` (control, generic — carries whatever's wired in), `Input Select` per input (Boolean, exclusive — the radio-button pin), `Mute` per output | `Input Count`, `Output Count`; `Selection Controls` style (Crosspoint buttons/Knobs/Combo boxes) |
+| `Flip-Flop` | `Toggle`/`Set`/`Reset` (Trigger inputs), `Out` (Boolean output) | none (confirmed earlier this session, see `MultiFlip-Flop`'s own README entry) |
+| `Control Delay` | 1 input, up to 32 outputs (Output 1's own wiring determines all outputs' behavior) | `Max Delay` (1-60s, default 10), `Delay` per channel (0ms-60s, default 10s), `Bypass` per channel |
+| `Blinking LED` | one output (alternating signal) | `Enable`, `Period` (seconds, not Hz), `Duty Cycle` (10%-90%) |
+| `LFO` | Position-style output, modulated between a `Minimum`/`Maximum` window (e.g. Min=10%, Max=30% -> output sweeps only that 20% band); exact pin *names* (e.g. whether the output pin is literally called `Output`) still not confirmed, only its behavior | `Period` (waveform period in seconds, not Hz -- 100ms=10Hz, 60s=.016Hz), Waveform (`Sine`/`Square`/`Triangle` confirmed, list may not be exhaustive), run mode (continuous vs. one-shot single period) |
+| `Control Function` | `Input 1..N` (left side, 2-512 depending on the selected `Function`), `Output` (right side, one) | `Function` -- one property, ~30 choices, incl. `Logic AND`/`Logic OR`/`Logic NOT`, `Trigger Combiner` (N triggers -> 1, OR-gate for triggers), `Value Greater Than`/`Value Less Than` (2 inputs only), `Value Sum`/`Average`/`Maximum`/`Minimum`/`Product`/`Quotient`/`Divide`/`Square`/`Square Root`/`Absolute Value`, `String Compare` (2 inputs only, case-sensitive). Confirmed: logic-type functions read Boolean directly but position/value-type inputs are read via >/< midpoint; Text is NOT accepted directly by any function, needs an intermediate converter control first. |
+
+Revisit the rest of the "Simple/Advanced/Even More Control Components"
+Q-SYS training categories (list of names not extractable from this
+environment -- those training modules are video-based with no indexed
+transcript) only with the same real-fetch-or-crawled-index rigor as above —
+never guessed.
+
 ### Key module patterns
 
 - **No external OOP base.** `qknob.lua` no longer depends on any `class()`
