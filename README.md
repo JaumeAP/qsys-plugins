@@ -7,7 +7,10 @@ Component that controls All CP Dolby Processors from CP650 to CP950A
 ### Dolby Sweep
 Dolby Sweep Tone Generator
 ### Multi-Flipflop
-Multiple FlipFlop in one component
+Multiple FlipFlop in one component. Adds two things the stock Q-SYS
+Flip-Flop doesn't have: `Exclusive` (only one instance active at a time
+across the whole component) and `State` (a direct Boolean output per
+instance, not just Set/Reset/Toggle triggers)
 ### SubharmonicSynth
 Bass enhancement / subharmonic-style boost for LFE/Sub channels
 ### CP Series Emulator
