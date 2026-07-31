@@ -1,3 +1,20 @@
+# Recommended skills for all projects
+#
+# FORMAT: skill-name -> owner/repo
+#
+# INSTALL: Each skill can be installed with:
+#   npx skills add owner/repo -s skill-name
+# Or all from a repository:
+#   npx skills add owner/repo
+#
+# Example installations:
+#   npx skills add vercel-labs/skills -s find-skills
+#   npx skills add obra/superpowers -s brainstorming
+#   npx skills add anthropics/skills -s dataviz
+#
+# Search available skills: npx skills find <query>
+# Browse at: https://skills.sh/
+
 find-skills -> vercel-labs/skills
 brainstorming -> obra/superpowers
 dispatching-parallel-agents -> obra/superpowers

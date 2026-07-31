@@ -4,11 +4,22 @@
 # into target repos. This list contains all programming-related skills currently
 # available for qsys-plugins (19 skills total).
 #
-# USAGE: During target repo's import step 2.7, present these skills as optional
-# installations. Target repos can selectively add any or all of these via:
-#   npx skills add <owner/repo> -s <skill-name>
+# FORMAT: skill-name -> owner/repo
 #
-# FORMAT: skill-name -> owner/repo (same as recommended-skills.txt)
+# INSTALL: Each skill can be installed individually with:
+#   npx skills add owner/repo -s skill-name
+# Or all skills from a repository:
+#   npx skills add owner/repo
+#
+# Example installations:
+#   npx skills add obra/superpowers -s brainstorming
+#   npx skills add anthropics/skills -s claude-security
+#   npx skills add trailofbits/skills -s static-analysis
+#   npx skills add borghei/Claude-Skills -s skill-security-auditor
+#
+# Search available skills: npx skills find <query>
+# Browse at: https://skills.sh/
+#
 # Always fetch individual skills, never by pack name.
 #
 # 2026-07-30: the "Code quality & security" (claude-security, simplify,
