@@ -8,6 +8,11 @@
 -- against QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin}
 -- templates (see .claude/rules/qsys-plugin-development.md).
 -- v1.0.0.1: initial release.
+-- v2.0.0.1: added InputCount property (1-256, same range as MultiFlip-Flop's
+-- own), for N independent State/Out pairs in one instance, same convention
+-- as Gain's Multi-Channel property. Breaking: State/Out renamed to
+-- State_N/Out_N -- a design already wired to the old single-instance
+-- names needs those pins reconnected.
 
 --[[ #include "info.lua" ]]
 
@@ -20,7 +25,9 @@ function GetPrettyName(props)
 end
 
 function GetProperties()
-	return {}
+	local props = {}
+	--[[ #include "properties.lua" ]]
+	return props
 end
 
 function RectifyProperties(props)

@@ -1,10 +1,12 @@
+local top = 20
+
 table.insert(graphics, {
 	Type = "Label",
 	Text = "State",
 	StrokeWidth = 0,
 	VTextAlign = "Center",
-	Position = { 0, 0 },
-	Size = { 64, 32 },
+	Position = { 36 * 1, top },
+	Size = { 36, 32 },
 })
 
 table.insert(graphics, {
@@ -12,9 +14,19 @@ table.insert(graphics, {
 	Text = "Out",
 	StrokeWidth = 0,
 	VTextAlign = "Center",
-	Position = { 96, 0 },
-	Size = { 64, 32 },
+	Position = { 36 * 2 + 4, top },
+	Size = { 36, 32 },
 })
 
-layout["State"] = { PrettyName = "State", Position = { 0, 32 } }
-layout["Out"] = { PrettyName = "Out", Position = { 96, 32 } }
+for t = 1, props["InputCount"].Value do
+	table.insert(graphics, {
+		Type = "Label",
+		Text = tostring(t),
+		StrokeWidth = 0,
+		Position = { 0, top + (t + 1) * 16 },
+		Size = { 32, 16 },
+	})
+
+	layout["State_" .. t] = { PrettyName = tostring(t) .. "~State", Position = { 36 * 1, top + (t + 1) * 16 } }
+	layout["Out_" .. t] = { PrettyName = tostring(t) .. "~Out", Position = { 36 * 2 + 16, top + (t + 1) * 16 } }
+end
