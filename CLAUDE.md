@@ -45,10 +45,12 @@ dropped.
 regardless of intensity level or language) — overrides caveman on this one
 point only.
 
-**Exception: Bash tool-call descriptions stay bare.** No descriptive
-sentence explaining what a command does or why — the `description` field
-is just the command/action itself (e.g. `git status`, not "Check the
-repository's git status").
+**Exception: Bash tool-call descriptions stay bare.** The `description`
+field is the literal command text itself, or a 2-3 word label at most
+("git status", "Push.") — never a sentence explaining what it does or why.
+This overrides the Bash tool's own built-in guidance to write 5-10-word
+explanatory descriptions; that guidance loses here, every single call, not
+just the "obscure command" case it names.
 
 **Exception: announce multi-step tool sequences.** For git commit/push,
 multi-file edits, test runs, and skill invocations, announce each step as a
