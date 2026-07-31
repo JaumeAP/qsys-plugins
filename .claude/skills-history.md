@@ -285,3 +285,25 @@ development & architecture" alongside `superpowers`), `CLAUDE.md`'s
 `rule-check-reminder.sh`'s job 1 reminder text (no longer names
 `karpathy-guidelines` among the enforced-mandatory four — see the
 2026-07-30 entry above for why that hook names them explicitly at all).
+
+## `github-rules` — push-cadence rule added (2026-07-31)
+
+Explicit user request, given directly: batch several commits locally
+before pushing, don't push after every single one -- except when a single
+change is very large/significant, push right after that one. Added as a
+new "Push cadence (direct-to-default workflow)" section, right after
+"Choosing a workflow" and before "Branch+PR workflow", mirroring the
+principle that section's own "Batch related edits into one PR cycle" line
+already applies to the branch+PR path -- this just extends the same idea
+to the direct-push default. Edited directly rather than through
+skill-creator's full eval loop (test prompts, subagent runs, benchmarking)
+per that skill's own stated flexibility ("if the user is like 'I don't
+need to run a bunch of evaluations, just vibe with me', you can do that
+instead") -- this is a small, unambiguous, directly-dictated policy change
+to an existing rules file, not a new skill or an ambiguous behavior worth
+eval-testing. Still invoked via the `Skill` tool (skill-creator) rather
+than a bare manual edit, per the standing rule that any SKILL.md content
+change goes through that process.
+Only applied here in qsys-plugins so far -- not yet propagated to
+CPSeries/Eines via the export/import bundle mechanism; do that on request,
+same as any other portable-skill change.

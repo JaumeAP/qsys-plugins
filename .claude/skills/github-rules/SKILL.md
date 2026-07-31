@@ -21,6 +21,14 @@ Two shapes exist. Pick based on the repo's actual risk profile, not habit — th
 
 If it's genuinely unclear which shape fits, ask once at the start of the session rather than assuming — cheap up front, expensive to discover mid-session after work has already landed the wrong way.
 
+## Push cadence (direct-to-default workflow)
+
+**Default (2026-07-31, explicit user request): batch several commits locally before pushing, don't push after every single one.** Each logical unit of work still gets its own commit (one commit per unit, same as always — this is about push frequency, not commit granularity), but hold the push until a few related commits have accumulated, the same "batch, don't fragment" principle the branch+PR path already applies to PR cycles below.
+
+**Exception: push right away when a single change is very large or significant** — a change substantial enough on its own that leaving it unpushed for long risks losing real work, or that other work depends on it landing first. Judgment call, not a fixed line count: a one-line typo fix waits for the next batch; a large refactor, a new module, or anything the user would be upset to lose pushes immediately on its own.
+
+Applies to the direct-to-default path only — the branch+PR workflow already has its own batching rule ("Batch related edits into one PR cycle" below), which stays as-is.
+
 ## Branch+PR workflow (when the exception applies)
 
 1. Work lands on task-specific branch: `git push -u origin <branch>`
