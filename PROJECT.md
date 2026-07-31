@@ -88,8 +88,3 @@ close an item by deleting its line here, and put the full story in
 - **`qsc-q-sys` is off-limits.** Do not call `add_repo` for it and do not ask
   about it, in this or any future session, unless the user brings it up first
   (2026-07-29 standing instruction; the submodule was deliberately removed).
-- The full commit/push/PR/merge automation default lives in the portable
-  `github-rules` skill, not here. Note the calling environment can layer its
-  own "do not create a PR unless asked" gate on top of it, independent of
-  anything this repo states — when that gate is live, ask for authorization
-  once, early, and treat it as standing for the session.
