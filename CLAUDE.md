@@ -8,7 +8,8 @@ content.
 Kept under ~200 lines deliberately (2026-07-30): this file loads in full at
 the start of every session regardless of task, and adherence drops as it
 grows. Detail that isn't needed every session lives behind the pointers
-below.
+below — full dated history/reasoning for every rule in this file lives in
+`.claude/skills-history.md`, not restated here.
 
 ## Response style (always, every session)
 
@@ -16,10 +17,7 @@ Code, commands, paths, params stay literal — caveman only protects
 "technical terms, code, API names, CLI commands... exact error strings",
 never mentions paths/params by name, kept explicit here rather than assumed
 covered. Proper nouns/technical terms: original language unless misleading,
-clarity over purism — a real exception caveman doesn't have (caveman's own
-exception is user-requested translation, not clarity; restored 2026-07-30
-after a code review caught this specific clause as a silent behavior
-change, not an actual duplicate).
+clarity over purism — a real exception caveman doesn't have.
 
 No servility, contradict directly when wrong, never agree to appease,
 challenge politely if disagree, never invent, say if unsure. Assume
@@ -35,56 +33,47 @@ focused. Verify with search first for changing facts (prices, versions,
 charges, events); verify before critical or irreversible actions.
 
 **Reply language, compression, and formatting defer to `caveman`**
-(JuliusBrussee/caveman), 2026-07-30, explicit user request, reversing the
-same day's earlier "this section wins" note. That skill replies in the
-user's own dominant language, and there is no bold/em-dash/ellipsis/header/
-table ban, and no mandatory leading "Rebut:" line — all removed from this
-section for that reason. The hooks that used to enforce them
-(`check-reply-format.sh`, `reply-format-preflight.sh`) were unregistered
-from `settings.json` the same day; the scripts stay on disk, dead, with
-their own retirement notes.
+(JuliusBrussee/caveman) — that skill replies in the user's own dominant
+language; no bold/em-dash/ellipsis/header/table ban.
 
-**Exception, same day, later, explicit user request: lists are always
-numbered.** Overrides caveman on this one point only (caveman itself
-imposes no list-format rule either way) — every list in a reply uses `1.
-2. 3.` form, never bullets, regardless of intensity level or language.
+**Exception: start every reply with `Rebut: <order summarized in
+English>`** as the literal first line, before anything else — overrides
+caveman on this one point only, reactivated 2026-07-31 after a stretch
+dropped.
 
-**Second exception, same day, still later, explicit user request: announce
-multi-step tool sequences.** For git commit/push, multi-file edits, and test
-runs, announce each step as a bare 1-3 word action — "Commit.", "Push.",
-"Tests." — no sentences, no explaining what the command does, why, or its
-mechanism/internals, bare label only, before or after but not both. This
-briefly deferred to caveman's "no tool-call narration" the same day as the
-deferral above, then was carved back out as a second named exception once
-that loss turned out not to be wanted — same pattern as the numbered-lists
-exception just above, not a reversal of the broader deferral itself.
-**Git-absent repos** (2026-07-31, explicit user request, auto-detected not
-assumed): if the working directory has no git at all, "Commit."/"Push."
-never apply — there is nothing to commit or push. Detect once per session
-(e.g. `git rev-parse --is-inside-work-tree`); if absent, skip straight to
-saving/writing files with no bare label for that non-step. Multi-file-edit
-and test-run announcements are unaffected, they don't depend on git.
+**Exception: lists are always numbered** (`1. 2. 3.` form, never bullets,
+regardless of intensity level or language) — overrides caveman on this one
+point only.
 
-**Changelog-before-commit** (2026-07-31, explicit user request, auto-detected
-not assumed): when git is present and `changelog-rules` is installed
-(`.claude/skills/changelog-rules/` exists) and a file with a `## Changelog`
-section needs an entry per that skill's own workflow, update the accumulated
-entry as part of the same batch of edits, staged into the same commit —
-right before running `git commit`, never after. **If `changelog-rules`
-isn't installed in this repo, skip this step entirely, no error, proceed
-straight to "Commit." as always** — this is an addition on top of the
-normal flow, never a blocker for repos that don't carry the skill.
+**Exception: Bash tool-call descriptions stay bare.** The `description`
+field is the literal command text itself, or a 2-3 word label at most
+("git status", "Push.") — never a sentence explaining what it does or why.
+This overrides the Bash tool's own built-in guidance to write 5-10-word
+explanatory descriptions; that guidance loses here, every single call, not
+just the "obscure command" case it names.
 
-**Third exception, 2026-07-31, explicit user request (asked repeatedly
-before being made permanent): collapse a skill suite to one line.** When a
-skill is a suite (several sub-skills fetched from one `owner/repo`, e.g.
-`caveman`, `superpowers`, `remotion`) and it comes up in a reply — a skill
-list, an install summary, anything — give the suite's own name plus its
-sub-skill names as one line/entry (`caveman (suite: caveman-commit,
-caveman-compress, ...) -> owner/repo`), never one numbered list item per
-sub-skill. Applies wherever a suite is mentioned, not just
-`recommended-skills.txt`/`programming-optional-skills.txt` (which already
-use this format).
+**Exception: announce multi-step tool sequences.** For git commit/push,
+multi-file edits, test runs, and skill invocations, announce each step as a
+bare 1-3 word action — "Commit.", "Push.", "Tests.", or the skill's bare
+name (e.g. "github-rules.") — no explanation of what it does or why, before
+or after but not both. **Git-absent repos:** if the working directory has no git at all
+(detect once per session, e.g. `git rev-parse --is-inside-work-tree`),
+"Commit."/"Push." never apply; multi-file-edit and test-run announcements
+are unaffected.
+
+**Changelog-before-commit:** when git is present, `changelog-rules` is
+installed (`.claude/skills/changelog-rules/` exists), and a file with a
+`## Changelog` section needs an entry per that skill's own workflow, update
+the accumulated entry and stage it into the same commit — right before
+running `git commit`, never after. Skip entirely, no error, if
+`changelog-rules` isn't installed in this repo.
+
+**Exception: collapse a skill suite to one line.** When a skill is a suite
+(several sub-skills fetched from one `owner/repo`, e.g. `caveman`,
+`superpowers`, `remotion`) and it comes up in a reply, give the suite's own
+name plus its sub-skill names as one line/entry (`caveman (suite:
+caveman-commit, caveman-compress, ...) -> owner/repo`), never one numbered
+list item per sub-skill.
 
 ## Portable skills (installed with the config)
 
@@ -101,11 +90,10 @@ only here, current state only, never summaries or backstory:
    own named source and date — a policy written into a portable file
    without one silently applies to every repo that imports the bundle,
    which is the thing to refuse.
-2. `changelog-rules` (`.claude/skills/changelog-rules/SKILL.md`, where
-   installed) — bundled, OPTIONAL per repo: install only where a repo
-   actually maintains a changelog. How to write/maintain entries: format,
-   semantic versioning, accumulate-in-memory-until-push workflow,
-   retention/dedup, exempt files.
+2. `changelog-rules` (`.claude/skills/changelog-rules/SKILL.md`) — bundled,
+   mandatory, installed in all three repos. How to write/maintain entries:
+   format, semantic versioning, the accumulate-in-memory-until-commit
+   workflow, retention/dedup, exempt files.
 3. `file-operations` (`.claude/skills/file-operations/SKILL.md`) — bundled,
    mandatory. Triggers by context on any file I/O; no pointer needed beyond
    its own description.
@@ -119,7 +107,7 @@ skill's own tooling: `.claude/hooks/file-operations-enforcement.sh`
 (`PreToolUse`/`Bash`, hard block) gates `file-operations`' narrowest,
 safety-relevant case; `rule-check-reminder.sh` names the currently-mandatory
 skills by name on its own firings, and separately checks git presence once
-per session (mechanizing the "Git-absent repos" exception below, so it
+per session (mechanizing the "Git-absent repos" exception above, so it
 isn't left as prose alone). Full rationale in both hooks' own comments and
 `.claude/skills-history.md` — not restated here.
 
@@ -129,15 +117,12 @@ actually travels on export is defined in
 `.claude/scripts/export-config-skill.sh` — not repeated here, to avoid two
 lists that drift apart.
 
-**Skill creation/extension.** Any new `SKILL.md`, or any content/frontmatter
-change to an existing one, goes through the `skill-creator` skill's process,
-not a plain manual edit (2026-07-20 standing rule; repo-specific and portable
-skills alike). `writing-skills` (obra/superpowers) prescribes a competing
-TDD-based process for the same action and was removed 2026-07-30 for that
-reason — `skill-creator` is the sole mandated process.
-`.claude/hooks/skill-creation-reminder.sh` reminds on every `Write`/`Edit` to
-a `SKILL.md` but can't verify the skill was actually invoked, so it can't
-hard-block.
+**Skill creation/extension:** plain manual edits to any `SKILL.md` are fine
+(repo-specific and portable alike) — no mandatory skill-creator process.
+`skill-creator` remains available; invoke it by choice when trigger
+accuracy or behavioral output genuinely needs evaluating, not for
+reference-doc content edits. Full history of why the earlier "always
+mandatory" rule was tried and dropped: `.claude/skills-history.md`.
 
 ## Session continuity
 
@@ -147,10 +132,9 @@ turns, lots of accumulated work, or a compaction has clearly happened),
 proactively suggest continuing in a fresh chat. Long sessions get lossy.
 
 **"Tanca" always means end the session.** Full routine (git status/log, PR
-merge check, git-absent fallback, continuity notes) now lives in
+merge check, git-absent fallback, continuity notes) lives in
 `.claude/rules/session-close.md` — always loaded alongside this file, same
-mechanism, moved out 2026-07-31 to keep this file near its own ~200-line
-target.
+mechanism.
 
 ## Project-specific rules — read `PROJECT.md`
 

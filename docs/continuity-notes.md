@@ -889,3 +889,99 @@ history actually matters.)
   and already double-checked for any plugin with no nested includes
   (confirmed for `CP Series Emulator`'s three rebuilds this session,
   each byte-for-byte matched against its own job log).
+
+- **`Developer/host-emulator/components/{gain,filter_lowpass,
+  equalizer_parametric}.lua` pin lists independently confirmed (2026-07-31),
+  closing `PROJECT.md`'s former "Open threads" item 2.** Direct fetches of
+  both `help.qsys.com` and `q-syshelp.qsc.com` still 403 (same block first
+  hit 2026-07-29 when these three files were written; also tried and
+  blocked this session: `web.archive.org`, the `r.jina.ai` read proxy,
+  GitHub code search over `gdyr/qsys-plugin-docs` and related public repos
+  for a real plugin wiring these specific component Types -- none turned up
+  a `GetWiring` example beyond the `mixer` one already cited in
+  `mixer.lua`). What DID work: a plain web search's own crawled index of
+  each component's official Q-SYS Help page (`gain.htm`,
+  `filter_lowpass.htm`, `equalizer_parametric.htm`) -- the same source
+  category, once removed from a direct fetch, that already confirmed
+  `sine.lua`. All three pages' indexed text states the same pattern: Mono
+  (default) = one input, one output; Stereo = two/two; Multi-Channel =
+  2-256, selectable via Properties. That corroborates the "Input 1"/
+  "Output 1" convention these three files already returned for the Mono
+  case, on top of the pre-existing internal evidence (SubharmonicSynth's own
+  shipped `GetWiring`, wiring them as "GainSub Input 1"/"Lpf Input 1"/
+  "Peq Input 1" etc.). Deliberately NOT extended to model Stereo/
+  Multi-Channel pin naming -- no plugin in this repo uses any of the three
+  outside Mono, and the exact Properties key(s) that would select those
+  modes for these Types (`mixer.lua`'s own `n_inputs`/`n_outputs` keys are
+  confirmed only for `mixer`) are still unverified, so guessing them would
+  be exactly the kind of speculative addition this repo's conventions rule
+  out. Re-open if a real host or a new plugin ever needs non-Mono wiring
+  for `gain`/`filter_lowpass`/`equalizer_parametric`.
+
+- **New plugin `StateTrigger` added (2026-07-31), inverse of
+  `MultiFlip-Flop`.** Researched against QSC's own support docs first
+  (confirmed the manufacturer has no dedicated fixed component for
+  Boolean-to-Trigger the way Flip-Flop covers Trigger-to-Boolean; the
+  recommended path is a Block Controller with a "State Trigger" push
+  action, or plain Lua). Built as a minimal dedicated plugin instead: one
+  `State` input (`ButtonType="Toggle"`), one `Out` output
+  (`ButtonType="Trigger"`), a single `EventHandler` that calls
+  `Controls.Out:Trigger()` on every `State` change, either direction. No
+  properties, no shared includes -- deliberately as basic as the request
+  asked for. Built via the real PLUGCC.exe CI path end to end for the
+  first time in this session (`build-qplug.yml` dispatched with
+  `plugin=StateTrigger`, job log read back, root `StateTrigger.qplug`
+  written from it, confirmed no unexpanded `#include` markers), not just
+  hand-assembled from the Developer source -- matches the documented
+  "Developer workflow" exactly. `Developer/tests/test_dist_statetrigger.lua`
+  added (9 checks: definition pass, control/layout counts, State->Out
+  firing both directions), wired into `run.sh` and `harness.lua`'s `DIST`
+  table. No `.qplugx` built yet (same state CP Series Emulator shipped in
+  initially -- workflow choice list updated, `build-qplugx.yml` not yet
+  dispatched for this one).
+
+- **`StateTrigger` given a `Channels` property (1-256), same session,
+  right after the entry above.** Explicit user request, "following
+  standard conventions... like Gain does" -- matched to the convention
+  already in this repo (`MultiFlip-Flop`'s own `InputCount`, same 1-256
+  range) rather than inventing a new one. Single `State`/`Out` renamed to
+  `State_n`/`Out_n`, looped `Channels` times in `GetControls`/
+  `GetControlLayout`/the runtime `EventHandler` block, `properties.lua`
+  added (previously had none). Property named `Channels`, not
+  `InputCount` -- the user asked specifically for "number of channels"
+  framing, closer to Gain's own Multi-Channel wording, after the first
+  pass already used `InputCount` and a CI build had already run against
+  it; that build's artifact was simply discarded, a second CI dispatch
+  (`build-qplug.yml`) produced the real `Channels`-based root
+  `StateTrigger.qplug` (v2.0.0.1, breaking bump per the rename
+  convention). `test_dist_statetrigger.lua` rewritten to match
+  (10 checks): control/layout count scales with `Channels`, and a
+  multi-instance check that triggering `State_2` only ever fires `Out_2`,
+  never `Out_1`/`Out_3`.
+
+- **`StateTrigger` given a `Detection` property (On/Off/Both, default
+  Both), same session, right after the `Channels` entry above.** Explicit
+  user request: gate which edge of `State_n` fires `Out_n` -- On = rising
+  only, Off = falling only, Both = either (matches v2.0.0.1's prior
+  behavior, so the default is non-breaking). First CI build (v2.0.0.2)
+  shipped a real bug: the `EventHandler` read `ctrl.Boolean` off its own
+  callback argument, but this repo's convention (`MultiFlip-Flop`, and the
+  test harness itself, which calls `EventHandler()` with no argument) is
+  to never rely on that argument and re-read `Controls[name]` by closure
+  instead. `test_dist_statetrigger.lua` (rewritten to 14 checks: definition
+  pass plus a runtime pass per `Detection` value) caught it immediately --
+  `lua5.3: ...StateTrigger.qplug:126: attempt to index a nil value (local
+  'ctrl')`. Fixed in `runtime.lua` (`Controls["State_"..t].Boolean`
+  instead of `ctrl.Boolean`), rebuilt via a fresh CI dispatch (v2.0.0.3),
+  confirmed in the job log, re-run against the corrected root file: all
+  14 checks pass. Non-breaking otherwise: no pin renamed, `Detection`
+  defaults to `Both`.
+
+- **`test_dist_statetrigger.lua` extended (14 -> 19 checks), same session.**
+  Three-ish more checks, explicit user request ("Fes-li unes tres all
+  test"): (1) definition pass now checks `GetProperties()`'s own `Detection`
+  entry has default `Value == "Both"` and `Choices` covering `On`/`Off`/
+  `Both`; (2) `Detection=On` and (3) `Detection=Off` runtime passes now also
+  assert channel isolation (`State_1` changes never fire `Out_2`/`Out_3`),
+  matching the isolation check `Detection=Both` already had. No source
+  change needed -- v2.0.0.3 already passes all 19.

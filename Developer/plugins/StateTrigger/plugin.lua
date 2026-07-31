@@ -1,0 +1,62 @@
+-- State Trigger for Q-SYS
+-- by Jaume Puig / james.puig@elcine.com
+-- Jul '26
+-- Inverse of the Multi Flip-Flop component: Flip-Flop converts a Trigger
+-- input into a Boolean State output; this converts a Boolean State input
+-- into a Trigger pulse output, one shot per state change, either
+-- direction. Built to the plugin structure/naming convention confirmed
+-- against QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin}
+-- templates (see .claude/rules/qsys-plugin-development.md).
+-- v1.0.0.1: initial release.
+-- v2.0.0.1: added Channels property (1-256, same range as MultiFlip-Flop's
+-- own InputCount), for N independent State/Out pairs in one instance, same
+-- convention as Gain's Multi-Channel property. Breaking: State/Out renamed
+-- to State_N/Out_N -- a design already wired to the old single-instance
+-- names needs those pins reconnected.
+-- v2.0.0.2: added Detection property (enum: On/Off/Both, default Both).
+-- On fires Out_N only when State_N becomes true, Off only when it becomes
+-- false, Both (default, matches prior behavior) fires on either change.
+-- Non-breaking: no pin renamed, default preserves v2.0.0.1's behavior.
+-- v2.0.0.3: fixed a bug in v2.0.0.2's own EventHandler -- it read
+-- ctrl.Boolean (the callback's own argument), but Q-SYS's own EventHandler
+-- convention here (see MultiFlip-Flop) is not to rely on that argument;
+-- re-reads Controls["State_"..t].Boolean instead, which also matches how
+-- this repo's own test harness calls EventHandler with no argument.
+
+--[[ #include "info.lua" ]]
+
+function GetColor(props)
+	return { 204, 204, 204 }
+end
+
+function GetPrettyName(props)
+	return "State Trigger"
+end
+
+function GetProperties()
+	local props = {}
+	--[[ #include "properties.lua" ]]
+	return props
+end
+
+function RectifyProperties(props)
+	props.plugin_show_debug.IsHidden = true
+	return props
+end
+
+function GetControls(props)
+	local ctrls = {}
+	--[[ #include "controls.lua" ]]
+	return ctrls
+end
+
+function GetControlLayout(props)
+	local layout = {}
+	local graphics = {}
+	--[[ #include "layout.lua" ]]
+	return layout, graphics
+end
+
+if Controls then
+	--[[ #include "runtime.lua" ]]
+end

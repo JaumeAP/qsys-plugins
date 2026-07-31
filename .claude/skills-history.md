@@ -307,3 +307,151 @@ change goes through that process.
 Only applied here in qsys-plugins so far -- not yet propagated to
 CPSeries/Eines via the export/import bundle mechanism; do that on request,
 same as any other portable-skill change.
+
+## CLAUDE.md response-style rules — full history moved here (2026-07-31)
+
+Trimmed out of `CLAUDE.md`'s "Response style" and "Portable skills"
+sections (2026-07-31, explicit user request: "treu tot lo que puguis del
+fitxer principal de configuracio i posa-ho a l'export o habilitat
+corresponent") -- CLAUDE.md keeps only the operative rule + a pointer here
+now; this section holds the dated reasoning that used to sit inline.
+
+**Caveman deferral (2026-07-30).** Reply language/compression/formatting
+deferring to `caveman` reverses that same day's earlier "this section
+[CLAUDE.md] wins" note -- explicit user request. The hooks that used to
+enforce the pre-caveman format rules (`check-reply-format.sh`,
+`reply-format-preflight.sh`) were unregistered from `settings.json` the
+same day. **Correction (2026-07-31, found during a cross-repo audit):**
+those two scripts were only ever created in `qsys-plugins` -- they stay on
+disk there, dead, with this same retirement note in their own headers.
+`CPSeries` and `Eines` never had them at all; CLAUDE.md's old wording ("the
+scripts stay on disk, dead") was being copied verbatim into those two
+repos' CLAUDE.md as if it were true there too, which it wasn't. Don't
+recreate them in CPSeries/Eines to "match" the sentence -- the sentence was
+the thing that was wrong, not the missing files.
+
+**Multi-step tool sequence announcements (2026-07-30, explicit user
+request).** For git commit/push, multi-file edits, and test runs: announce
+each step as a bare 1-3 word action -- "Commit.", "Push.", "Tests." -- no
+sentences, no explaining mechanism/internals, before or after but not
+both. This briefly deferred to caveman's "no tool-call narration" the same
+day as the caveman deferral above, then was carved back out as a second
+named exception once that loss turned out not to be wanted -- same pattern
+as the numbered-lists exception, not a reversal of the broader deferral
+itself. **Git-absent repos** (2026-07-31, explicit user request,
+auto-detected not assumed): if the working directory has no git at all,
+"Commit."/"Push." never apply. Detect once per session (`git rev-parse
+--is-inside-work-tree`); if absent, skip straight to saving/writing files
+with no bare label for that non-step. Multi-file-edit and test-run
+announcements are unaffected, they don't depend on git.
+
+**Collapse a skill suite to one line (2026-07-31, explicit user request,
+asked repeatedly before being made permanent).** When a skill is a suite
+(several sub-skills fetched from one `owner/repo`, e.g. `caveman`,
+`superpowers`, `remotion`) and it comes up in a reply -- a skill list, an
+install summary, anything -- give the suite's own name plus its sub-skill
+names as one line/entry, never one numbered list item per sub-skill.
+Applies wherever a suite is mentioned, not just
+`recommended-skills.txt`/`programming-optional-skills.txt` (which already
+used this format before the rule was generalized).
+
+## Skill creation/extension -- mandatory skill-creator process retired (2026-07-31)
+
+From 2026-07-20 through 2026-07-31, CLAUDE.md required every `SKILL.md`
+create/edit to go through `skill-creator`'s full interview/eval/benchmark
+process, never a plain manual edit. Reversed the same day it was tightened
+into a "no shortcuts, ever" clause: tested once for real on a content edit
+to `github-rules` (a reference-doc skill, no subjective/behavioral
+triggering to evaluate) -- 4 subagents, ~210k tokens, a real bug in the
+eval-viewer tooling itself (`generate_review.py`'s `build_run()` only
+checked `eval_metadata.json` at a run's immediate parent, missing it
+whenever an extra config-name directory sat in between -- fixed directly
+in the tool since it's a shared script, not something to route through its
+own eval process to fix), and a measured **0% behavioral difference**
+between the old and new skill content. The user's own verdict, directly:
+not spending that cost on something that doesn't work. Plain manual edits
+to any `SKILL.md` are fine again, repo-specific and portable alike.
+`skill-creator` itself is still available and still useful for what it's
+actually suited to -- a new skill, or a change to one where trigger
+accuracy or behavioral output is the question -- invoke it by choice when
+that's the situation, not by default. `writing-skills` (obra/superpowers)
+remains removed regardless (2026-07-30, unrelated reason -- a competing
+TDD-based process for the same action).
+`.claude/hooks/skill-creation-reminder.sh` mechanized the retired mandate
+and is unregistered from `settings.json` as of this same reversal -- left
+on disk, dead, with its own retirement note in its header (present in all
+three repos, unlike the check-reply-format.sh pair above).
+
+An immediate follow-up finding, same session: the user asked to try the
+retired process ONE more time for real ("Refes-la ara pel procediment
+estandard") before accepting the retirement, specifically on the
+`github-rules` multi-repo-sessions edit -- that run is what produced the
+4-subagent/~210k-token/0%-difference/real-bug result documented above, and
+the retirement itself only became permanent after seeing that result
+("Definitiu no gastarem mes... elimina tot aquesta funcionalitat").
+
+## "Rebut: <order in English>" leading line reactivated (2026-07-31, explicit user request)
+
+Dropped 2026-07-30 as part of the caveman deferral (see the entry above --
+that deferral also killed the whole `check-reply-format.sh` mechanical
+enforcement bundle: Catalan-only, no bold/em-dash/ellipsis/headers/tables,
+numbered-lists-only). The user asked specifically for this one piece back
+("quan et donava una ordre immediatament me la repetides posar-la en
+angles"), not the rest of that bundle -- reactivated as a plain CLAUDE.md
+rule only, followed by judgment, not re-wired into
+`check-reply-format.sh`/`reply-format-preflight.sh` (still retired, still
+dead on disk in qsys-plugins per that entry -- those two scripts also
+enforced the Catalan-only/no-bold/etc rules the user has NOT asked back,
+so mechanically re-enabling them would over-apply this request).
+
+## Bundled-skill group history (find-skills / git-rules / github-rules / changelog-rules) — moved here from `config-export-import.md` (2026-07-31)
+
+The step-by-step version of this history used to live inline in
+`config-export-import.md` (steps 2.2/2.5/2.7), spelled out turn by turn
+with exact dates -- moved here when that file was trimmed to
+operative-only content, same treatment CLAUDE.md got the same day. Nothing
+below is new; it's the same record, relocated.
+
+**`find-skills`** had the longest road of any skill in the bundle: optional
+(2026-07-27) -> deleted entirely the same day -> restored as optional
+(2026-07-28) -> deleted again as fetch-on-demand-only later that day ->
+made mandatory/always-present (briefly) -> moved to the then-existing
+optional group (2.5) -> and finally, later the same day, moved off the
+bundled-file path entirely, back to fetch-on-demand-only via
+`recommended-skills.txt` (`find-skills -> vercel-labs/skills`) -- its
+final resting state, landing back where its very first attempt at this
+left off. A same-day standing order that briefly required installing
+`find-skills` first before anything else in the "recommended skills" step
+was removed once it went fetch-on-demand-only: `npx skills add` is a
+standalone CLI, not dependent on `find-skills` being installed first.
+
+**`git-rules`** was retired from the bundle entirely on 2026-07-25,
+explicit user request -- see `removed-files.txt`. Never revisited after
+that.
+
+**`github-rules`** was promoted into the bundle 2026-07-27 after being
+generalized from an earlier repo-specific skill into portable GitHub PR
+conventions. The same day, the whole four-skill group was briefly switched
+from mandatory/blind-copy to optional/offered, then later the same day
+moved back to mandatory (explicit user request each time) -- its settled
+state since.
+
+**`changelog-rules`** walked the longest road of any skill that stayed
+bundled (as opposed to going fetch-on-demand like `find-skills`): optional
+(2026-07-27) -> deleted entirely the same day -> restored from git history
+as optional (2026-07-28) -> deleted from the bundle a second time, also
+2026-07-28 -> reinstated a THIRD time on 2026-07-30, straight into the
+mandatory blind-copy group -> reverted back to optional a FOURTH time,
+later the same day, into the then-existing 2.5 group rather than deleted
+(unlike `find-skills`, it never went fetch-on-demand-remote at any point --
+every state it occupied kept it as a locally-bundled file, only the
+mandatory-vs-optional question ever changed). It used to also embed its
+full current `SKILL.md` content verbatim in `config-export-import.md`'s
+own appendix, so a repo without it installed still had the complete
+definition on hand -- removed 2026-07-31 (the user held their own
+extracted copy outside this repo at the time). **Fifth turn, same day,
+later: back to mandatory, this time for good** -- installed as a real file
+in all three repos and moved into the mandatory blind-copy group for
+good, following an audit that also fixed two real bugs in the skill
+itself (see the `changelog-rules` entry above). The 2.5 optional group has
+been empty ever since.

@@ -64,12 +64,7 @@ close an item by deleting its line here, and put the full story in
    2026-07-30) can't be deleted from any session: git proxy 403s ref
    deletion, no delete-branch MCP tool, retried again 2026-07-30, still
    blocked. Names in continuity notes. Needs the user, from the GitHub UI.
-2. `Developer/host-emulator/components/` pin lists for `gain`,
-   `filter_lowpass`, and `equalizer_parametric` are NOT independently
-   confirmed against an official source — they mirror the numbered-pin
-   convention and match what SubharmonicSynth ships. Re-verify these first
-   if a real host ever disagrees about wiring.
-3. Root cause of item 1 (2026-07-30 investigation, see continuity notes),
+2. Root cause of item 1 (2026-07-30 investigation, see continuity notes),
    needs the user via GitHub web UI, no session can do it: enable
    "Automatically delete head branches" in Settings > General > Pull
    Requests. Server-side, applies on every merge regardless of proxy
