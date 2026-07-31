@@ -1,4 +1,4 @@
-for t = 1, props["InputCount"].Value do
+for t = 1, props["Channels"].Value do
 	table.insert(ctrls, {
 		Name = "State_" .. t,
 		ControlType = "Button",

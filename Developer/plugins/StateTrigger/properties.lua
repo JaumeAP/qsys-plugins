@@ -1,5 +1,5 @@
 table.insert(props, {
-	Name = "InputCount",
+	Name = "Channels",
 	Type = "integer",
 	Value = 1,
 	Min = 1,

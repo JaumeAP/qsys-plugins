@@ -18,7 +18,7 @@ table.insert(graphics, {
 	Size = { 36, 32 },
 })
 
-for t = 1, props["InputCount"].Value do
+for t = 1, props["Channels"].Value do
 	table.insert(graphics, {
 		Type = "Label",
 		Text = tostring(t),
