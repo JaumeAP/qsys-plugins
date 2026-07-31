@@ -69,8 +69,8 @@ reversing that same day's earlier "mandatory" call) — see
 `.claude/config-export-import.md` step 2.5 for the install mechanics. When a
 repo does NOT have it installed, its full current content still lives
 verbatim in `.claude/config-export-import.md`'s own appendix, so nothing is
-lost to git archaeology the way it was earlier this same day. Two additional
-mandatory skills — `caveman` and `karpathy-guidelines` — fetch on-demand
+lost to git archaeology the way it was earlier this same day. Three additional
+mandatory skills — `find-skills`, `caveman`, and `karpathy-guidelines` — fetch on-demand
 from remote (not bundled locally), but are obligatory for all target repos.
 Import mechanics (blind-copy, merge rules, everything else in that process)
 live solely in `.claude/config-export-import.md`, not restated here.
@@ -98,9 +98,11 @@ topic:
 
 Mandatory fetch-on-demand (listed in `.claude/recommended-skills.txt`):
 
-4. `caveman` (JuliusBrussee/caveman) — compression, terseness, and token
+4. `find-skills` (vercel-labs/skills) — discover and install agent skills
+   from the open ecosystem when users ask for help with specialized capabilities.
+5. `caveman` (JuliusBrussee/caveman) — compression, terseness, and token
    economy in replies; applies to any project regardless of language or domain.
-5. `karpathy-guidelines` (forrestchang/andrej-karpathy-skills) — thinking
+6. `karpathy-guidelines` (forrestchang/andrej-karpathy-skills) — thinking
    principles and behavioral guidelines applicable to any project.
 
 **"Mandatory" is enforced, not just stated (2026-07-30).** A full-session
