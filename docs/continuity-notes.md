@@ -1063,3 +1063,33 @@ history actually matters.)
   repo's own prior authorization would NOT exempt it if/when this bundle
   is re-imported there). Not yet applied to any other repo -- this is the
   import PROCEDURE being updated, no actual import ran this session.
+
+- **`DolbyKnobTest` added (2026-07-31), scratch/test plugin, explicit
+  user request.** Grew out of a conversation about `DolbyFader`'s own
+  `DKNob` control (`Developer/shared/dolbyfader.lua`): whether the Dolby
+  0.0-10.0 scale could be expressed in dB via the native `ControlUnit`
+  instead (no -- confirmed closed enum, `Hz|Float|Integer|Pan|Percent|
+  Position|Seconds|dB`, no `Custom` option unlike `ButtonType`), then
+  whether to add a dB-native control to `DolbyFader` itself. First
+  attempt built a full alternative PLUGIN and, separately, a second
+  attempt grafted a new control directly onto `DolbyFader`'s own files --
+  both corrected by the user ("no t'he dit de crear un nou plugin... he
+  dit un nou control", then "no, crea un plugin PROVA i el poses dintre"):
+  what was actually wanted is a standalone TEST plugin containing a clone
+  of the `DKNob` mechanism, with `DolbyFader` left completely untouched.
+  Built as `DolbyKnobTest`: `Gain` (a real native `Knob`, dB, -100..20,
+  same range `DolbyFader`'s own `Gain` declares) bidirectionally synced
+  with `GainDb` (a `Text` control wrapped via `QKnob`, same class `DKNob`
+  itself uses, `#include`d directly from `shared/qknob.lua` rather than
+  going through `shared/dolbyfader.lua`). Confirms via `qknob.lua`'s own
+  `setposition`/`getposition` (already linear) that no
+  `convertToDb`/`convertToDolby`-style piecewise step is needed for a
+  plain dB knob -- that conversion pair exists only because Dolby's own
+  scale is nonlinear, not because `QKnob` requires it. Built via the real
+  PLUGCC.exe CI path (`build-qplug.yml` dispatched with
+  `plugin=DolbyKnobTest`, job log confirmed no unexpanded `#include`
+  markers, root `DolbyKnobTest.qplug` written from it).
+  `Developer/tests/test_dist_dolbyknobtest.lua` added (13 checks):
+  definition pass, both-direction sync, range clamping, and a 210-value
+  storm across and beyond -100..20 that never throws. Full suite green
+  (`Developer/tests/run.sh`).
