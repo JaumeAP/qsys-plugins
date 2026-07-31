@@ -25,7 +25,9 @@ superpowers (full suite: brainstorming, dispatching-parallel-agents, executing-p
 
 # Code quality & security
 code-simplification -> addyosmani/agent-skills
-static-analysis (suite: codeql, semgrep, sarif-parsing) -> trailofbits/skills
+codeql -> trailofbits/skills
+semgrep -> trailofbits/skills
+sarif-parsing -> trailofbits/skills
 skill-security-auditor -> borghei/Claude-Skills
 
 # Development tools & practices
