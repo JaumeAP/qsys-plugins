@@ -22,12 +22,18 @@
 
 # Core development & architecture
 superpowers (full suite: brainstorming, dispatching-parallel-agents, executing-plans, finishing-a-development-branch, receiving-code-review, requesting-code-review, subagent-driven-development, systematic-debugging, test-driven-development, using-git-worktrees, using-superpowers, verification-before-completion, writing-plans) -> obra/superpowers
+  install: npx skills add obra/superpowers -s brainstorming -s dispatching-parallel-agents -s executing-plans -s finishing-a-development-branch -s receiving-code-review -s requesting-code-review -s subagent-driven-development -s systematic-debugging -s test-driven-development -s using-git-worktrees -s using-superpowers -s verification-before-completion -s writing-plans
 
 # Code quality & security
 code-simplification -> addyosmani/agent-skills
+  install: npx skills add addyosmani/agent-skills -s code-simplification
 codeql -> trailofbits/skills
+  install: npx skills add trailofbits/skills -s codeql
 sarif-parsing -> trailofbits/skills
+  install: npx skills add trailofbits/skills -s sarif-parsing
 skill-security-auditor -> borghei/Claude-Skills
+  install: npx skills add borghei/Claude-Skills -s skill-security-auditor
 
 # Development tools & practices
 docker-development -> netresearch/docker-development-skill
+  install: npx skills add netresearch/docker-development-skill -s docker-development
