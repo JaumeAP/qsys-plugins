@@ -66,6 +66,12 @@ Only subscribe when PR will stay open after this turn (still draft, checks pendi
 
 **Performance tip:** On routine PRs opened seconds ago with nothing uncertain, skip `pull_request_read` status check before merging. Merge directly; only read status if merge fails.
 
+**Multi-repo sessions (2026-07-31, explicit user request — minimum tokens, minimum interactions, never re-check the same thing twice):** a repo's own steps above are still per-repo, but the calls behind them aren't naturally sequential across repos, so don't run them that way.
+
+- Per-repo GitHub API calls (`pull_request_read`, `list_pull_requests`, `merge_pull_request`) across *different* repos have no dependency on each other — issue them together in one message, not one per turn.
+- Use `minimal_output: true` on `list_*`/`search_*` calls when only existence/state is needed, not the full payload (per that server's own tool instructions).
+- If a PR's `mergeable_state` (or any other fact this session already pulled) was established earlier in the same turn and nothing has changed since, reuse it — don't query it again just because a later step also happens to need it.
+
 ## Reading mergeable_state
 
 | Value | Meaning |
