@@ -17,9 +17,7 @@ once before running the routine (e.g. `git rev-parse --is-inside-work-tree`;
 - **Git present:** before signaling closed, run plain `git status` (not
   `--short`; it reports branch and clean/dirty together, so a separate
   `git branch --show-current` adds nothing), then `git log --oneline -1`.
-  Say plainly what's left uncommitted/unpushed. Also apply `github-rules`'
-  own merge-automation default as part of the same routine — don't leave it
-  for the user to ask separately.
+  Say plainly what's left uncommitted/unpushed.
 - **Git absent** (2026-07-31, explicit user request): skip the `git
   status`/`git log`/PR-merge checks entirely, they don't apply. Instead
   state plainly which files were created/edited this session, from your
