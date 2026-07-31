@@ -69,6 +69,11 @@ close an item by deleting its line here, and put the full story in
    "Automatically delete head branches" in Settings > General > Pull
    Requests. Server-side, applies on every merge regardless of proxy
    restrictions -- without it, item 1 keeps growing by ~1 branch/session.
+3. `DolbyKnobTest` Developer source is at v1.0.0.5 (`GainDbText` control +
+   embedded `GainComponent`); root `DolbyKnobTest.qplug` and its dist test
+   still reflect v1.0.0.3. CI build deliberately held back, explicit user
+   request (2026-07-31). Next: dispatch `build-qplug.yml`, rewrite the
+   root file, extend the test. See continuity notes for full detail.
 
 ## Git
 
