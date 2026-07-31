@@ -1,8 +1,8 @@
 # Programming-focused optional skills
 #
 # PURPOSE: Offer these skills as optional recommendations during config import
-# into target repos. This list contains all programming-related skills currently
-# available for qsys-plugins (19 skills total).
+# into target repos. This list mirrors the programming-related skills
+# currently installed in this repo.
 #
 # FORMAT: skill-name -> owner/repo
 #
@@ -10,12 +10,6 @@
 #   npx skills add owner/repo -s skill-name
 # Or all skills from a repository:
 #   npx skills add owner/repo
-#
-# Example installations:
-#   npx skills add obra/superpowers -s brainstorming
-#   npx skills add addyosmani/agent-skills -s code-simplification
-#   npx skills add trailofbits/skills -s static-analysis
-#   npx skills add borghei/Claude-Skills -s skill-security-auditor
 #
 # Search available skills: npx skills find <query>
 # Browse at: https://skills.sh/
