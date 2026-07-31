@@ -11,6 +11,8 @@ Execute plan by dispatching a fresh implementer subagent per task, a task review
 
 **Core principle:** Fresh subagent per task + task review (spec + quality) + broad final review = high quality, fast iteration
 
+**Precedence vs dispatching-parallel-agents:** this skill governs once tasks come from a written implementation plan (per `writing-plans`) executed in the current session. Independent problems with no formal plan behind them (e.g. unrelated test failures found while debugging) are `dispatching-parallel-agents`' territory instead — lighter-weight, no per-task review/plan-compliance checks.
+
 **Narration:** between tool calls, narrate at most one short line — the
 ledger and the tool results carry the record.
 

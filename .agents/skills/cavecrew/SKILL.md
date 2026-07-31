@@ -13,6 +13,8 @@ description: >
 
 Cavecrew = three subagent presets that emit caveman output. Same job as Anthropic defaults (`Explore`, edit-style agents, reviewer); difference is the tool-result they return is compressed, so main context shrinks per delegation.
 
+**Precedence vs dispatching-parallel-agents / subagent-driven-development:** those two decide WHETHER to delegate at all (independent tasks? a formal plan?). Cavecrew operates one level below, deciding WHICH preset to hand a delegation that's already been decided — caveman-compressed (this skill) vs vanilla `Explore`/edit-agent/reviewer. Once either of those skills has picked a task to delegate, come back to this table to pick the preset.
+
 ## When to use cavecrew vs alternatives
 
 | Task | Use |

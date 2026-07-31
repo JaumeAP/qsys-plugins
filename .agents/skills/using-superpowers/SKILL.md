@@ -30,6 +30,8 @@ When multiple skills apply, process skills come first — they set the approach,
 - "Let's build X" → superpowers:brainstorming first, then implementation skills.
 - "Fix this bug" → superpowers:systematic-debugging first, then domain skills.
 
+**Precedence vs find-skills:** this skill governs first — check installed skills under `.claude/skills/` before anything else. If that check comes up empty and the task calls for capability no installed skill covers, `find-skills` is the fallback for searching the open ecosystem. "No installed skill fits" is itself a valid outcome of this skill's own check, not a reason to skip the check.
+
 ## Red Flags
 
 These thoughts mean STOP—you're rationalizing:

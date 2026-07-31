@@ -7,6 +7,8 @@ description: Helps users discover and install agent skills when they ask questio
 
 This skill helps you discover and install skills from the open agent skills ecosystem.
 
+**Precedence vs using-superpowers:** `using-superpowers` governs first — check what's already installed under `.claude/skills/` before reaching for this skill. Invoke `find-skills` only once that check comes up empty (no installed skill covers the need) and the user's request calls for searching the wider ecosystem rather than just proceeding without one.
+
 ## When to Use This Skill
 
 Use this skill when the user:

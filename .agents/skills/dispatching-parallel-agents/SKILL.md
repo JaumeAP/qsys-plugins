@@ -13,6 +13,8 @@ When you have multiple unrelated failures (different test files, different subsy
 
 **Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
 
+**Precedence vs subagent-driven-development:** this skill is for ad-hoc independent problems with no formal plan behind them (e.g. three unrelated test failures found during debugging). The moment the independent tasks come from a written implementation plan, `subagent-driven-development` (same session) or `executing-plans` (parallel session) governs instead — they add per-task review and plan-compliance checks this skill doesn't do.
+
 ## When to Use
 
 ```dot
