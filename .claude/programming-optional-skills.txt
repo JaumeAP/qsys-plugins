@@ -20,17 +20,11 @@
 # Search available skills: npx skills find <query>
 # Browse at: https://skills.sh/
 #
-# 2026-07-30: the "Code quality & security" (claude-security, simplify,
-# static-analysis, skill-security-auditor) and "Development tools &
-# practices" (docker-best-practices, documentation-handbook) groups --
-# 6 skills -- were removed as dead pointers (none found in anthropics/skills).
-# 2026-07-31: re-verified with WebFetch against real repos. static-analysis
-# and skill-security-auditor confirmed with corrected sources (below).
-# simplify and docker-best-practices had no exact-name match anywhere;
-# renamed to the closest verified equivalents (code-simplification,
-# docker-development), each from a different owner/repo than the original
-# guess. claude-security and documentation-handbook still have no verified
-# single-skill source under any name -- left out, still dead pointers.
+# 2026-07-31: all entries below verified with WebFetch against their real
+# repos. Two names were corrected to their closest verified equivalent,
+# each under a different owner/repo than originally assumed. Two other
+# candidates had no verified single-skill source under any name and are
+# left out entirely, not listed.
 
 # Core development & architecture
 superpowers (full suite: brainstorming, dispatching-parallel-agents, executing-plans, finishing-a-development-branch, receiving-code-review, requesting-code-review, subagent-driven-development, systematic-debugging, test-driven-development, using-git-worktrees, using-superpowers, verification-before-completion, writing-plans) -> obra/superpowers
