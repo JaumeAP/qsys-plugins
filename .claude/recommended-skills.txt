@@ -21,18 +21,7 @@ karpathy-guidelines -> forrestchang/andrej-karpathy-skills
 
 # Recommended optional skills
 find-skills -> vercel-labs/skills
-brainstorming -> obra/superpowers
-dispatching-parallel-agents -> obra/superpowers
-executing-plans -> obra/superpowers
-finishing-a-development-branch -> obra/superpowers
-receiving-code-review -> obra/superpowers
-requesting-code-review -> obra/superpowers
-subagent-driven-development -> obra/superpowers
-systematic-debugging -> obra/superpowers
-test-driven-development -> obra/superpowers
-using-git-worktrees -> obra/superpowers
-using-superpowers -> obra/superpowers
-verification-before-completion -> obra/superpowers
+superpowers (full suite: brainstorming, dispatching-parallel-agents, executing-plans, finishing-a-development-branch, receiving-code-review, requesting-code-review, subagent-driven-development, systematic-debugging, test-driven-development, using-git-worktrees, using-superpowers, verification-before-completion) -> obra/superpowers
 frontend-design -> anthropics/claude-code
 dataviz -> anthropics/skills
 webapp-testing -> anthropics/skills

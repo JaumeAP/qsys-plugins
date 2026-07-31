@@ -20,8 +20,6 @@
 # Search available skills: npx skills find <query>
 # Browse at: https://skills.sh/
 #
-# Always fetch individual skills, never by pack name.
-#
 # 2026-07-30: the "Code quality & security" (claude-security, simplify,
 # static-analysis, skill-security-auditor) and "Development tools &
 # practices" (docker-best-practices, documentation-handbook) groups --
@@ -31,19 +29,7 @@
 # Restored with correct source ownership.
 
 # Core development & architecture
-brainstorming -> obra/superpowers
-dispatching-parallel-agents -> obra/superpowers
-executing-plans -> obra/superpowers
-finishing-a-development-branch -> obra/superpowers
-receiving-code-review -> obra/superpowers
-requesting-code-review -> obra/superpowers
-subagent-driven-development -> obra/superpowers
-systematic-debugging -> obra/superpowers
-test-driven-development -> obra/superpowers
-using-git-worktrees -> obra/superpowers
-using-superpowers -> obra/superpowers
-verification-before-completion -> obra/superpowers
-writing-plans -> obra/superpowers
+superpowers (full suite: brainstorming, dispatching-parallel-agents, executing-plans, finishing-a-development-branch, receiving-code-review, requesting-code-review, subagent-driven-development, systematic-debugging, test-driven-development, using-git-worktrees, using-superpowers, verification-before-completion, writing-plans) -> obra/superpowers
 
 # Code quality & security
 claude-security -> anthropics/skills
