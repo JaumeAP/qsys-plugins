@@ -853,3 +853,39 @@ history actually matters.)
   itself kept, holding only that README). No test coverage existed for
   the `.quc` binaries themselves (never testable outside Designer), so
   deleting them doesn't touch `run.sh`.
+
+- **`CHANGELOG.md` deleted (2026-07-31), same day it was started.**
+  Created earlier this session and maintained by hand across several
+  entries (v0.1.0 through v0.5.0), but `changelog-rules` was never
+  actually installed in this repo (`.claude/skills/changelog-rules/`
+  doesn't exist here) -- the user caught the inconsistency directly
+  ("si no està instal·lat rules no té que estar amb md") and chose
+  deletion over installing the skill retroactively. CLAUDE.md's own
+  "Changelog-before-commit" rule already no-ops gracefully when the
+  skill isn't installed, so nothing else needed touching -- no other
+  file in this repo claimed `CHANGELOG.md` existed or referenced its
+  content.
+
+- **PLUGCC's real indentation for a NESTED `#include` doesn't match a
+  naive "prefix every line with the marker's current indent, recurse"
+  model (found rebuilding DolbyFader, 2026-07-31).** `DolbyFader/
+  plugin.lua` includes `../../shared/dolbyfader.lua` at 1-tab indent;
+  `dolbyfader.lua`'s own first line includes `../../shared/qknob.lua`
+  at 0 indent in ITS OWN source. A two-pass local simulation (apply the
+  same regex substitution twice, using each pass's own computed indent)
+  gives qknob.lua's content 1 tab of indent; the REAL PLUGCC output
+  (confirmed against the actual build-qplug.yml job log) gives it 2
+  tabs -- dolbyfader.lua's own directly-written content (not further
+  nested) correctly gets 1 tab either way, so the discrepancy is
+  specific to the SECOND nesting level, and the exact rule PLUGCC
+  actually uses for it wasn't fully reverse-engineered from this one
+  example. Rather than guess further, the fix was procedural, not
+  algorithmic: for any plugin with a nested `#include` chain (currently
+  only `DolbyFader` and `Dolby CPSeries Control`, both via
+  `dolbyfader.lua` -> `qknob.lua`; `Dolby Sweep` includes `qknob.lua`
+  directly, no nesting), write the root `.qplug` from the VERIFIED job
+  log content itself (extracted and cleaned of timestamps/ANSI codes),
+  not from local `#include` simulation. Local simulation stays valid
+  and already double-checked for any plugin with no nested includes
+  (confirmed for `CP Series Emulator`'s three rebuilds this session,
+  each byte-for-byte matched against its own job log).
