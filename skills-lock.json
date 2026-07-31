@@ -205,6 +205,18 @@
       "skillPath": "skills/subagent-driven-development/SKILL.md",
       "computedHash": "f32739563160d3612fe2febd0dad4a9cc8a6d1ea7dfcda59f245b3a4b968f7cf"
     },
+    "swift": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "swift/SKILL.md",
+      "computedHash": "be639118d6a32874b533f3ca9746b2a60ca1dbe27aacc02f555420dbdcd0ece9"
+    },
+    "swiftui-specialist": {
+      "source": "superagents-lab/xcode27-skills",
+      "sourceType": "github",
+      "skillPath": "swiftui-specialist/SKILL.md",
+      "computedHash": "3822a405011719e955934b3df69a3617fbda4aa86da6dbbed89912a86ed0b994"
+    },
     "systematic-debugging": {
       "source": "obra/superpowers",
       "sourceType": "github",

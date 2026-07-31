@@ -44,3 +44,7 @@ docker-development -> netresearch/docker-development-skill
 # skipping it -- let the user decide, don't decide for them.
 lua -> mindrally/skills
   install: npx skills add mindrally/skills -s lua
+swift -> mindrally/skills
+  install: npx skills add mindrally/skills -s swift
+swiftui-specialist (Apple-authored, exported from Xcode 27; suite also has: swiftui-whats-new-27, uikit-app-modernization, test-modernizer, c-bounds-safety, audit-xcode-security-settings, device-interaction) -> superagents-lab/xcode27-skills
+  install: npx skills add superagents-lab/xcode27-skills -s swiftui-specialist
