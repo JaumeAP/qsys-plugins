@@ -23,6 +23,8 @@ This is not negotiable. You cannot rationalize your way out of this.
 
 Then announce "Using [skill] to [purpose]" and follow the skill exactly. If it has a checklist, create a todo per item.
 
+**Exception: caveman.** Skip the announcement for caveman itself — its own rule explicitly forbids self-announcement, and announcing it would undermine the compression it exists to provide. This is a narrow, named carve-out for that one skill, not a general opt-out from announcing.
+
 ## Skill Priority
 
 When multiple skills apply, process skills come first — they set the approach, then implementation skills (frontend-design, etc.) carry it out. Brainstorming and systematic-debugging are Superpowers' most common process skills, but the rule holds for any of them.
