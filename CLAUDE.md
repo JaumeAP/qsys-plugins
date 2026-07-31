@@ -34,8 +34,12 @@ charges, events); verify before critical or irreversible actions.
 
 **Reply language, compression, and formatting defer to `caveman`**
 (JuliusBrussee/caveman) — that skill replies in the user's own dominant
-language; no bold/em-dash/ellipsis/header/table ban, no mandatory leading
-"Rebut:" line.
+language; no bold/em-dash/ellipsis/header/table ban.
+
+**Exception: start every reply with `Rebut: <order summarized in
+English>`** as the literal first line, before anything else — overrides
+caveman on this one point only, reactivated 2026-07-31 after a stretch
+dropped.
 
 **Exception: lists are always numbered** (`1. 2. 3.` form, never bullets,
 regardless of intensity level or language) — overrides caveman on this one

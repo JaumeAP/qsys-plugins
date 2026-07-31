@@ -389,3 +389,17 @@ estandard") before accepting the retirement, specifically on the
 4-subagent/~210k-token/0%-difference/real-bug result documented above, and
 the retirement itself only became permanent after seeing that result
 ("Definitiu no gastarem mes... elimina tot aquesta funcionalitat").
+
+## "Rebut: <order in English>" leading line reactivated (2026-07-31, explicit user request)
+
+Dropped 2026-07-30 as part of the caveman deferral (see the entry above --
+that deferral also killed the whole `check-reply-format.sh` mechanical
+enforcement bundle: Catalan-only, no bold/em-dash/ellipsis/headers/tables,
+numbered-lists-only). The user asked specifically for this one piece back
+("quan et donava una ordre immediatament me la repetides posar-la en
+angles"), not the rest of that bundle -- reactivated as a plain CLAUDE.md
+rule only, followed by judgment, not re-wired into
+`check-reply-format.sh`/`reply-format-preflight.sh` (still retired, still
+dead on disk in qsys-plugins per that entry -- those two scripts also
+enforced the Catalan-only/no-bold/etc rules the user has NOT asked back,
+so mechanically re-enabling them would over-apply this request).
