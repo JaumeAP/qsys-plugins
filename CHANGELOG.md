@@ -2,6 +2,13 @@
 
 ## Changelog
 
+- **v0.3.0** (2026-07-31) - CP Series Emulator, as a real Plugin (PLUGCC), not just a Control Script
+  - feature: `Developer/plugins/CP Series Emulator/` -- built via PLUGCC.exe like every other plugin here: `Model` enum property (5 choices), `Status`/`Status.Led` indicator, same protocol logic as the Control Script version but reading `Properties.Model` instead of a hardcoded constant
+  - chore: "CP Series Emulator" added to `build-qplug.yml`'s and `build-qplugx.yml`'s workflow-dispatch choice lists so it can be built via CI like the other five plugins
+  - feature: root `CP Series Emulator.qplug` (v1.0.0.0) built via `build-qplug.yml` (run 30627826424) and committed
+  - test: `Developer/tests/test_dist_cpseriesemulator.lua` (37 checks, added to `run.sh`) -- definition pass plus a runtime pass per model exercising the built plugin's own `TcpSocketServer`/Status wiring end to end, distinct from `test_cp_series_emulator.lua`'s own coverage of the Control Script source against the real client class
+  - docs: `README.md`, `repo-layout.md`, `docs/continuity-notes.md` updated with the new plugin folder and root `.qplug`
+
 - **v0.2.0** (2026-07-31) - CP Series Emulator: all-5-model replacement for the old single-model .quc files
   - feature: `Developer/cp-series-emulator/cp-series-emulator.lua`, a single Control Script emulating all five defined processors (CP650/CP750/CP850/CP950/CP950A), modeling the real plugin's CPServices wire vocabulary exactly (commlib.lua) -- the three old `Dolby CP Emulator/*.quc` files only covered CP650/CP750/CP850, never CP950/CP950A
   - feature: `Dolby CP Emulator/README.md` -- explains the gap and how to install the new source into Designer as a Control Script (this repo can't generate the `.quc` binary directly)

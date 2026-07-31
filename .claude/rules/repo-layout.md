@@ -72,12 +72,17 @@ docs/continuity-notes.md (dated history). -->
 │   │                                 workflow (or Designer's "Save as
 │   │                                 compiled plugin") after any .qplug rebuild.
 │   ├── SubharmonicSynth.qplug        (v0.6, added 2026-07-29)
-│   └── SubharmonicSynth.qplugx       All five .qplugx (including this one, for the
-│                                     first time) rebuilt together 2026-07-30 via
-│                                     the same workflow, once it was added to that
-│                                     workflow's own choice list -- corrected same
-│                                     day, this section previously said
-│                                     SubharmonicSynth had no .qplugx yet.
+│   ├── SubharmonicSynth.qplugx       All five .qplugx (including this one, for the
+│   │                                 first time) rebuilt together 2026-07-30 via
+│   │                                 the same workflow, once it was added to that
+│   │                                 workflow's own choice list -- corrected same
+│   │                                 day, this section previously said
+│   │                                 SubharmonicSynth had no .qplugx yet.
+│   └── CP Series Emulator.qplug      (v1.0, added 2026-07-31) -- no real Dolby
+│                                     hardware behind this one; fakes a
+│                                     processor for bench-testing Dolby CPSeries
+│                                     Control. No .qplugx built yet (workflow
+│                                     choice list updated, not yet dispatched).
 │
 ├── Dolby CP Emulator/                Q-SYS User Components (.quc) that emulate
 │   ├── README.md                     real Dolby processors for bench testing --
@@ -160,7 +165,7 @@ docs/continuity-notes.md (dated history). -->
     │   │   │                         Developer/Modules/cpseries_commlib.lua)
     │   │   └── runtime.lua           Application layer: TCP connection lifecycle,
     │   │                             Controls wiring (formerly Developer/Modules/cpseries.lua)
-    │   └── SubharmonicSynth/         Bass enhancement / subharmonic-style boost for
+    │   ├── SubharmonicSynth/         Bass enhancement / subharmonic-style boost for
     │       ├── plugin.lua            LFE/Sub channels (incorporated 2026-07-29 from an
     │       │                         external contribution, restructured onto this
     │       │                         repo's own convention -- see the Continuity notes
@@ -173,6 +178,19 @@ docs/continuity-notes.md (dated history). -->
     │                                 defaults (the original's per-control `DefaultValue`
     │                                 field isn't a real Q-SYS key, so those defaults
     │                                 never actually applied pre-incorporation)
+    │   └── CP Series Emulator/       Plugin form of the CP Series Emulator
+    │       ├── plugin.lua            (added 2026-07-31) -- fakes a Dolby processor
+    │       ├── info.lua              over TCP for bench-testing Dolby CPSeries
+    │       ├── properties.lua        Control without hardware. Model property (5
+    │       ├── controls.lua          choices) + Status/Status.Led indicator. Same
+    │       ├── layout.lua            protocol logic as the Control Script version
+    │       └── runtime.lua           (Developer/cp-series-emulator/, kept for the
+    │                                 non-Designer bench-testing workflow), reading
+    │                                 the model from Properties.Model instead of a
+    │                                 hardcoded constant. Not #include'd from Dolby
+    │                                 CPSeries Control's own private models.lua/
+    │                                 protocol.lua -- this plugin keeps its own copy
+    │                                 of the same wire tables, kept in sync by hand.
     ├── shared/                       Code #include'd by more than one plugin
     │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua
     │   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
@@ -230,6 +248,10 @@ docs/continuity-notes.md (dated history). -->
         ├── test_dist_sweep.lua       Root Dolby Sweep distributable, both host passes
         ├── test_dist_flipflop.lua    Root MultiFlip-Flop distributable, both host passes
         ├── test_dist_subharmonic.lua Root SubharmonicSynth distributable, both host passes
+        ├── test_dist_cpseriesemulator.lua Root CP Series Emulator distributable
+        │                             (added 2026-07-31): definition pass, and a
+        │                             runtime pass per model exercising the built
+        │                             plugin's own server/Status wiring end to end
         ├── test_stress.lua           Stress/fuzz over all five plugins: asserts invariants
         │                             (nothing throws, nothing publishes nil, every written
         │                             value stays in range) rather than exact values. Fixed

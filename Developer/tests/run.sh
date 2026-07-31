@@ -41,7 +41,7 @@ done < <(
 [ "${1:-}" = "--syntax-only" ] && { echo; [ "$fails" -eq 0 ] && echo "syntax OK" || echo "$fails syntax failure(s)"; exit $((fails > 0)); }
 
 echo
-for t in test_modules test_cp_series_emulator test_dist_cpseries test_dist_fader test_dist_sweep test_dist_flipflop test_dist_subharmonic test_stress; do
+for t in test_modules test_cp_series_emulator test_dist_cpseries test_dist_fader test_dist_sweep test_dist_flipflop test_dist_subharmonic test_dist_cpseriesemulator test_stress; do
 	echo "$t"
 	if out=$("$LUA" "$here/$t.lua" 2>&1); then
 		pass "$(printf '%s' "$out" | tail -1)"

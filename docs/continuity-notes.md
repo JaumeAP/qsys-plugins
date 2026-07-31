@@ -768,3 +768,43 @@ history actually matters.)
   live emulator instance (the value actually persisted), and relies on the
   client's zero-initialized cache to make the FIRST read of any param a
   genuine mismatch that does fire.
+
+- **CP Series Emulator turned into a real Plugin (2026-07-31), same day
+  it was first built as a Control Script.** The user clarified they
+  actually wanted a Plugin (PLUGCC, `.qplug`), not a Control Script pasted
+  by hand into Designer -- the Control Script version
+  (`Developer/cp-series-emulator/cp-series-emulator.lua`) stays, since it
+  still serves the non-Designer bench-testing workflow, but the new
+  `Developer/plugins/CP Series Emulator/` is now the primary form. Chosen
+  design (asked via AskUserQuestion, recommended option picked): a `Model`
+  enum property (5 choices, same shape as the real plugin's own) plus a
+  minimal `Status`/`Status.Led` indicator -- no manual override controls.
+  Built through the normal `Developer workflow`: `build-qplug.yml`'s
+  `plugin` choice list needed "CP Series Emulator" added first (run
+  30627826424, windows-latest, succeeded on the first try, no literal
+  unexpanded `#include` left in the output). The built `.qplug` was
+  reconstructed locally rather than hand-transcribed from the job log --
+  this session's egress proxy blocks both the artifact's blob-storage URL
+  and the signed full-log-zip URL (`results-receiver.actions.
+  githubusercontent.com`, 403), so a Python script did the same `--[[
+  #include "x.lua" ]]` -> file-content substitution PLUGCC does (confirmed
+  by inspecting the job log: each included line gets the include
+  directive's own leading whitespace prepended, not naive concatenation),
+  then the result was verified against the job log's own echoed output
+  line-for-line and syntax-checked (`luac5.3 -p`) before being written to
+  the repo root as `CP Series Emulator.qplug`, LF line endings matching
+  the other four root `.qplug` files (the job log's own `\r\n` is GitHub
+  Actions' own log-transport wrapping, not the actual file's line endings
+  -- confirmed by checking an existing root `.qplug` has none).
+  `build-qplugx.yml`'s choice list and `$all` array also got "CP Series
+  Emulator.qplug" added, ahead of that workflow actually being dispatched
+  for it (not done yet -- no `.qplugx` built this session).
+  New test `Developer/tests/test_dist_cpseriesemulator.lua` (37 checks,
+  added to `run.sh`) covers the BUILT distributable specifically -- not a
+  duplicate of `test_cp_series_emulator.lua`'s own 55 checks (which drive
+  the Control Script source against the real CPSeries client class):
+  definition pass (Model's 5 choices, Status controls, RectifyProperties
+  hides `plugin_show_debug`), and a runtime pass per model wiring
+  `server`/`SocketHandler` through `qsys_stub.lua`'s `TcpSocketServer`
+  stub, checking `Status` transitions 4 (no client) -> 0 (connected) -> 4
+  (disconnected) and one GET round trip per model.

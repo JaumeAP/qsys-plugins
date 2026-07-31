@@ -10,4 +10,6 @@ Dolby Sweep Tone Generator
 Multiple FlipFlop in one component
 ### SubharmonicSynth
 Bass enhancement / subharmonic-style boost for LFE/Sub channels
+### CP Series Emulator
+Fakes a Dolby CP650/CP750/CP850/CP950/CP950A processor over TCP, for bench-testing Dolby CPSeries Control without hardware
 
