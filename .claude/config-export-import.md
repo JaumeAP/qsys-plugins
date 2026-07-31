@@ -126,9 +126,13 @@ directions, mechanized best-effort by
         own inline heredoc so it's independently testable — a runtime
         dependency of that hook, not optional, copied recursively), plus
         `scripts/merge-settings.sh` and `scripts/export-config-skill.sh`
-        themselves, is a blind copy into
-        `.claude/hooks/`/`.claude/scripts/` respectively, no
-        diff/compare/ask step — straight over whatever's already there,
+        themselves, plus every file under `references/rules/` (2026-07-31:
+        portable always-loaded rule files, e.g. `session-close.md` — an
+        explicit allowlist on the export side, so everything that arrives
+        here is portable by construction, safe to blind-copy), is a blind
+        copy into
+        `.claude/hooks/`/`.claude/scripts/`/`.claude/rules/` respectively,
+        no diff/compare/ask step — straight over whatever's already there,
         they're meant to be identical across all repos by design.
         Installing `export-config-skill.sh` into the target repo too is
         what lets that repo export its own bundle later, instead of only

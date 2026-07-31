@@ -88,71 +88,46 @@ use this format).
 
 ## Portable skills (installed with the config)
 
-These travel with this file and the rest of `.claude/`. Two skills are
-bundled+mandatory as files — `file-operations` and `github-rules`. A third,
-`changelog-rules`, is also bundled as a file (never fetch-on-demand remote)
-but is OPTIONAL to install per repo (2026-07-30, explicit user request,
-reversing that same day's earlier "mandatory" call) — see
-`.claude/config-export-import.md` step 2.5 for the install mechanics. When a
-repo does NOT have it installed, its full current content still lives
-verbatim in `.claude/config-export-import.md`'s own appendix, so nothing is
-lost to git archaeology the way it was earlier this same day. One additional
-mandatory skill — `caveman` — fetches on-demand from remote (not bundled
-locally), but is obligatory for all target repos. `karpathy-guidelines`
-moved out of this mandatory list on 2026-07-31 (explicit user request) to
-`programming-optional-skills.txt` — optional, programming-specific now,
-no longer obligatory for every project regardless of domain.
-Import mechanics (blind-copy, merge rules, everything else in that process)
-live solely in `.claude/config-export-import.md`, not restated here.
-Pointers only here, never summaries — each skill is the authority on its own
-topic:
+These travel with this file and the rest of `.claude/`. Full status history
+and reasoning for every skill below: `.claude/skills-history.md` — pointers
+only here, current state only, never summaries or backstory:
 
-1. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — portable GitHub
-   PR conventions: workflow shape, reading `pull_request_read` results, merge
-   mechanics. Carries one dated, attributed standing authorization
-   (2026-07-29) to open a PR at session close when the branch has unmerged
-   commits and none exists, then merge it once clean. Anything BEYOND that
-   one authorization still needs its own named source and date — a policy
-   written into a portable file without one silently applies to every repo
-   that imports the bundle, which is the thing to refuse.
+1. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — bundled,
+   mandatory. Portable GitHub PR conventions: workflow shape, reading
+   `pull_request_read` results, merge mechanics. Carries one dated,
+   attributed standing authorization (2026-07-29) to open a PR at session
+   close when the branch has unmerged commits and none exists, then merge
+   it once clean. Anything BEYOND that one authorization still needs its
+   own named source and date — a policy written into a portable file
+   without one silently applies to every repo that imports the bundle,
+   which is the thing to refuse.
 2. `changelog-rules` (`.claude/skills/changelog-rules/SKILL.md`, where
-   installed) — how to write and maintain changelog entries: format,
+   installed) — bundled, OPTIONAL per repo: install only where a repo
+   actually maintains a changelog. How to write/maintain entries: format,
    semantic versioning, accumulate-in-memory-until-push workflow,
-   retention/dedup, which files are exempt. Optional per repo, not
-   mandatory — install only where a repo actually maintains a changelog
-   (e.g. `CPSeries` keeps it; `Eines` doesn't, no file there has a
-   `## Changelog` section). `.claude/skills-history.md` has the whole
-   back-and-forth on this skill's status.
-3. `file-operations` — triggers by context on any file I/O; no pointer needed
-   beyond its own description.
+   retention/dedup, exempt files.
+3. `file-operations` (`.claude/skills/file-operations/SKILL.md`) — bundled,
+   mandatory. Triggers by context on any file I/O; no pointer needed beyond
+   its own description.
+4. `caveman` (JuliusBrussee/caveman) — mandatory, fetch-on-demand (listed in
+   `.claude/recommended-skills.txt`, not bundled as a file). Compression,
+   terseness, token economy in replies; applies to any project regardless
+   of language or domain.
 
-Mandatory fetch-on-demand (listed in `.claude/recommended-skills.txt`):
-
-4. `caveman` (JuliusBrussee/caveman) — compression, terseness, and token
-   economy in replies; applies to any project regardless of language or domain.
-
-**"Mandatory" is enforced, not just stated (2026-07-30).** A full-session
-audit found the four skills mandatory at the time invoked zero times despite
-repeatedly matching their own trigger descriptions — documentation-only
-"mandatory" wording doesn't self-enforce. Two mechanisms now back it, neither
-optional to a session: `.claude/hooks/file-operations-enforcement.sh`
-(`PreToolUse`/`Bash`, hard block) stops raw `cp`/`mv`/`rm`/`dd`/`tee`/`sed -i`
-against a repo file outside `/tmp/` — narrower than the skill's full "MUST"
-scope (doesn't catch e.g. a `python3 -c` file write, deliberately, to avoid
-blocking legitimate reads); `rule-check-reminder.sh` names every mandatory
-skill by name every firing (first call + every 15th) — a deliberate narrow
-exception to its own "don't enumerate skills" rule for the merely-recommended
-ones. `changelog-rules` was briefly added to that named list the same day it
-was briefly mandatory; removed again the same day once it went back to
-optional, since an optional skill isn't part of this enforcement. Full
-rationale in both hooks' own comments — not restated here.
+**"Mandatory" is enforced, not just stated.** Two mechanisms back it, per
+skill's own tooling: `.claude/hooks/file-operations-enforcement.sh`
+(`PreToolUse`/`Bash`, hard block) gates `file-operations`' narrowest,
+safety-relevant case; `rule-check-reminder.sh` names the currently-mandatory
+skills by name on its own firings, and separately checks git presence once
+per session (mechanizing the "Git-absent repos" exception below, so it
+isn't left as prose alone). Full rationale in both hooks' own comments and
+`.claude/skills-history.md` — not restated here.
 
 Everything else installed locally is listed by name/source in
 `.claude/recommended-skills.txt` (fetch-on-demand, updated by hand). What
 actually travels on export is defined in
 `.claude/scripts/export-config-skill.sh` — not repeated here, to avoid two
-lists that drift apart. Why any given skill is bundled, optional, or removed:
-`.claude/skills-history.md`.
+lists that drift apart.
 
 **Skill creation/extension.** Any new `SKILL.md`, or any content/frontmatter
 change to an existing one, goes through the `skill-creator` skill's process,
@@ -171,28 +146,11 @@ a turn, so this is heuristic: when signs of a long session appear (many
 turns, lots of accumulated work, or a compaction has clearly happened),
 proactively suggest continuing in a fresh chat. Long sessions get lossy.
 
-**"Tanca" always means end the session.** A bare "tanca" (no other object
-attached) always means "tanca sessió" — never "drop this topic". Detect git
-once before running the routine (e.g. `git rev-parse --is-inside-work-tree`):
-
-- **Git present:** before signaling closed, run plain `git status` (not
-  `--short`; it reports branch and clean/dirty together, so a separate
-  `git branch --show-current` adds nothing), then `git log --oneline -1`.
-  Say plainly what's left uncommitted/unpushed. Also check whether the
-  current branch has an open PR at `mergeable_state: clean` and merge it as
-  part of the same routine, per `github-rules`' merge-automation default —
-  don't leave it for the user to ask separately.
-- **Git absent** (2026-07-31, explicit user request): skip the `git
-  status`/`git log`/PR-merge checks entirely, they don't apply. Instead
-  state plainly which files were created/edited this session, from your
-  own turn history — that's the closest equivalent of "what's left
-  unsaved," since there's no commit/push state to report.
-
-Unfinished work or an open question worth a future session picking up gets
-a dated entry in this repo's continuity notes first —
-`docs/continuity-notes.md`, created there if the repo doesn't have one yet
-(this section is portable, so don't assume the file already exists). This
-applies regardless of git presence — continuity notes are plain files.
+**"Tanca" always means end the session.** Full routine (git status/log, PR
+merge check, git-absent fallback, continuity notes) now lives in
+`.claude/rules/session-close.md` — always loaded alongside this file, same
+mechanism, moved out 2026-07-31 to keep this file near its own ~200-line
+target.
 
 ## Project-specific rules — read `PROJECT.md`
 

@@ -252,3 +252,36 @@ narrow, deliberate exception to that hook's own 2026-07-30 decision to
 stop enumerating skills, scoped to just these four mandatory ones, not
 reverted for the 25 merely-recommended ones. `CLAUDE.md`'s own "Portable
 skills" section points here rather than restating this.
+
+## `changelog-rules` — mandatory/optional status, full timeline
+
+Bundled as a file (never fetch-on-demand remote) throughout its whole
+history — only the mandatory-vs-optional question ever changed.
+2026-07-30: optional → deleted entirely the same day → restored from git
+history as optional → deleted from the bundle a second time, same day →
+reinstated a THIRD time, straight into the mandatory blind-copy group →
+reverted a FOURTH time, later the same day, back to optional (2.5 group in
+`config-export-import.md`), its state through most of that day. 2026-07-31:
+reinstalled again after being briefly removed for having no real target
+(no repo had a `## Changelog` section at the time) — `qsys-plugins` then
+got its own `CHANGELOG.md` created and the skill wired into the
+commit flow (CLAUDE.md's "Changelog-before-commit" exception), giving it
+a real target for the first time. Its full current `SKILL.md` content also
+lives verbatim in `config-export-import.md`'s own appendix, so a repo
+without it installed still has the complete definition on hand — no
+git-history archaeology needed, the failure mode that appendix exists to
+avoid after it happened once already.
+
+## `karpathy-guidelines` — moved out of the mandatory set (2026-07-31)
+
+Was mandatory fetch-on-demand alongside `caveman` since 2026-07-30.
+Explicit user request 2026-07-31 moved it to
+`programming-optional-skills.txt` instead — optional, programming-specific
+now, no longer obligatory for every project regardless of domain. Required
+touching 4 places to stay consistent: `recommended-skills.txt` (entry
+removed), `programming-optional-skills.txt` (entry added, under "Core
+development & architecture" alongside `superpowers`), `CLAUDE.md`'s
+"Portable skills" section (mandatory list trimmed to just `caveman`), and
+`rule-check-reminder.sh`'s job 1 reminder text (no longer names
+`karpathy-guidelines` among the enforced-mandatory four — see the
+2026-07-30 entry above for why that hook names them explicitly at all).

@@ -124,6 +124,33 @@ if (( count == 1 || count % 15 == 0 )); then
   msg="${msg} Excepcio (nomes els mandatory, no els recomanats): file-operations, github-rules i caveman son 'mandatory' segons CLAUDE.md -- invoca'ls de veritat amb el tool Skill quan la tasca hi encaixi (fitxers, treball amb PR/GitHub, o sempre per estil/compressio de resposta), no nomes com a referencia de fons."
 fi
 
+# Job 3, added 2026-07-31 (explicit user request): mechanize the git-presence
+# check CLAUDE.md's "Commit./Push." exception and "Tanca" routine ask for,
+# instead of leaving it as pure prose the model has to remember to run each
+# time -- the exact self-enforcement gap job 1's own comment already names
+# as the reason CLAUDE.md text alone doesn't stick. Fires once, on the
+# session's first tool call only (count==1) -- git presence doesn't change
+# mid-session, so a one-time fact is enough; repeating it at every-15th
+# would just be noise like the skill-list enumeration job 1 already trimmed
+# away. Also checks changelog-rules' presence in the same breath, since
+# CLAUDE.md's "Changelog-before-commit" rule needs the same yes/no fact.
+if (( count == 1 )); then
+  if git -C "$project_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git_fact="Aquest repo TE git -- 'Commit.'/'Push.' i la rutina de Tanca amb git status/log/PR apliquen normalment."
+    if [ -f "$project_dir/.claude/skills/changelog-rules/SKILL.md" ]; then
+      git_fact="${git_fact} changelog-rules esta instal.lada -- actualitza l'entrada acumulada just abans de cada git commit, dins el mateix commit."
+    fi
+  else
+    git_fact="Aquest repo NO te git -- salta 'Commit.'/'Push.' i la rutina de Tanca amb git status/log/PR (CLAUDE.md, excepcions 'Git-absent repos'); desa fitxers directament, i a Tanca informa dels fitxers tocats en lloc de l'estat de git."
+  fi
+  if [ -n "$msg" ]; then
+    msg="${msg}
+${git_fact}"
+  else
+    msg="$git_fact"
+  fi
+fi
+
 # Job 2: consume the PreCompact pending flag exactly once, if present.
 compaction_flag="/tmp/claude_compaction_pending_${sid}"
 if [ -f "$compaction_flag" ]; then

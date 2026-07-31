@@ -120,6 +120,11 @@ repeated here.
   first, don't copy anything in blind" note the .zip export carries,
   kept here for parity even though this package's own SKILL.md now
   serves that role too.
+- `references/rules/*.md` -- portable always-loaded rule files (currently:
+  `session-close.md`, the "Tanca" session-close routine, split out of
+  CLAUDE.md 2026-07-31), installed into the target's own `.claude/rules/`.
+  An explicit allowlist, not the source repo's whole `rules/` directory --
+  project-specific files there (e.g. `repo-layout.md`) never travel.
 - `references/scripts/merge-settings.sh` -- merges an incoming
   `settings.json` into a target's existing one without dropping the
   target's own project-specific hook registrations (see
@@ -173,6 +178,18 @@ cp .claude/recommended-skills.txt "$skill_dir/references/"
 # restates (split out 2026-07-30 to keep CLAUDE.md under ~200 lines). It has
 # to travel, or that pointer dangles in every target repo.
 [ -f .claude/skills-history.md ] && cp .claude/skills-history.md "$skill_dir/references/"
+
+# portable_rules_files (2026-07-31): explicit allowlist of .claude/rules/*.md
+# files that are common/portable, NOT a blind copy of the whole rules/
+# directory -- that directory also holds project-specific files (e.g.
+# repo-layout.md, qsys-plugin-development.md in this repo) that must never
+# ship into another repo's bundle. Only files named here travel, installed
+# into the target's own .claude/rules/ on import.
+portable_rules_files=(session-close.md)
+mkdir -p "$skill_dir/references/rules"
+for f in "${portable_rules_files[@]}"; do
+  [ -f ".claude/rules/$f" ] && cp ".claude/rules/$f" "$skill_dir/references/rules/"
+done
 
 # bundled_hooks is the single source of truth for which hooks are
 # portable -- reused below both to copy the hook files themselves and to
