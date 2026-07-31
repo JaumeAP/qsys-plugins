@@ -403,3 +403,55 @@ rule only, followed by judgment, not re-wired into
 dead on disk in qsys-plugins per that entry -- those two scripts also
 enforced the Catalan-only/no-bold/etc rules the user has NOT asked back,
 so mechanically re-enabling them would over-apply this request).
+
+## Bundled-skill group history (find-skills / git-rules / github-rules / changelog-rules) — moved here from `config-export-import.md` (2026-07-31)
+
+The step-by-step version of this history used to live inline in
+`config-export-import.md` (steps 2.2/2.5/2.7), spelled out turn by turn
+with exact dates -- moved here when that file was trimmed to
+operative-only content, same treatment CLAUDE.md got the same day. Nothing
+below is new; it's the same record, relocated.
+
+**`find-skills`** had the longest road of any skill in the bundle: optional
+(2026-07-27) -> deleted entirely the same day -> restored as optional
+(2026-07-28) -> deleted again as fetch-on-demand-only later that day ->
+made mandatory/always-present (briefly) -> moved to the then-existing
+optional group (2.5) -> and finally, later the same day, moved off the
+bundled-file path entirely, back to fetch-on-demand-only via
+`recommended-skills.txt` (`find-skills -> vercel-labs/skills`) -- its
+final resting state, landing back where its very first attempt at this
+left off. A same-day standing order that briefly required installing
+`find-skills` first before anything else in the "recommended skills" step
+was removed once it went fetch-on-demand-only: `npx skills add` is a
+standalone CLI, not dependent on `find-skills` being installed first.
+
+**`git-rules`** was retired from the bundle entirely on 2026-07-25,
+explicit user request -- see `removed-files.txt`. Never revisited after
+that.
+
+**`github-rules`** was promoted into the bundle 2026-07-27 after being
+generalized from an earlier repo-specific skill into portable GitHub PR
+conventions. The same day, the whole four-skill group was briefly switched
+from mandatory/blind-copy to optional/offered, then later the same day
+moved back to mandatory (explicit user request each time) -- its settled
+state since.
+
+**`changelog-rules`** walked the longest road of any skill that stayed
+bundled (as opposed to going fetch-on-demand like `find-skills`): optional
+(2026-07-27) -> deleted entirely the same day -> restored from git history
+as optional (2026-07-28) -> deleted from the bundle a second time, also
+2026-07-28 -> reinstated a THIRD time on 2026-07-30, straight into the
+mandatory blind-copy group -> reverted back to optional a FOURTH time,
+later the same day, into the then-existing 2.5 group rather than deleted
+(unlike `find-skills`, it never went fetch-on-demand-remote at any point --
+every state it occupied kept it as a locally-bundled file, only the
+mandatory-vs-optional question ever changed). It used to also embed its
+full current `SKILL.md` content verbatim in `config-export-import.md`'s
+own appendix, so a repo without it installed still had the complete
+definition on hand -- removed 2026-07-31 (the user held their own
+extracted copy outside this repo at the time). **Fifth turn, same day,
+later: back to mandatory, this time for good** -- installed as a real file
+in all three repos and moved into the mandatory blind-copy group for
+good, following an audit that also fixed two real bugs in the skill
+itself (see the `changelog-rules` entry above). The 2.5 optional group has
+been empty ever since.

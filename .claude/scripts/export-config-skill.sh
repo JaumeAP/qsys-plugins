@@ -1,51 +1,23 @@
 #!/bin/bash
-# Create the portable config export as a single .skill file. Replaces
-# the old export-config.sh, which produced a plain .zip -- removed
-# 2026-07-24, same day this script was verified byte-for-byte equivalent
-# to it and per explicit user request once that equivalence was
-# confirmed. A .skill file is just a zip with
-# that extension and one required entry, <folder>/SKILL.md at its root --
-# same convention Claude's own skill-creator uses for "Save skill"
-# uploads. This script assembles that shape directly (no dependency on
-# skill-creator's own scripts being present at any particular path
-# outside this repo -- the packaging logic itself is only a few lines).
+# Create the portable config export as a single .skill file. A .skill
+# file is just a zip with that extension and one required entry,
+# <folder>/SKILL.md at its root -- same convention Claude's own
+# skill-creator uses for "Save skill" uploads. This script assembles that
+# shape directly (no dependency on skill-creator's own scripts being
+# present at any particular path outside this repo).
 #
 # A .skill package may contain exactly ONE SKILL.md (the claude.ai/Skills
 # API upload path rejects more than one). This bundle carries THREE
-# skills as files: file-operations and github-rules
-# are mandatory/blind-copy; changelog-rules is bundled the same way but
-# OPTIONAL per target repo (config-export-import.md step 2.5) -- still
-# packaged into every export regardless (that's what makes it available
-# to offer), the optionality is purely an import-side, per-repo choice.
-# `file-operations`/`github-rules` were each
-# briefly made an optional import choice on 2026-07-27, then moved back
-# the same day by explicit user request -- github-rules first,
-# file-operations shortly after -- see config-export-import.md step 2.2.
-# `changelog-rules` had the longest road of any skill that stayed
-# bundled: briefly deleted entirely on
-# 2026-07-27, restored and made optional on 2026-07-28, removed from the
-# bundle entirely a second time the same day, reinstated a THIRD
-# time on 2026-07-30 as mandatory, then reverted a FOURTH time later the
-# same day (explicit user request) back to optional -- its settled state,
-# at least so far. Its full current content is also embedded verbatim in
-# config-export-import.md's own appendix now, so it survives even in a
-# repo that doesn't install it; see `.claude/skills-history.md`
-# for the full timeline. `find-skills` is NOT bundled as a file any
-# more -- after its own long mandatory/optional history (see
-# `.claude/skills-history.md`), it moved a final time on 2026-07-28
-# (explicit user request) to fetch-on-demand only, listed in
-# `recommended-skills.txt` like any other unbundled recommendation
-# instead of travelling as a file -- a state it had already passed
-# through once before this same day, reverted at the time, now the
-# settled choice. Each
-# remaining bundled skill has its
-# own SKILL.md -- those get renamed to
-# <name>.md under references/skills/<name>/ inside the package, so the
-# whole bundle still fits in one valid .skill. Whoever applies the
-# bundle to a target repo renames each <name>.md back to SKILL.md when
-# installing it into .claude/skills/<name>/ -- that rename is what turns
-# it back into a real, loadable skill (documented in the bundle's own
-# top-level SKILL.md, not repeated here).
+# skills as files, all mandatory/blind-copy: file-operations,
+# github-rules, and changelog-rules. Each has its own SKILL.md -- those
+# get renamed to <name>.md under references/skills/<name>/ inside the
+# package, so the whole bundle still fits in one valid .skill. Whoever
+# applies the bundle to a target repo renames each <name>.md back to
+# SKILL.md when installing it into .claude/skills/<name>/ -- that rename
+# is what turns it back into a real, loadable skill (documented in the
+# bundle's own top-level SKILL.md, not repeated here). Full history of
+# what has been bundled/optional/removed and why, for every skill:
+# `.claude/skills-history.md` -- not repeated here.
 #
 # Usage: ./export-config-skill.sh [output_dir]
 # Output: claude-config-bundle.skill (generic name, no "export" word,
@@ -134,25 +106,14 @@ repeated here.
   installed into the target's own `.claude/scripts/` too, so the target
   repo can export its own bundle later instead of only ever being an
   import destination.
-- `references/skills/<name>/<name>.md` -- three bundled skills:
-  `file-operations` and `github-rules`, mandatory (step 2.2), plus
-  `changelog-rules`, bundled the same way but optional per target repo
-  (step 2.5) -- install it only where the repo actually maintains a
-  changelog. `file-operations`/`github-rules` were each briefly made
-  optional on
-  2026-07-27, moved back the same day. `changelog-rules` went through the
-  longest history of any skill here -- deleted, restored optional, removed
-  entirely, all within 2026-07-27/28, reinstated as mandatory on
-  2026-07-30, then reverted the same day to optional, its settled state;
-  its full current content also lives verbatim in
-  `config-export-import.md`'s own appendix now, so a repo without it
-  installed still has the definition on hand; see
-  `.claude/skills-history.md` for the full timeline. `caveman` and
-  `karpathy-guidelines` are also mandatory (2026-07-30) but fetch-on-demand
-  remote only (see `recommended-skills.txt` above — listed there for remote
-  installation). `find-skills` used to be bundled here too and no longer
-  is: moved to fetch-on-demand only after its own long optional history.
-  Each bundled skill's entry point is
+- `references/skills/<name>/<name>.md` -- three bundled skills, all
+  mandatory (step 2.2): `file-operations`, `github-rules`, and
+  `changelog-rules`. `caveman` is also mandatory but fetch-on-demand
+  remote only (see `recommended-skills.txt` above — listed there for
+  remote installation). `find-skills` used to be bundled here too and no
+  longer is: moved to fetch-on-demand only. Full history of what has been
+  bundled/optional/removed and why, for every skill here:
+  `.claude/skills-history.md`. Each bundled skill's entry point is
   named `<name>.md` here instead of `SKILL.md`, because a `.skill` package
   may only contain one `SKILL.md` (this one) -- nesting more would fail
   validation on upload. **When actually installing one of these into a
@@ -197,20 +158,22 @@ done
 # (e.g. a project-specific SessionStart hook like ensure-lua53.sh, which
 # is deliberately excluded from this array further down).
 #
-# check-reply-format.sh and reply-format-preflight.sh were dropped from
-# this array 2026-07-30: the CLAUDE.md rules they enforced (mandatory
-# leading "Rebut:" line, Catalan-only, the bold/em-dash/ellipsis/header/
-# table ban, numbered-lists-only) were removed that day in favor of
-# deferring to the `caveman` skill, and both hooks were unregistered from
-# settings.json. They stay on disk here, dead, with their own retirement
-# notes -- but shipping them would put two scripts nothing registers into
-# every target repo, and re-registering them there would reimpose rules
-# the common CLAUDE.md no longer states.
+# A hook drops out of this array once it's fully retired (unregistered
+# from settings.json, its own header carries the retirement note) --
+# shipping a dead script nothing registers into every target repo, or
+# re-registering it there, would reimpose rules the common CLAUDE.md no
+# longer states. check-reply-format.sh and reply-format-preflight.sh
+# (mandatory leading "Rebut:" line, Catalan-only, bold/em-dash/ellipsis/
+# header/table ban, numbered-lists-only -- superseded by deferring to the
+# `caveman` skill) and skill-creation-reminder.sh (mandatory
+# skill-creator process for SKILL.md edits -- retired) are all excluded
+# for this reason; the "Rebut:" line was later reactivated as a plain
+# CLAUDE.md rule, not by re-registering its old hook. Full history:
+# `.claude/skills-history.md`.
 bundled_hooks=(config-ingest-reminder.sh
   file-operations-enforcement.sh
   init-submodules.sh no-commit-on-main.sh precompact-hygiene-flag.sh
-  rule-check-reminder.sh
-  skill-creation-reminder.sh submodule-clone-fixup.sh)
+  rule-check-reminder.sh submodule-clone-fixup.sh)
 
 # settings.json is NOT a blind copy: it can carry two kinds of
 # project-specific leakage that would otherwise ship into every target
