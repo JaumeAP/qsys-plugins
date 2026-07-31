@@ -1112,3 +1112,19 @@ history actually matters.)
   this one): rebuild via CI, rewrite the root `.qplug` from the job log,
   and rewrite the test for the single-native-Knob shape before trusting
   either as current.
+  **Closed (2026-07-31, later the same day, user asked to continue).**
+  `build-qplug.yml` dispatched for `DolbyKnobTest` on this session's own
+  branch (had to be pushed first -- it only existed locally, `add_repo`/
+  `run_workflow` both need the ref to exist on `origin`). Job log confirmed
+  no unexpanded `#include` markers (`info.lua`/`controls.lua`/`layout.lua`,
+  all depth-1 into `plugin.lua`, nothing nested) and matched the Developer
+  source exactly; root `DolbyKnobTest.qplug` rewritten from it (v1.0.0.3,
+  single `GainDb` native Knob). `test_dist_dolbyknobtest.lua` rewritten to
+  match -- no runtime logic left to drive (Min/Max clamping is host-side,
+  not plugin code), so its 13 checks are a definition pass over every
+  control/layout field plus a runtime-pass smoke check that the built file
+  still loads with no throw. Full `Developer/tests/run.sh` green afterward.
+  `.claude/rules/repo-layout.md`'s own `DolbyKnobTest.qplug` and
+  `test_dist_dolbyknobtest.lua` entries updated to match, both previously
+  still describing the old two-control v1.0.0.1 shape. No `.qplugx` built
+  yet, same as before this entry.
