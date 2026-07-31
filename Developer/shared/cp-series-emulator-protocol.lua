@@ -1,42 +1,26 @@
--- CP Series Emulator (Q-SYS Control Script)
+-- CP Series Emulator protocol core -- shared between Developer/plugins/CP
+-- Series Emulator/runtime.lua (#include's this file) and
+-- Developer/cp-series-emulator/cp-series-emulator.lua (the standalone
+-- Control Script version, which CANNOT #include -- Control Scripts are
+-- pasted directly into Q-SYS Designer with no PLUGCC build step at all, so
+-- that file keeps its own inline copy of everything below, kept in sync by
+-- hand against this file as the source of truth. This split exists so at
+-- least the Plugin side never drifts.
 --
--- A single Control Script that fakes a Dolby CP650/CP750/CP850/CP950/CP950A
--- cinema processor, for bench-testing the "Dolby CPSeries Control" plugin
--- without real hardware. Unlike the three older single-model
--- Dolby CP Emulator/*.quc scripts (CP650/CP750/CP850 only, each its own
--- ad-hoc param subset, no CP950/CP950A), this one models the full wire
--- vocabulary from Developer/plugins/Dolby CPSeries Control/commlib.lua
--- (CPServices) for all five defined models, and is exercised against the
--- REAL CPSeries/CPModels/CPProtocol classes by
--- Developer/tests/test_cp_series_emulator.lua -- not a separate simulator
--- with its own, possibly-diverging idea of the protocol.
---
--- USAGE: this file is plain Lua, meant to be pasted into a new Control
--- Script component in Q-SYS Designer (Designer produces the .quc binary on
--- save; this repo cannot generate that format directly -- see
--- Dolby CP Emulator/README.md). Edit MODEL below to the processor you want
--- to emulate, one instance per model, same as the three existing .quc files.
---
--- SYNC NOTE (2026-07-31): the protocol core below (constants through
--- SocketHandler) is a hand-maintained copy of
--- Developer/shared/cp-series-emulator-protocol.lua, which the Plugin
--- version (Developer/plugins/CP Series Emulator/) #include's directly.
--- This file can't do the same -- a Control Script has no PLUGCC build
--- step, it's pasted into Designer as-is -- so when that shared file
--- changes, mirror the change here too. The two are currently identical
--- except for this file's own MODEL constant and the lack of any Status/
--- Controls wiring (this file has no host UI at all).
-
--- Variables and flags
-local MODEL = 'CP750'  -- CP650 / CP750 / CP850 / CP950 / CP950A
-
--- Timers, tables, and constants
+-- Callers must declare `local MODEL = '...'` (CP650/CP750/CP850/CP950/
+-- CP950A) BEFORE #include'ing this file -- everything here closes over
+-- that local. After the #include, `server = TcpSocketServer.New()` /
+-- `server.EventHandler = ...` / `server:Listen(PORT[MODEL])` (and any
+-- caller-specific UI wiring, e.g. Status controls) are the caller's own
+-- responsibility -- deliberately not part of this shared file, since that
+-- part genuinely differs between the two callers.
 
 -- Per-model TCP port and wire dialect. Mirrors Developer/plugins/
--- Dolby CPSeries Control/models.lua's CPModels.CONFIG exactly. This script
--- is standalone (pasted into its own Control Script, not #include'd by the
--- plugin), so it can't require that module directly -- kept in sync by
--- hand; CPModels.CONFIG is the source of truth if these ever drift.
+-- Dolby CPSeries Control/models.lua's CPModels.CONFIG exactly. Kept as its
+-- own copy rather than #include'd from there: that plugin's own
+-- models.lua/protocol.lua/commlib.lua are documented as private to it
+-- (repo-layout.md), and this emulator is meant to stay a standalone
+-- drop-in, not coupled to another plugin's file tree.
 local PORT = { CP650 = 61412, CP750 = 61408, CP850 = 61408, CP950 = 61408, CP950A = 61408 }
 local KEYVALUE = { CP650 = true }  -- CP650 speaks KEY=VALUE; every other model speaks "param value"
 
@@ -83,7 +67,6 @@ local state = {
 	version = '1.4.2',  -- CP750's handshake-only cp750.sysinfo.version reply
 }
 
--- Helper functions
 local function escape(s) return (s:gsub('%p', '%%%0')) end
 
 local function isGet(msg, param)
@@ -114,15 +97,6 @@ local function macroIndex(name)
 	return nil
 end
 
--- Sockets and services
-
--- Must stay global, never local (the same GC-safety requirement documented
--- for Timer/TcpSocket in qsys-plugin-development.md: a local one can be
--- collected once nothing else references it, silently killing the
--- listener).
-server = TcpSocketServer.New()
-
--- EventHandlers
 function SocketHandler(sock, event)
 	if event ~= TcpSocket.Events.Data then return end
 
@@ -143,34 +117,30 @@ function SocketHandler(sock, event)
 	-- CP650 raw-echoes the sent line before its real response ("Protocol
 	-- Guarantees" in the Dolby CP Cinema Control spec) -- the CPSeries
 	-- client class works around exactly this (its own echopending logic),
-	-- so an accurate CP650 emulation has to actually do it, not just reply
-	-- once: a SET's reply text is otherwise indistinguishable from the raw
-	-- echo (both are "param=value"), and without a real echo line first,
-	-- the client can't tell the two apart.
+	-- so an accurate CP650 emulation has to actually do it: a SET's reply
+	-- text is otherwise indistinguishable from the raw echo (both are
+	-- "param=value"), and without a real echo line first, the client
+	-- can't tell the two apart.
 	if MODEL == 'CP650' then write(msg) end
 
-	-- FADER
 	if isGet(msg, params.fader) then write(formatMessage(params.fader, state.fader)) return end
 	do
 		local v = trySet(msg, params.fader)
 		if v then state.fader = v write(formatMessage(params.fader, state.fader)) return end
 	end
 
-	-- MUTE
 	if isGet(msg, params.mute) then write(formatMessage(params.mute, state.mute)) return end
 	do
 		local v = trySet(msg, params.mute)
 		if v then state.mute = v write(formatMessage(params.mute, state.mute)) return end
 	end
 
-	-- FORMAT (CP650: numeric wire token; CP750: keyword; macro models: 1-indexed number)
 	if isGet(msg, params.format) then write(formatMessage(params.format, state.format)) return end
 	do
 		local v = trySet(msg, params.format)
 		if v then state.format = v write(formatMessage(params.format, state.format)) return end
 	end
 
-	-- FORMNAME (macro models only -- CP650/CP750 resolve names locally, no wire param)
 	if params.formname then
 		if isGet(msg, params.formname) then
 			write(formatMessage(params.formname, macroName(state.format) or ''))
@@ -185,40 +155,25 @@ function SocketHandler(sock, event)
 		end
 	end
 
-	-- FORMLIST (device-populated, get-only; CP750 has none -- the plugin
-	-- builds its list locally for that model instead of querying it)
 	if params.formlist and isGet(msg, params.formlist) then
 		if MODEL == 'CP650' then
 			write(formatMessage(params.formlist, CP650_FORMAT_LIST))
 		else
-			-- The macro models' received() only recognizes this as a
-			-- formlist reply (as opposed to 512 unrelated "unrecognized
-			-- action" lines) if the FIRST line matches the sys.macros
-			-- param pattern itself -- that's what flips it into formlist-
-			-- collection mode, which then drains the "n:name" lines that
-			-- follow. A bare "sys.macros" header line, no value, is what
-			-- the plugin's own CPServices sep (" ?" optional) matches; the
-			-- rest of the burst carries no repeated header, one entry per
-			-- line.
+			-- A bare "sys.macros" header line, no value, is what flips the
+			-- real plugin's received() into formlist-collection mode; the
+			-- "n:name" entries that follow carry no repeated header, one
+			-- per line.
 			write(params.formlist)
 			for _, entry in ipairs(MACROS) do write(entry) end
 		end
 		return
 	end
 
-	-- CP750's read-only handshake param (also its own Actions.reset row --
-	-- distinct from fader/mute/format, unlike every other model, whose
-	-- reset row reuses the fader param and is already covered above)
+	-- CP750's read-only handshake param (its own Actions.reset row,
+	-- distinct from fader/mute/format -- every other model's reset row
+	-- reuses the fader param, already covered above).
 	if MODEL == 'CP750' and isGet(msg, 'cp750.sysinfo.version') then
 		write('cp750.sysinfo.version ' .. state.version)
 		return
 	end
 end
-
-server.EventHandler = function(SocketInstance)
-	SocketInstance.ReadTimeout = 10
-	SocketInstance.EventHandler = SocketHandler
-end
-
--- Initialization
-server:Listen(PORT[MODEL])

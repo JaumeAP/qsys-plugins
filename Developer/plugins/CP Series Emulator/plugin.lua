@@ -14,6 +14,15 @@
 -- file per model. Built via PLUGCC.exe like every other plugin here (see
 -- qsys-plugin-development.md's "Developer workflow"), not the Control
 -- Script paste-into-Designer path the .lua source above still documents.
+-- v1.0.0.1: the protocol logic (constants, escape/isGet/trySet/macroName/
+-- macroIndex, SocketHandler) moved out of runtime.lua into
+-- Developer/shared/cp-series-emulator-protocol.lua, #include'd directly by
+-- this file (depth-1, before runtime.lua) rather than duplicated inline --
+-- it was byte-for-byte identical to the Control Script version
+-- (Developer/cp-series-emulator/cp-series-emulator.lua), which itself
+-- cannot #include anything (no PLUGCC build step) and so still carries its
+-- own inline copy, kept in sync by hand against the new shared file. No
+-- functional change.
 
 --[[ #include "info.lua" ]]
 
@@ -78,5 +87,15 @@ function GetControlLayout(props)
 end
 
 if Controls then
+	-- MODEL must be declared before the shared protocol #include below --
+	-- everything in that file closes over this local. Kept as a depth-1
+	-- include directly in plugin.lua, not nested inside runtime.lua:
+	-- PLUGCC.exe only recognizes a NESTED #include (one inside a file
+	-- that itself got #include'd) if it is that file's own first line
+	-- (see qsys-plugin-development.md) -- "Dolby CPSeries Control"'s own
+	-- plugin.lua avoids the question the same way, #include'ing
+	-- everything it needs directly rather than from inside runtime.lua.
+	local MODEL = (Properties.Model.Value):gsub("%s", "")
+	--[[ #include "../../shared/cp-series-emulator-protocol.lua" ]]
 	--[[ #include "runtime.lua" ]]
 end
