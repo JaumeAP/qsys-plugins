@@ -5,9 +5,9 @@ name: Build .qplug (PLUGCC)
 # (vendor/qsys-plugins/ExamplePlugin/PluginCompile/PLUGCC.exe), a Windows
 # binary -- hence windows-latest, same reasoning as build-qplugx.yml.
 # Replaces Developer/tools/build_distributable.sh for any plugin that has
-# been migrated onto this file-split convention (currently all six:
+# been migrated onto this file-split convention (currently all seven:
 # MultiFlip-Flop, Dolby Sweep, DolbyFader, Dolby CPSeries Control,
-# SubharmonicSynth, CP Series Emulator). SubharmonicSynth was missing from
+# SubharmonicSynth, CP Series Emulator, StateTrigger). SubharmonicSynth was missing from
 # the `plugin` choice list below from its 2026-07-29 incorporation until
 # 2026-07-30 -- it has had the same Developer/plugins/<name>/plugin.lua
 # split as the other four the entire time, it just could never be rebuilt
@@ -41,6 +41,7 @@ on:
           - Dolby CPSeries Control
           - SubharmonicSynth
           - CP Series Emulator
+          - StateTrigger
 
 jobs:
   build:
