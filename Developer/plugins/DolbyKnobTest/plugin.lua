@@ -10,6 +10,10 @@
 -- v1.0.0.3: GainDb is now a native ControlType="Knob" (ControlUnit="dB"),
 -- no QKnob/Text wrapper -- removes the shared/qknob.lua dependency and
 -- the runtime.lua file entirely, nothing left to run.
+-- v1.0.0.4: added GainDbText, a plain editable Text control bidirectionally
+-- linked to GainDb -- typing a value into GainDbText updates GainDb.Value
+-- (clamped to -90..10) and vice versa. Brings runtime.lua back, but as a
+-- direct Controls.* wiring, no QKnob wrapper.
 
 --[[ #include "info.lua" ]]
 
@@ -41,4 +45,8 @@ function GetControlLayout(props)
 	local graphics = {}
 	--[[ #include "layout.lua" ]]
 	return layout, graphics
+end
+
+if Controls then
+	--[[ #include "runtime.lua" ]]
 end
