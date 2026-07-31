@@ -976,3 +976,12 @@ history actually matters.)
   confirmed in the job log, re-run against the corrected root file: all
   14 checks pass. Non-breaking otherwise: no pin renamed, `Detection`
   defaults to `Both`.
+
+- **`test_dist_statetrigger.lua` extended (14 -> 19 checks), same session.**
+  Three-ish more checks, explicit user request ("Fes-li unes tres all
+  test"): (1) definition pass now checks `GetProperties()`'s own `Detection`
+  entry has default `Value == "Both"` and `Choices` covering `On`/`Off`/
+  `Both`; (2) `Detection=On` and (3) `Detection=Off` runtime passes now also
+  assert channel isolation (`State_1` changes never fire `Out_2`/`Out_3`),
+  matching the isolation check `Detection=Both` already had. No source
+  change needed -- v2.0.0.3 already passes all 19.

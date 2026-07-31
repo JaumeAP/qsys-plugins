@@ -251,11 +251,13 @@ docs/continuity-notes.md (dated history). -->
         │                             runtime pass per model exercising the built
         │                             plugin's own server/Status wiring end to end
         ├── test_dist_statetrigger.lua Root StateTrigger distributable (added
-        │                             2026-07-31): definition pass, control/layout
-        │                             count for a given Channels, and runtime
-        │                             checks per Detection value (On/Off/Both)
-        │                             that each State_n only ever fires its own
-        │                             Out_n, gated by the selected edge(s)
+        │                             2026-07-31, 19 checks): definition pass
+        │                             (incl. Detection property's own default/
+        │                             Choices), control/layout count for a given
+        │                             Channels, and runtime checks per Detection
+        │                             value (On/Off/Both) that each State_n only
+        │                             ever fires its own Out_n, gated by the
+        │                             selected edge(s)
         ├── test_stress.lua           Stress/fuzz over all five plugins: asserts invariants
         │                             (nothing throws, nothing publishes nil, every written
         │                             value stays in range) rather than exact values. Fixed

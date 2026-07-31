@@ -29,6 +29,24 @@ do
 		h.check(layout["State_2"] ~= nil, "layout entry exists for a dynamic control (State_2)")
 		h.check(layout["Out_2"] ~= nil, "layout entry exists for a dynamic control (Out_2)")
 	end
+
+	local props = GetProperties()
+	local detectionProp
+	for _, p in ipairs(props) do
+		if p.Name == "Detection" then detectionProp = p end
+	end
+	h.check(detectionProp ~= nil, "GetProperties declares a Detection property")
+	if detectionProp then
+		h.check(detectionProp.Value == "Both", "Detection default Value is \"Both\" (got " .. tostring(detectionProp.Value) .. ")")
+		local choices = detectionProp.Choices or {}
+		local hasOn, hasOff, hasBoth = false, false, false
+		for _, c in ipairs(choices) do
+			if c == "On" then hasOn = true end
+			if c == "Off" then hasOff = true end
+			if c == "Both" then hasBoth = true end
+		end
+		h.check(hasOn and hasOff and hasBoth, "Detection Choices include On/Off/Both (got " .. table.concat(choices, ",") .. ")")
+	end
 end
 
 local controls_list = {}
@@ -74,16 +92,21 @@ do
 	local env = install("On")
 	assert(loadfile(DIST))()
 
-	local fired = 0
-	env.controls.Out_1.Trigger = function() fired = fired + 1 end
+	local fired = {}
+	for t = 1, N do
+		fired[t] = 0
+		env.controls["Out_" .. t].Trigger = function() fired[t] = fired[t] + 1 end
+	end
 
 	env.controls.State_1.Value = 1
 	env.controls.State_1.EventHandler()
-	h.check(fired == 1, "On: State_1 -> true fires Out_1 (got " .. fired .. ")")
+	h.check(fired[1] == 1, "On: State_1 -> true fires Out_1 (got " .. fired[1] .. ")")
 
 	env.controls.State_1.Value = 0
 	env.controls.State_1.EventHandler()
-	h.check(fired == 1, "On: State_1 -> false does NOT fire Out_1 (got " .. fired .. ")")
+	h.check(fired[1] == 1, "On: State_1 -> false does NOT fire Out_1 (got " .. fired[1] .. ")")
+
+	h.check(fired[2] == 0 and fired[3] == 0, "On: State_1 changes do not fire Out_2/Out_3")
 end
 
 h.section("Detection=Off (falling edge only)")
@@ -91,16 +114,21 @@ do
 	local env = install("Off")
 	assert(loadfile(DIST))()
 
-	local fired = 0
-	env.controls.Out_1.Trigger = function() fired = fired + 1 end
+	local fired = {}
+	for t = 1, N do
+		fired[t] = 0
+		env.controls["Out_" .. t].Trigger = function() fired[t] = fired[t] + 1 end
+	end
 
 	env.controls.State_1.Value = 1
 	env.controls.State_1.EventHandler()
-	h.check(fired == 0, "Off: State_1 -> true does NOT fire Out_1 (got " .. fired .. ")")
+	h.check(fired[1] == 0, "Off: State_1 -> true does NOT fire Out_1 (got " .. fired[1] .. ")")
 
 	env.controls.State_1.Value = 0
 	env.controls.State_1.EventHandler()
-	h.check(fired == 1, "Off: State_1 -> false fires Out_1 (got " .. fired .. ")")
+	h.check(fired[1] == 1, "Off: State_1 -> false fires Out_1 (got " .. fired[1] .. ")")
+
+	h.check(fired[2] == 0 and fired[3] == 0, "Off: State_1 changes do not fire Out_2/Out_3")
 end
 
 h.report()
