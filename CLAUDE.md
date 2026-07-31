@@ -139,6 +139,18 @@ reason — `skill-creator` is the sole mandated process.
 a `SKILL.md` but can't verify the skill was actually invoked, so it can't
 hard-block.
 
+**No shortcut clause (2026-07-31, explicit user request).** `skill-creator`'s
+own text allows skipping its eval/benchmark loop when "the user is like 'I
+don't need to run a bunch of evaluations, just vibe with me'" — that escape
+hatch requires the user's own explicit words in the moment, never an
+inference from something else the user said (e.g. a request for fewer
+tokens/interactions doesn't imply it, even when the full loop would cost
+more). Triggered by a session that skipped the eval-set/subagent-runs/
+benchmark/viewer steps on that inference for a reference-doc-style skill
+edit and was caught on it unprompted. Always run the full documented
+procedure end to end — cost accepted — unless the user invokes that exact
+escape hatch themselves, that session.
+
 ## Session continuity
 
 **Long-session hygiene.** No reliable way to measure token budget from inside
