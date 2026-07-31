@@ -78,11 +78,16 @@ docs/continuity-notes.md (dated history). -->
 │   │                                 workflow's own choice list -- corrected same
 │   │                                 day, this section previously said
 │   │                                 SubharmonicSynth had no .qplugx yet.
-│   └── CP Series Emulator.qplug      (v1.0, added 2026-07-31) -- no real Dolby
-│                                     hardware behind this one; fakes a
-│                                     processor for bench-testing Dolby CPSeries
-│                                     Control. No .qplugx built yet (workflow
-│                                     choice list updated, not yet dispatched).
+│   ├── CP Series Emulator.qplug      (v1.0, added 2026-07-31) -- no real Dolby
+│   │                                 hardware behind this one; fakes a
+│   │                                 processor for bench-testing Dolby CPSeries
+│   │                                 Control. No .qplugx built yet (workflow
+│   │                                 choice list updated, not yet dispatched).
+│   └── StateTrigger.qplug            (v1.0, added 2026-07-31) -- inverse of
+│                                     MultiFlip-Flop: one Boolean State input,
+│                                     one Trigger Out output, fires Out once
+│                                     per State change either direction. No
+│                                     .qplugx built yet.
 │
 ├── Dolby CP Emulator/                Once held 3 hand-written .quc Control
 │   └── README.md                     Scripts (CP650/CP750/CP850, no CP950/CP950A)
@@ -176,7 +181,7 @@ docs/continuity-notes.md (dated history). -->
     │                                 defaults (the original's per-control `DefaultValue`
     │                                 field isn't a real Q-SYS key, so those defaults
     │                                 never actually applied pre-incorporation)
-    │   └── CP Series Emulator/       Fakes a Dolby processor over TCP for
+    │   ├── CP Series Emulator/       Fakes a Dolby processor over TCP for
     │       ├── plugin.lua            bench-testing Dolby CPSeries Control without
     │       ├── info.lua              hardware (added 2026-07-31). Model property (5
     │       ├── properties.lua        choices) + Status/Status.Led indicator. The
@@ -191,6 +196,13 @@ docs/continuity-notes.md (dated history). -->
     │                                 Control's own private models.lua/protocol.lua --
     │                                 this plugin keeps its own copy of the same wire
     │                                 tables, kept in sync by hand.
+    │   └── StateTrigger/             Inverse of MultiFlip-Flop: Boolean State in,
+    │       ├── plugin.lua            Trigger Out out (added 2026-07-31). No
+    │       ├── info.lua              properties.lua -- GetProperties() returns {}
+    │       ├── controls.lua          directly in plugin.lua, same as SubharmonicSynth/
+    │       ├── layout.lua            DolbyFader. Runtime is a single EventHandler:
+    │       └── runtime.lua           State changes (either direction) call
+    │                                 Controls.Out:Trigger(), nothing else.
     ├── shared/                       Code #include'd by more than one plugin
     │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua
     │   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
@@ -233,6 +245,10 @@ docs/continuity-notes.md (dated history). -->
         │                             (added 2026-07-31): definition pass, and a
         │                             runtime pass per model exercising the built
         │                             plugin's own server/Status wiring end to end
+        ├── test_dist_statetrigger.lua Root StateTrigger distributable (added
+        │                             2026-07-31): definition pass, control/layout
+        │                             count, and a runtime check that a State
+        │                             change fires Out exactly once each direction
         ├── test_stress.lua           Stress/fuzz over all five plugins: asserts invariants
         │                             (nothing throws, nothing publishes nil, every written
         │                             value stays in range) rather than exact values. Fixed

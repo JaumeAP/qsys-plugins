@@ -1,0 +1,88 @@
+-- State Trigger for Q-SYS
+-- by Jaume Puig / james.puig@elcine.com
+-- Jul '26
+-- Inverse of the Multi Flip-Flop component: Flip-Flop converts a Trigger
+-- input into a Boolean State output; this converts a Boolean State input
+-- into a Trigger pulse output, one shot per state change, either
+-- direction. Built to the plugin structure/naming convention confirmed
+-- against QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin}
+-- templates (see .claude/rules/qsys-plugin-development.md).
+-- v1.0.0.1: initial release.
+
+PluginInfo = {
+	Name = "Utility~State Trigger",
+	Version = "1.0",
+	BuildVersion = "1.0.0.1",
+	Id = "8b93d00a-5281-4dd9-b963-4d5f6d6ec6cc",
+	Author = "Jaume Puig",
+	Description = "Fires a Trigger pulse whenever a Boolean state input changes -- the inverse of the Flip-Flop component",
+}
+
+function GetColor(props)
+	return { 204, 204, 204 }
+end
+
+function GetPrettyName(props)
+	return "State Trigger"
+end
+
+function GetProperties()
+	return {}
+end
+
+function RectifyProperties(props)
+	props.plugin_show_debug.IsHidden = true
+	return props
+end
+
+function GetControls(props)
+	local ctrls = {}
+	table.insert(ctrls, {
+		Name = "State",
+		ControlType = "Button",
+		ButtonType = "Toggle",
+		UserPin = true,
+		PinStyle = "Input",
+	})
+
+	table.insert(ctrls, {
+		Name = "Out",
+		ControlType = "Button",
+		ButtonType = "Trigger",
+		UserPin = true,
+		PinStyle = "Output",
+	})
+	return ctrls
+end
+
+function GetControlLayout(props)
+	local layout = {}
+	local graphics = {}
+	table.insert(graphics, {
+		Type = "Label",
+		Text = "State",
+		StrokeWidth = 0,
+		VTextAlign = "Center",
+		Position = { 0, 0 },
+		Size = { 64, 32 },
+	})
+
+	table.insert(graphics, {
+		Type = "Label",
+		Text = "Out",
+		StrokeWidth = 0,
+		VTextAlign = "Center",
+		Position = { 96, 0 },
+		Size = { 64, 32 },
+	})
+
+	layout["State"] = { PrettyName = "State", Position = { 0, 32 } }
+	layout["Out"] = { PrettyName = "Out", Position = { 96, 32 } }
+	return layout, graphics
+end
+
+if Controls then
+	Controls.State.EventHandler = function(ctrl)
+		Controls.Out:Trigger()
+	end
+end

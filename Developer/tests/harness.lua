@@ -17,6 +17,7 @@ M.DIST = {
 	flipflop        = M.repo .. "/MultiFlip-Flop.qplug",
 	subharmonic     = M.repo .. "/SubharmonicSynth.qplug",
 	cpseriesemulator = M.repo .. "/CP Series Emulator.qplug",
+	statetrigger    = M.repo .. "/StateTrigger.qplug",
 }
 
 M.MODELS = { "CP 650", "CP 750", "CP 850", "CP 950", "CP 950A" }

@@ -917,3 +917,25 @@ history actually matters.)
   be exactly the kind of speculative addition this repo's conventions rule
   out. Re-open if a real host or a new plugin ever needs non-Mono wiring
   for `gain`/`filter_lowpass`/`equalizer_parametric`.
+
+- **New plugin `StateTrigger` added (2026-07-31), inverse of
+  `MultiFlip-Flop`.** Researched against QSC's own support docs first
+  (confirmed the manufacturer has no dedicated fixed component for
+  Boolean-to-Trigger the way Flip-Flop covers Trigger-to-Boolean; the
+  recommended path is a Block Controller with a "State Trigger" push
+  action, or plain Lua). Built as a minimal dedicated plugin instead: one
+  `State` input (`ButtonType="Toggle"`), one `Out` output
+  (`ButtonType="Trigger"`), a single `EventHandler` that calls
+  `Controls.Out:Trigger()` on every `State` change, either direction. No
+  properties, no shared includes -- deliberately as basic as the request
+  asked for. Built via the real PLUGCC.exe CI path end to end for the
+  first time in this session (`build-qplug.yml` dispatched with
+  `plugin=StateTrigger`, job log read back, root `StateTrigger.qplug`
+  written from it, confirmed no unexpanded `#include` markers), not just
+  hand-assembled from the Developer source -- matches the documented
+  "Developer workflow" exactly. `Developer/tests/test_dist_statetrigger.lua`
+  added (9 checks: definition pass, control/layout counts, State->Out
+  firing both directions), wired into `run.sh` and `harness.lua`'s `DIST`
+  table. No `.qplugx` built yet (same state CP Series Emulator shipped in
+  initially -- workflow choice list updated, `build-qplugx.yml` not yet
+  dispatched for this one).

@@ -15,4 +15,6 @@ instance, not just Set/Reset/Toggle triggers)
 Bass enhancement / subharmonic-style boost for LFE/Sub channels
 ### CP Series Emulator
 Fakes a Dolby CP650/CP750/CP850/CP950/CP950A processor over TCP, for bench-testing Dolby CPSeries Control without hardware
+### StateTrigger
+Inverse of Multi-Flipflop: fires a Trigger pulse whenever a Boolean State input changes, either direction
 
