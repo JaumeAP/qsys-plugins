@@ -889,3 +889,31 @@ history actually matters.)
   and already double-checked for any plugin with no nested includes
   (confirmed for `CP Series Emulator`'s three rebuilds this session,
   each byte-for-byte matched against its own job log).
+
+- **`Developer/host-emulator/components/{gain,filter_lowpass,
+  equalizer_parametric}.lua` pin lists independently confirmed (2026-07-31),
+  closing `PROJECT.md`'s former "Open threads" item 2.** Direct fetches of
+  both `help.qsys.com` and `q-syshelp.qsc.com` still 403 (same block first
+  hit 2026-07-29 when these three files were written; also tried and
+  blocked this session: `web.archive.org`, the `r.jina.ai` read proxy,
+  GitHub code search over `gdyr/qsys-plugin-docs` and related public repos
+  for a real plugin wiring these specific component Types -- none turned up
+  a `GetWiring` example beyond the `mixer` one already cited in
+  `mixer.lua`). What DID work: a plain web search's own crawled index of
+  each component's official Q-SYS Help page (`gain.htm`,
+  `filter_lowpass.htm`, `equalizer_parametric.htm`) -- the same source
+  category, once removed from a direct fetch, that already confirmed
+  `sine.lua`. All three pages' indexed text states the same pattern: Mono
+  (default) = one input, one output; Stereo = two/two; Multi-Channel =
+  2-256, selectable via Properties. That corroborates the "Input 1"/
+  "Output 1" convention these three files already returned for the Mono
+  case, on top of the pre-existing internal evidence (SubharmonicSynth's own
+  shipped `GetWiring`, wiring them as "GainSub Input 1"/"Lpf Input 1"/
+  "Peq Input 1" etc.). Deliberately NOT extended to model Stereo/
+  Multi-Channel pin naming -- no plugin in this repo uses any of the three
+  outside Mono, and the exact Properties key(s) that would select those
+  modes for these Types (`mixer.lua`'s own `n_inputs`/`n_outputs` keys are
+  confirmed only for `mixer`) are still unverified, so guessing them would
+  be exactly the kind of speculative addition this repo's conventions rule
+  out. Re-open if a real host or a new plugin ever needs non-Mono wiring
+  for `gain`/`filter_lowpass`/`equalizer_parametric`.
