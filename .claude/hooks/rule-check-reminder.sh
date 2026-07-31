@@ -118,7 +118,10 @@ if (( count == 1 || count % 15 == 0 )); then
   # optional per repo (config-export-import.md step 2.5) -- an optional
   # skill doesn't belong in a list of things this hook insists get
   # invoked "for real" every time its trigger matches.
-  msg="${msg} Excepcio (nomes els mandatory, no els recomanats): file-operations, github-rules, caveman i karpathy-guidelines son 'mandatory' segons CLAUDE.md -- invoca'ls de veritat amb el tool Skill quan la tasca hi encaixi (fitxers, treball amb PR/GitHub, o sempre per estil/compressio de resposta i principis de comportament), no nomes com a referencia de fons."
+  # karpathy-guidelines removed from this named list 2026-07-31 (explicit
+  # user request): moved out of CLAUDE.md's mandatory set into
+  # programming-optional-skills.txt, no longer obligatory for every repo.
+  msg="${msg} Excepcio (nomes els mandatory, no els recomanats): file-operations, github-rules i caveman son 'mandatory' segons CLAUDE.md -- invoca'ls de veritat amb el tool Skill quan la tasca hi encaixi (fitxers, treball amb PR/GitHub, o sempre per estil/compressio de resposta), no nomes com a referencia de fons."
 fi
 
 # Job 2: consume the PreCompact pending flag exactly once, if present.

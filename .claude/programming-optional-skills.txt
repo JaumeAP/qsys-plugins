@@ -23,6 +23,8 @@
 # Core development & architecture
 superpowers (full suite: brainstorming, dispatching-parallel-agents, executing-plans, finishing-a-development-branch, receiving-code-review, requesting-code-review, subagent-driven-development, systematic-debugging, test-driven-development, using-git-worktrees, using-superpowers, verification-before-completion, writing-plans) -> obra/superpowers
   install: npx skills add obra/superpowers -s brainstorming -s dispatching-parallel-agents -s executing-plans -s finishing-a-development-branch -s receiving-code-review -s requesting-code-review -s subagent-driven-development -s systematic-debugging -s test-driven-development -s using-git-worktrees -s using-superpowers -s verification-before-completion -s writing-plans
+karpathy-guidelines -> forrestchang/andrej-karpathy-skills
+  install: npx skills add forrestchang/andrej-karpathy-skills -s karpathy-guidelines
 
 # Code quality & security
 code-simplification -> addyosmani/agent-skills
