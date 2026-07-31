@@ -42,9 +42,10 @@ regardless of intensity level or language) — overrides caveman on this one
 point only.
 
 **Exception: announce multi-step tool sequences.** For git commit/push,
-multi-file edits, and test runs, announce each step as a bare 1-3 word
-action — "Commit.", "Push.", "Tests." — no explanation, before or after but
-not both. **Git-absent repos:** if the working directory has no git at all
+multi-file edits, test runs, and skill invocations, announce each step as a
+bare 1-3 word action — "Commit.", "Push.", "Tests.", or the skill's bare
+name (e.g. "github-rules.") — no explanation of what it does or why, before
+or after but not both. **Git-absent repos:** if the working directory has no git at all
 (detect once per session, e.g. `git rev-parse --is-inside-work-tree`),
 "Commit."/"Push." never apply; multi-file-edit and test-run announcements
 are unaffected.
