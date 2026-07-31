@@ -61,6 +61,12 @@
       "skillPath": "plugins/static-analysis/skills/codeql/SKILL.md",
       "computedHash": "439ce7e08165b579fd4943aee0b9a7cb04c0538e1b421b76c8b42bd5b6779321"
     },
+    "cpp": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "cpp/SKILL.md",
+      "computedHash": "a5c52fd693ab42fd04e17f7540feec456bef25bc82dfaddf2a47357f748243c8"
+    },
     "dispatching-parallel-agents": {
       "source": "obra/superpowers",
       "sourceType": "github",
