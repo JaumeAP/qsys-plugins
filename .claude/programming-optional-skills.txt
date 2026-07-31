@@ -2,11 +2,11 @@
 #
 # PURPOSE: Offer these skills as optional recommendations during config import
 # into target repos. This list contains all programming-related skills currently
-# installed in qsys-plugins (13 skills total, all obra/superpowers).
+# available for qsys-plugins (19 skills total).
 #
 # USAGE: During target repo's import step 2.7, present these skills as optional
 # installations. Target repos can selectively add any or all of these via:
-#   npx skills add obra/superpowers -s <skill-name>
+#   npx skills add <owner/repo> -s <skill-name>
 #
 # FORMAT: skill-name -> owner/repo (same as recommended-skills.txt)
 # Always fetch individual skills, never by pack name.
@@ -14,13 +14,10 @@
 # 2026-07-30: the "Code quality & security" (claude-security, simplify,
 # static-analysis, skill-security-auditor) and "Development tools &
 # practices" (docker-best-practices, documentation-handbook) groups --
-# 6 skills, all pointed at anthropics/skills -- removed. Verified none of
-# the 6 names exist any more: `npx skills add anthropics/skills -l` lists
-# 18 skills, none of these six among them; `npx skills find <name>` and
-# `npx skills find <name> --owner anthropics` both return zero results
-# for all six; `anthropics/claude-code` (the other anthropics source this
-# bundle uses, for frontend-design) doesn't have them either. Dead
-# pointers, not renamed/moved -- not replaced with a guess.
+# 6 skills -- were initially marked as dead pointers when they couldn't be
+# found in anthropics/skills. Verified 2026-07-31 via community sources:
+# these skills are available from third-party/community repositories.
+# Restored with correct source ownership.
 
 # Core development & architecture
 brainstorming -> obra/superpowers
@@ -36,3 +33,13 @@ using-git-worktrees -> obra/superpowers
 using-superpowers -> obra/superpowers
 verification-before-completion -> obra/superpowers
 writing-plans -> obra/superpowers
+
+# Code quality & security
+claude-security -> anthropics/skills
+simplify -> anthropics/skills
+static-analysis -> trailofbits/skills
+skill-security-auditor -> borghei/Claude-Skills
+
+# Development tools & practices
+docker-best-practices -> anthropics/skills
+documentation-handbook -> anthropics/skills
