@@ -1,14 +1,17 @@
 -- DolbyKnob Test for Q-SYS
 -- by Jaume Puig / james.puig@elcine.com
 -- Jul '26
--- Scratch/test plugin, NOT for production: clones DolbyFader's own DKNob
--- mechanism (QKnob wrapping a Text control, styled as a Knob) but with a
--- plain linear dB range (-100..20) instead of Dolby's own piecewise 0.0-
--- 10.0 scale, to confirm the QKnob mechanism works for a simple linear
--- knob too. Two controls, bidirectionally synced: Gain (a real native
--- Knob) and GainDb (the QKnob clone). DolbyFader itself is untouched by
--- this -- this is a separate plugin, built purely to try the idea out.
--- v1.0.0.1: initial release.
+-- Scratch/test plugin, NOT for production: the QKnob mechanism (Text
+-- control wrapped as a Knob, same class DolbyFader's own DKNob uses) but
+-- with a plain linear dB range (-90..10) instead of Dolby's own piecewise
+-- 0.0-10.0 scale, to confirm the mechanism works for a simple linear knob
+-- too. DolbyFader itself is untouched by this -- separate plugin, built
+-- purely to try the idea out.
+-- v1.0.0.1: initial release, two controls (a native Gain Knob and a
+-- GainDb QKnob clone, bidirectionally synced).
+-- v1.0.0.2: down to a single, standalone control -- GainDb only, no
+-- native Gain Knob, no sync logic, range changed to -90..10. Explicit
+-- user request: no relation to any other control in this plugin.
 
 --[[ #include "info.lua" ]]
 
