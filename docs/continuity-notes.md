@@ -1093,3 +1093,22 @@ history actually matters.)
   definition pass, both-direction sync, range clamping, and a 210-value
   storm across and beyond -100..20 that never throws. Full suite green
   (`Developer/tests/run.sh`).
+
+- **`DolbyKnobTest` simplified twice more, same session, explicit user
+  requests.** First: down to a single, standalone control (`GainDb`, no
+  relation to any other control) -- the native `Gain` Knob and the sync
+  logic removed, range changed to -90..10 (v1.0.0.2). Then: `GainDb`
+  itself switched from the `QKnob`/Text mechanism to a native
+  `ControlType="Knob"` (v1.0.0.3) -- explicit request to eliminate the
+  external `shared/qknob.lua` dependency entirely. `runtime.lua` deleted,
+  nothing left to run.
+  **Open/stale as of this entry**: the Developer source (`plugin.lua`/
+  `controls.lua`/`layout.lua`, no more `runtime.lua`) is at v1.0.0.3, but
+  the root `DolbyKnobTest.qplug` and `Developer/tests/
+  test_dist_dolbyknobtest.lua` were never regenerated against it -- they
+  still reflect the original two-control v1.0.0.1 build. Explicit user
+  request mid-session to hold off dispatching `build-qplug.yml` again
+  ("no passis a compilar-lo després de pujar"). Next session (or later
+  this one): rebuild via CI, rewrite the root `.qplug` from the job log,
+  and rewrite the test for the single-native-Knob shape before trusting
+  either as current.
