@@ -1017,3 +1017,19 @@ history actually matters.)
   Components" candidates from this sweep are now recorded; only the
   "Advanced"/"Even More Control Components" categories remain open, still
   blocked on the video-training-transcript problem noted above.
+
+- **"The PR always wins" made a mandatory repo-specific rule here
+  (2026-07-31, explicit user call), `PROJECT.md`'s own "Git" section.**
+  Triggered by a question about the CPSeries session-close merge protocol;
+  asked whether to make that same rule mandatory across all 3 repos
+  (`AskUserQuestion`), user chose qsys-plugins only for now. Unlike
+  CPSeries (2026-07-30), this isn't a reversal -- qsys-plugins never had a
+  competing local-merge convention, the portable `github-rules` skill's
+  2026-07-29 authorization already only ever did PR+merge. What changed:
+  that authorization frames full automation as something that "applies at
+  end-of-session close," which reads as merge-at-close being the routine
+  case; the new repo-specific rule in `PROJECT.md` makes merge-continuously
+  (a PR opened and merged whenever a unit of work reaches `clean`, not
+  deferred) the explicit, standing, higher-priority rule for this repo.
+  Not ported to `Eines` or back into the portable skill -- deliberately
+  scoped to this repo only per the user's own choice.

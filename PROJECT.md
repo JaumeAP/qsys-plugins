@@ -93,3 +93,18 @@ close an item by deleting its line here, and put the full story in
   own "do not create a PR unless asked" gate on top of it, independent of
   anything this repo states — when that gate is live, ask for authorization
   once, early, and treat it as standing for the session.
+- **The PR always wins (2026-07-31, explicit user call).** Repo-specific
+  override, mandatory here: every unit of work on the working branch gets a
+  PR opened and merged once `mergeable_state: clean`, not deferred to
+  session close only — the portable `github-rules` skill's own 2026-07-29
+  authorization phrases this as something that additionally "applies at
+  end-of-session close," which reads as the routine case being merge-at-close
+  rather than merge-continuously; this repo's own rule is the stronger,
+  standing one and takes priority whenever the two would differ. Modeled on
+  `CPSeries`' own identically-named rule (dated 2026-07-30 there), but this
+  is not a reversal here the way it was there — qsys-plugins never had a
+  competing "merge locally, no PR" convention to revert from; this is simply
+  making the always-PR behavior explicit and mandatory rather than leaving
+  it implicit in the portable skill's session-close framing. Scoped to this
+  repo only for now (2026-07-31 user call) — not yet ported to `Eines` or
+  back into the portable skill itself.
