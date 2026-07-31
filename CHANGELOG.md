@@ -2,6 +2,13 @@
 
 ## Changelog
 
+- **v0.4.0** (2026-07-31) - Fix CP Series Emulator duplication, then remove the Control Script entirely
+  - refactor: extracted ~150 duplicated lines (constants, escape/isGet/trySet/macroName/macroIndex, SocketHandler) shared byte-for-byte between the Control Script and Plugin versions into one file, first as `Developer/shared/cp-series-emulator-protocol.lua`
+  - chore: Control Script version (`Developer/cp-series-emulator/`, `Developer/tests/test_cp_series_emulator.lua`) removed entirely -- explicit user request, once the Plugin covered the same job with less to maintain
+  - refactor: `protocol.lua` moved from `Developer/shared/` (now zero real consumers left) into `Developer/plugins/CP Series Emulator/protocol.lua`, a private per-plugin file matching Dolby CPSeries Control's own models.lua/protocol.lua/commlib.lua split
+  - docs: `Dolby CP Emulator/README.md` rewritten to point only at the Plugin; `repo-layout.md` and `docs/continuity-notes.md` updated
+  - `BuildVersion` 1.0.0.1 then 1.0.0.2, each rebuilt via `build-qplug.yml` and reverified against `run.sh`
+
 - **v0.3.0** (2026-07-31) - CP Series Emulator, as a real Plugin (PLUGCC), not just a Control Script
   - feature: `Developer/plugins/CP Series Emulator/` -- built via PLUGCC.exe like every other plugin here: `Model` enum property (5 choices), `Status`/`Status.Led` indicator, same protocol logic as the Control Script version but reading `Properties.Model` instead of a hardcoded constant
   - chore: "CP Series Emulator" added to `build-qplug.yml`'s and `build-qplugx.yml`'s workflow-dispatch choice lists so it can be built via CI like the other five plugins

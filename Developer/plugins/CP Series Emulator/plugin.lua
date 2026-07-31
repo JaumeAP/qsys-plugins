@@ -5,24 +5,26 @@
 -- "Dolby CPSeries Control" can be bench-tested against it without real
 -- hardware -- a plugin replacement for the old single-model
 -- Dolby CP Emulator/*.quc Control Scripts (CP650/CP750/CP850 only, no
--- CP950/CP950A). Same protocol logic as
--- Developer/cp-series-emulator/cp-series-emulator.lua (kept for the
--- non-Designer bench-testing workflow that predates this plugin), ported
--- into this repo's standard plugin structure: a Model property picks which
--- of the five it emulates, a Status indicator shows whether a client is
--- connected -- one dropped-in instance, reconfigurable, instead of one
--- file per model. Built via PLUGCC.exe like every other plugin here (see
--- qsys-plugin-development.md's "Developer workflow"), not the Control
--- Script paste-into-Designer path the .lua source above still documents.
+-- CP950/CP950A). A Model property picks which of the five it emulates, a
+-- Status indicator shows whether a client is connected -- one dropped-in
+-- instance, reconfigurable, instead of one file per model. Built via
+-- PLUGCC.exe like every other plugin here (see qsys-plugin-development.md's
+-- "Developer workflow").
 -- v1.0.0.1: the protocol logic (constants, escape/isGet/trySet/macroName/
--- macroIndex, SocketHandler) moved out of runtime.lua into
--- Developer/shared/cp-series-emulator-protocol.lua, #include'd directly by
--- this file (depth-1, before runtime.lua) rather than duplicated inline --
--- it was byte-for-byte identical to the Control Script version
--- (Developer/cp-series-emulator/cp-series-emulator.lua), which itself
--- cannot #include anything (no PLUGCC build step) and so still carries its
--- own inline copy, kept in sync by hand against the new shared file. No
--- functional change.
+-- macroIndex, SocketHandler) moved out of runtime.lua into its own
+-- protocol.lua, #include'd directly by this file (depth-1, before
+-- runtime.lua) rather than inline in runtime.lua. At this point it was
+-- also briefly byte-for-byte duplicated in a standalone Control Script
+-- version (Developer/cp-series-emulator/cp-series-emulator.lua, predating
+-- this plugin) -- that duplication was the reason for the split.
+-- v1.0.0.2: the standalone Control Script version removed entirely
+-- (explicit user request, once the Plugin covered the same job with less
+-- to maintain) -- protocol.lua moved from the briefly-shared
+-- Developer/shared/ location back to a private per-plugin file, matching
+-- "Dolby CPSeries Control"'s own models.lua/protocol.lua/commlib.lua split
+-- (private files, not shared -- Developer/shared/ is for code more than
+-- one plugin actually uses). No functional change. See
+-- docs/continuity-notes.md for the full history.
 
 --[[ #include "info.lua" ]]
 
@@ -87,7 +89,7 @@ function GetControlLayout(props)
 end
 
 if Controls then
-	-- MODEL must be declared before the shared protocol #include below --
+	-- MODEL must be declared before the protocol.lua #include below --
 	-- everything in that file closes over this local. Kept as a depth-1
 	-- include directly in plugin.lua, not nested inside runtime.lua:
 	-- PLUGCC.exe only recognizes a NESTED #include (one inside a file
@@ -96,6 +98,6 @@ if Controls then
 	-- plugin.lua avoids the question the same way, #include'ing
 	-- everything it needs directly rather than from inside runtime.lua.
 	local MODEL = (Properties.Model.Value):gsub("%s", "")
-	--[[ #include "../../shared/cp-series-emulator-protocol.lua" ]]
+	--[[ #include "protocol.lua" ]]
 	--[[ #include "runtime.lua" ]]
 end

@@ -87,10 +87,10 @@ docs/continuity-notes.md (dated history). -->
 ├── Dolby CP Emulator/                Q-SYS User Components (.quc) that emulate
 │   ├── README.md                     real Dolby processors for bench testing --
 │   ├── CP650 Emulator.quc            explains the gap below and points at the
-│   ├── CP750 Emulator.quc            newer Developer/cp-series-emulator/ source
-│   └── CP850 Emulator.quc            (added 2026-07-31). No CP950/CP950A .quc
-│                                     exists in this old hand-written format --
-│                                     those two models never got one.
+│   ├── CP750 Emulator.quc            newer root CP Series Emulator.qplug (added
+│   └── CP850 Emulator.quc            2026-07-31). No CP950/CP950A .quc exists in
+│                                     this old hand-written format -- those two
+│                                     models never got one.
 │
 ├── vendor/                            Read-only reference material (git submodules) —
 │   │                                 `git submodule update --init --recursive` after
@@ -178,36 +178,24 @@ docs/continuity-notes.md (dated history). -->
     │                                 defaults (the original's per-control `DefaultValue`
     │                                 field isn't a real Q-SYS key, so those defaults
     │                                 never actually applied pre-incorporation)
-    │   └── CP Series Emulator/       Plugin form of the CP Series Emulator
-    │       ├── plugin.lua            (added 2026-07-31) -- fakes a Dolby processor
-    │       ├── info.lua              over TCP for bench-testing Dolby CPSeries
-    │       ├── properties.lua        Control without hardware. Model property (5
-    │       ├── controls.lua          choices) + Status/Status.Led indicator. Same
-    │       ├── layout.lua            protocol logic as the Control Script version
-    │       └── runtime.lua           (Developer/cp-series-emulator/, kept for the
-    │                                 non-Designer bench-testing workflow), reading
-    │                                 the model from Properties.Model instead of a
-    │                                 hardcoded constant. Not #include'd from Dolby
-    │                                 CPSeries Control's own private models.lua/
-    │                                 protocol.lua -- this plugin keeps its own copy
-    │                                 of the same wire tables, kept in sync by hand.
+    │   └── CP Series Emulator/       Fakes a Dolby processor over TCP for
+    │       ├── plugin.lua            bench-testing Dolby CPSeries Control without
+    │       ├── info.lua              hardware (added 2026-07-31). Model property (5
+    │       ├── properties.lua        choices) + Status/Status.Led indicator. The
+    │       ├── controls.lua          only plugin here with a 7th file: protocol.lua,
+    │       ├── layout.lua            split out of runtime.lua so it could briefly be
+    │       ├── protocol.lua          shared with a standalone Control Script version
+    │       └── runtime.lua           (removed the same day once this plugin covered
+    │                                 the same job with less to maintain -- see
+    │                                 docs/continuity-notes.md); kept as its own
+    │                                 private file rather than merged back into
+    │                                 runtime.lua. Not #include'd from Dolby CPSeries
+    │                                 Control's own private models.lua/protocol.lua --
+    │                                 this plugin keeps its own copy of the same wire
+    │                                 tables, kept in sync by hand.
     ├── shared/                       Code #include'd by more than one plugin
     │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua
     │   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
-    ├── cp-series-emulator/            Source for "CP Series Emulator" (added
-    │   │                             2026-07-31): a single Control Script
-    │   │                             covering all 5 defined processors, the
-    │   │                             newer alternative to the 3 old
-    │   │                             single-model `Dolby CP Emulator/*.quc`
-    │   │                             files (see that folder's own README.md
-    │   │                             for the gap it fills and how to install
-    │   │                             it in Designer -- this repo can't
-    │   │                             produce the .quc binary directly).
-    │   └── cp-series-emulator.lua     TcpSocketServer-based, models CPServices
-    │                                 from Dolby CPSeries Control/commlib.lua
-    │                                 exactly; `local MODEL = 'CP750'` at the
-    │                                 top selects which processor, one
-    │                                 instance per model like the .quc files.
     ├── host-emulator/                The Q-SYS Designer host stub, its own module
     │   │                             (added 2026-07-29, split out of Developer/tests/)
     │   │                             so it reads as a standalone unit distinct from
@@ -238,11 +226,6 @@ docs/continuity-notes.md (dated history). -->
         ├── test_modules.lua          CPSeries class, loaded straight from
         │                             Developer/plugins/Dolby CPSeries Control/
         │                             {models,protocol,commlib}.lua
-        ├── test_cp_series_emulator.lua CP Series Emulator (added 2026-07-31)
-        │                             driven against those same real classes --
-        │                             all 5 models, readiness, GET/SET round
-        │                             trip verified via a second independent
-        │                             connection, both format-list dialects
         ├── test_dist_cpseries.lua    Root CP Series distributable, both host passes
         ├── test_dist_fader.lua       Root Dolby Fader distributable, both host passes
         ├── test_dist_sweep.lua       Root Dolby Sweep distributable, both host passes

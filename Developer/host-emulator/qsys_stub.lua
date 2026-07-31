@@ -113,9 +113,9 @@ local PLUGIN_GLOBALS = {
 	"period", "timer",
 	-- Dolby CPSeries Control's own globals
 	"DolbyCP", "sock",
-	-- Dolby CP Emulator / CP Series Emulator control script's own globals
-	-- (TcpSocketServer objects are kept global for the same GC-safety
-	-- reason as Timer/TcpSocket, see qsys-plugin-development.md)
+	-- CP Series Emulator's own globals (TcpSocketServer objects are kept
+	-- global for the same GC-safety reason as Timer/TcpSocket, see
+	-- qsys-plugin-development.md)
 	"server", "SocketHandler",
 }
 

@@ -16,36 +16,32 @@ counterpart.
 
 ## CP Series Emulator — the newer, complete alternative
 
-`Developer/cp-series-emulator/cp-series-emulator.lua` (source of truth,
-edited as plain text) is a from-scratch replacement covering **all five**
-defined models (CP650/CP750/CP850/CP950/CP950A) from one script, modeling
-the exact wire vocabulary the real plugin sends and expects (`CPServices` in
+The root `CP Series Emulator.qplug` (source: `Developer/plugins/CP Series
+Emulator/`) is a from-scratch replacement covering **all five** defined
+models (CP650/CP750/CP850/CP950/CP950A) from one plugin, modeling the exact
+wire vocabulary the real plugin sends and expects (`CPServices` in
 `Developer/plugins/Dolby CPSeries Control/commlib.lua`) — the readiness
 handshake, fader, mute, format/macro selection (both the CP650 numeric and
 CP750 keyword dialects, and the CP850/950/950A macro-preset + macro-name +
-macro-list burst), and CP650's raw-echo-before-reply behavior. It is
-exercised against the plugin's own real `CPSeries`/`CPModels`/`CPProtocol`
-classes — not a separate, possibly-diverging idea of the protocol — by
-`Developer/tests/test_cp_series_emulator.lua` (55 checks, part of
-`Developer/tests/run.sh`).
+macro-list burst), and CP650's raw-echo-before-reply behavior.
 
-**This repo cannot produce a `.quc` file directly** — it's a serialized
-.NET object Q-SYS Designer writes, not a text format, and no generator for
-it exists outside Designer itself. To actually use CP Series Emulator on
-the bench:
+Unlike the three `.quc` files above, it's a normal plugin: add it to a
+design like any other component, pick the processor from its **Model**
+property, and its **Status** indicator shows whether "Dolby CPSeries
+Control" (or any TCP client) is currently connected. No copy-pasting into a
+Control Script, no per-model file. Built via PLUGCC.exe the same way as
+every other plugin in this repo (`.github/workflows/build-qplug.yml`) and
+covered by `Developer/tests/test_dist_cpseriesemulator.lua` (37 checks,
+part of `Developer/tests/run.sh`), driven against the actual built
+`.qplug`.
 
-1. In Q-SYS Designer, add a new **Control Script** component to a design.
-2. Open its code editor and paste in the full contents of
-   `Developer/cp-series-emulator/cp-series-emulator.lua`.
-3. Edit the `local MODEL = 'CP750'` line near the top to the processor you
-   want to emulate (`CP650` / `CP750` / `CP850` / `CP950` / `CP950A`) — one
-   instance per model, same convention as the three `.quc` files above.
-4. Save the component. If you want it to persist as a standalone `.quc`
-   file (to check into this folder, matching the other three), use
-   Designer's own "Save Control Script as..." / export flow and drop the
-   result here as `CP<model> Emulator.quc`.
+The macro list (`sys.macros`) and CP750 format keywords it ships with are
+illustrative bench-test values, not verified against a real processor —
+edit `MACROS`/`CP750_FORMATS` in `Developer/plugins/CP Series
+Emulator/protocol.lua` if you need specific values to match a real unit
+you're testing against.
 
-The macro list (`sys.macros`) and CP750 format keywords the script ships
-with are illustrative bench-test values, not verified against a real
-processor — edit `MACROS`/`CP750_FORMATS` in the script if you need
-specific values to match a real unit you're testing against.
+(A standalone Control Script version of this existed briefly, for pasting
+directly into Designer with no build step — removed 2026-07-31 once this
+plugin covered the same job with less to maintain; see
+`docs/continuity-notes.md` if you're looking for it in history.)

@@ -1,19 +1,26 @@
--- CP Series Emulator protocol core -- shared between Developer/plugins/CP
--- Series Emulator/runtime.lua (#include's this file) and
--- Developer/cp-series-emulator/cp-series-emulator.lua (the standalone
--- Control Script version, which CANNOT #include -- Control Scripts are
--- pasted directly into Q-SYS Designer with no PLUGCC build step at all, so
--- that file keeps its own inline copy of everything below, kept in sync by
--- hand against this file as the source of truth. This split exists so at
--- least the Plugin side never drifts.
+-- CP Series Emulator protocol core -- private to this plugin, #include'd
+-- directly by plugin.lua (depth-1, before runtime.lua). Split out of
+-- runtime.lua on its own (2026-07-31) rather than left inline, matching
+-- "Dolby CPSeries Control"'s own models.lua/protocol.lua/commlib.lua split
+-- (private per-plugin files, not Developer/shared/ -- that directory is
+-- for code actually used by more than one plugin).
 --
--- Callers must declare `local MODEL = '...'` (CP650/CP750/CP850/CP950/
--- CP950A) BEFORE #include'ing this file -- everything here closes over
--- that local. After the #include, `server = TcpSocketServer.New()` /
--- `server.EventHandler = ...` / `server:Listen(PORT[MODEL])` (and any
--- caller-specific UI wiring, e.g. Status controls) are the caller's own
--- responsibility -- deliberately not part of this shared file, since that
--- part genuinely differs between the two callers.
+-- History: this file used to also back a standalone Control Script version
+-- (Developer/cp-series-emulator/cp-series-emulator.lua, predates this
+-- plugin), briefly living in Developer/shared/ so both could reference the
+-- same source instead of duplicating ~150 lines by hand. The Control
+-- Script was removed the same day once the Plugin covered the same job
+-- with less to maintain (no build step needed for a quick paste-into-
+-- Designer test was its only remaining edge, judged not worth the
+-- duplication) -- see docs/continuity-notes.md. Moved back to a private
+-- per-plugin file once it had only one real consumer left.
+--
+-- Caller (plugin.lua) must declare `local MODEL = '...'` (CP650/CP750/
+-- CP850/CP950/CP950A) BEFORE #include'ing this file -- everything here
+-- closes over that local. After the #include, `server =
+-- TcpSocketServer.New()` / `server.EventHandler = ...` / `server:Listen(
+-- PORT[MODEL])` and the Status UI wiring live in runtime.lua instead,
+-- since that part is plugin-specific, not protocol logic.
 
 -- Per-model TCP port and wire dialect. Mirrors Developer/plugins/
 -- Dolby CPSeries Control/models.lua's CPModels.CONFIG exactly. Kept as its

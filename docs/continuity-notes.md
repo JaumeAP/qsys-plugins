@@ -801,10 +801,43 @@ history actually matters.)
   for it (not done yet -- no `.qplugx` built this session).
   New test `Developer/tests/test_dist_cpseriesemulator.lua` (37 checks,
   added to `run.sh`) covers the BUILT distributable specifically -- not a
-  duplicate of `test_cp_series_emulator.lua`'s own 55 checks (which drive
+  duplicate of `test_cp_series_emulator.lua`'s own 55 checks (which drove
   the Control Script source against the real CPSeries client class):
   definition pass (Model's 5 choices, Status controls, RectifyProperties
   hides `plugin_show_debug`), and a runtime pass per model wiring
   `server`/`SocketHandler` through `qsys_stub.lua`'s `TcpSocketServer`
   stub, checking `Status` transitions 4 (no client) -> 0 (connected) -> 4
   (disconnected) and one GET round trip per model.
+
+- **The Control Script version removed the same day, once its only
+  remaining edge (no build step) was judged not worth the duplication
+  (2026-07-31, explicit user request, asked directly: "why do I need
+  [it] if I already have the [plugin]").** By this point the protocol
+  core (constants, `escape`/`isGet`/`trySet`/`macroName`/`macroIndex`,
+  `SocketHandler`) had already been extracted out of duplication into one
+  file to fix a ~150-line byte-for-byte duplication between
+  `Developer/cp-series-emulator/cp-series-emulator.lua` and `Developer/
+  plugins/CP Series Emulator/runtime.lua` (found when asked generally
+  "if there are repeated things in the repo" -- there were, this was it):
+  first landed in `Developer/shared/cp-series-emulator-protocol.lua` so
+  both could #include/reference the same source (the Plugin via a
+  depth-1 `#include` from `plugin.lua`, kept out of `runtime.lua` itself
+  to avoid PLUGCC's nested-#include-must-be-first-line rule; the Control
+  Script, which cannot `#include` at all -- no PLUGCC build step -- kept
+  a hand-synced inline copy). Once the Control Script was deleted
+  outright, that file had exactly one real consumer left, so it moved
+  again, out of `Developer/shared/` (for code more than one plugin
+  actually uses) into a private per-plugin file, `Developer/plugins/CP
+  Series Emulator/protocol.lua` -- matching "Dolby CPSeries Control"'s
+  own `models.lua`/`protocol.lua`/`commlib.lua` split. `BuildVersion`
+  bumped twice the same day for these two structural passes (1.0.0.1,
+  then 1.0.0.2), each rebuilt via `build-qplug.yml` and re-verified
+  against `Developer/tests/run.sh` before being written to the repo
+  root, replacing the previous `CP Series Emulator.qplug`.
+  `Dolby CP Emulator/README.md` rewritten to point only at the Plugin (no
+  more paste-into-Designer instructions); `Developer/tests/
+  test_cp_series_emulator.lua` and the whole `Developer/cp-series-
+  emulator/` folder deleted; `run.sh`'s syntax-check globs and test list
+  updated to match. The Plugin's own `plugin.lua` header keeps the full
+  history (v1.0 -> v1.0.0.1 -> v1.0.0.2) rather than restating it here in
+  full a second time.

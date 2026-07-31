@@ -1,15 +1,14 @@
--- The root CP Series Emulator distributable (the PLUGCC-built plugin, not
--- the Control Script source under Developer/cp-series-emulator/ -- that one
--- has its own coverage in test_cp_series_emulator.lua, driven against the
--- real CPSeries client class instead of this file's own qsys_stub-only
--- checks). Definition pass: Model property (5 choices), Status/Status.Led
--- controls, layout doesn't throw. Runtime pass: server:Listen on the right
--- port per model, Status reflects connect/disconnect, one GET round trip
--- per model confirms SocketHandler actually answers (not just that it's
--- reachable) -- same wire vocabulary test_cp_series_emulator.lua already
--- verifies against the real plugin client, checked here from the OTHER
--- side: that the BUILT distributable (post-PLUGCC #include expansion) still
--- behaves the same as the Developer source it was built from.
+-- The root CP Series Emulator distributable (the PLUGCC-built plugin --
+-- there is no separate Control Script version any more, removed
+-- 2026-07-31 once this plugin covered the same job with less to maintain,
+-- see docs/continuity-notes.md). Definition pass: Model property (5
+-- choices), Status/Status.Led controls, layout doesn't throw. Runtime
+-- pass: server:Listen on the right port per model, Status reflects
+-- connect/disconnect, one GET round trip per model confirms SocketHandler
+-- actually answers (not just that it's reachable) -- checked against the
+-- BUILT distributable (post-PLUGCC #include expansion of plugin.lua +
+-- protocol.lua + runtime.lua), not just the Developer source it was built
+-- from.
 
 local test_dir = (arg[0]:match("^(.*)[/\\]") or ".")
 package.path = test_dir .. "/?.lua;" .. test_dir .. "/../host-emulator/?.lua;" .. package.path
@@ -53,7 +52,7 @@ do
 end
 
 -- A fake client socket the test drives by hand -- same shape
--- test_cp_series_emulator.lua's own fake_client_sock() uses.
+-- test_modules.lua's own fake_sock() uses.
 local function fake_client_sock()
 	local s = { IsConnected = true, writes = {}, lines = {} }
 	function s:Write(m) self.writes[#self.writes + 1] = (m:gsub("\r\n$", "")) end
