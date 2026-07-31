@@ -10,13 +10,13 @@
 # Example installations:
 #   npx skills add vercel-labs/skills -s find-skills
 #   npx skills add obra/superpowers -s brainstorming
-#   npx skills add anthropics/skills -s dataviz
+#   npx skills add anthropics/knowledge-work-plugins -s data-visualization
 #
 # Search available skills: npx skills find <query>
 # Browse at: https://skills.sh/
 
 # Mandatory fetch-on-demand (required for all projects)
-caveman (full suite: caveman, caveman-commit, caveman-compress, caveman-help, caveman-review, caveman-stats) -> JuliusBrussee/caveman
+caveman (full suite: caveman, caveman-commit, caveman-compress, caveman-review, caveman-stats, caveman-shrink) -> JuliusBrussee/caveman
 karpathy-guidelines -> forrestchang/andrej-karpathy-skills
 
 # Recommended optional skills
@@ -24,6 +24,6 @@ karpathy-guidelines -> forrestchang/andrej-karpathy-skills
 # programming-optional-skills.txt instead -- no skill is listed in both.)
 find-skills -> vercel-labs/skills
 frontend-design -> anthropics/claude-code
-dataviz -> anthropics/skills
+data-visualization -> anthropics/knowledge-work-plugins
 webapp-testing -> anthropics/skills
-remotion -> remotion/remotion
+remotion -> remotion-dev/skills
