@@ -82,14 +82,11 @@ and reasoning for every skill below: `.claude/skills-history.md` — pointers
 only here, current state only, never summaries or backstory:
 
 1. `github-rules` (`.claude/skills/github-rules/SKILL.md`) — bundled,
-   mandatory. Portable GitHub PR conventions: workflow shape, reading
-   `pull_request_read` results, merge mechanics. Carries one dated,
-   attributed standing authorization (2026-07-29) to open a PR at session
-   close when the branch has unmerged commits and none exists, then merge
-   it once clean. Anything BEYOND that one authorization still needs its
-   own named source and date — a policy written into a portable file
-   without one silently applies to every repo that imports the bundle,
-   which is the thing to refuse.
+   mandatory. Portable GitHub PR conventions and merge automation; the
+   skill file is the sole authority on its own content. Anything added
+   there still needs its own named source and date — a policy written
+   into a portable file without one silently applies to every repo that
+   imports the bundle, which is the thing to refuse.
 2. `changelog-rules` (`.claude/skills/changelog-rules/SKILL.md`) — bundled,
    mandatory, installed in all three repos. How to write/maintain entries:
    format, semantic versioning, the accumulate-in-memory-until-commit
