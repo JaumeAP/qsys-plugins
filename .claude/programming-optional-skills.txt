@@ -29,8 +29,6 @@ code-simplification -> addyosmani/agent-skills
   install: npx skills add addyosmani/agent-skills -s code-simplification
 codeql -> trailofbits/skills
   install: npx skills add trailofbits/skills -s codeql
-sarif-parsing -> trailofbits/skills
-  install: npx skills add trailofbits/skills -s sarif-parsing
 skill-security-auditor -> borghei/Claude-Skills
   install: npx skills add borghei/Claude-Skills -s skill-security-auditor
 

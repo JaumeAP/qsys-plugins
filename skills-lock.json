@@ -187,12 +187,6 @@
       "skillPath": "skills/requesting-code-review/SKILL.md",
       "computedHash": "2304d2073c62eab163e04de40fe775e3d87c69c0df40cd4dc953fdb8e3205b81"
     },
-    "sarif-parsing": {
-      "source": "trailofbits/skills",
-      "sourceType": "github",
-      "skillPath": "plugins/static-analysis/skills/sarif-parsing/SKILL.md",
-      "computedHash": "94412d423e7a13940adbd30802632687346e8d4cd49c7e4e38a44ccfe155649c"
-    },
     "skill-security-auditor": {
       "source": "borghei/Claude-Skills",
       "sourceType": "github",
