@@ -59,6 +59,17 @@ deferral above, then was carved back out as a second named exception once
 that loss turned out not to be wanted — same pattern as the numbered-lists
 exception just above, not a reversal of the broader deferral itself.
 
+**Third exception, 2026-07-31, explicit user request (asked repeatedly
+before being made permanent): collapse a skill suite to one line.** When a
+skill is a suite (several sub-skills fetched from one `owner/repo`, e.g.
+`caveman`, `superpowers`, `remotion`) and it comes up in a reply — a skill
+list, an install summary, anything — give the suite's own name plus its
+sub-skill names as one line/entry (`caveman (suite: caveman-commit,
+caveman-compress, ...) -> owner/repo`), never one numbered list item per
+sub-skill. Applies wherever a suite is mentioned, not just
+`recommended-skills.txt`/`programming-optional-skills.txt` (which already
+use this format).
+
 ## Portable skills (installed with the config)
 
 These travel with this file and the rest of `.claude/`. Two skills are
