@@ -6,6 +6,8 @@
 # DO-NOT-remove note below).
 #
 # FORMAT: skill-name -> owner/repo
+#   what it does: <one-line description, shown when offering this entry>
+#   install: <npx skills add command>
 #
 # INSTALL: Each skill can be installed individually with:
 #   npx skills add owner/repo -s skill-name
@@ -26,23 +28,34 @@
 # each under a different owner/repo than originally assumed. Two other
 # candidates had no verified single-skill source under any name and are
 # left out entirely, not listed.
+#
+# "what it does" lines added 2026-07-31 (explicit user request): shown
+# alongside the name whenever this entry is offered on import (see
+# config-export-import.md step 2.7a) -- condensed from each skill's own
+# SKILL.md `description:` frontmatter, not invented.
 
 # Core development & architecture
 superpowers (full suite: brainstorming, dispatching-parallel-agents, executing-plans, finishing-a-development-branch, receiving-code-review, requesting-code-review, subagent-driven-development, systematic-debugging, test-driven-development, using-git-worktrees, using-superpowers, verification-before-completion, writing-plans) -> obra/superpowers
+  what it does: Core dev-workflow suite -- brainstorming before building, writing/executing plans, TDD, systematic debugging, requesting/receiving code review, worktree isolation, subagent-driven and parallel-agent dispatch, finishing a branch, pre-completion verification.
   install: npx skills add obra/superpowers -s brainstorming -s dispatching-parallel-agents -s executing-plans -s finishing-a-development-branch -s receiving-code-review -s requesting-code-review -s subagent-driven-development -s systematic-debugging -s test-driven-development -s using-git-worktrees -s using-superpowers -s verification-before-completion -s writing-plans
 karpathy-guidelines -> forrestchang/andrej-karpathy-skills
+  what it does: Behavioral guidelines to avoid common LLM coding mistakes -- overcomplication, non-surgical changes, unverifiable claims.
   install: npx skills add forrestchang/andrej-karpathy-skills -s karpathy-guidelines
 
 # Code quality & security
 code-simplification -> addyosmani/agent-skills
+  what it does: Refactors working code for clarity/maintainability without changing behavior.
   install: npx skills add addyosmani/agent-skills -s code-simplification
 codeql -> trailofbits/skills
+  what it does: Static security-vulnerability scanning via CodeQL's data-flow/taint-tracking analysis.
   install: npx skills add trailofbits/skills -s codeql
 skill-security-auditor -> borghei/Claude-Skills
+  what it does: Audits other agent skills for prompt injection, dangerous code, and exfiltration risk before install.
   install: npx skills add borghei/Claude-Skills -s skill-security-auditor
 
 # Development tools & practices
 docker-development -> netresearch/docker-development-skill
+  what it does: Dockerfile/docker-compose authoring, multi-stage builds, container security audits.
   install: npx skills add netresearch/docker-development-skill -s docker-development
 
 # Language-specific
@@ -52,10 +65,14 @@ docker-development -> netresearch/docker-development-skill
 # section by name as an available optional extra rather than silently
 # skipping it -- let the user decide, don't decide for them.
 lua -> mindrally/skills
+  what it does: Lua development guidelines -- tables, metatables, error handling, performance.
   install: npx skills add mindrally/skills -s lua
 swift -> mindrally/skills
+  what it does: Swift/SwiftUI development for iOS, macOS, and other Apple platforms.
   install: npx skills add mindrally/skills -s swift
 cpp -> mindrally/skills
+  what it does: Modern C++17/20 guidelines -- memory safety, performance optimization.
   install: npx skills add mindrally/skills -s cpp
 swiftui-specialist (Apple-authored, exported from Xcode 27; suite also has: swiftui-whats-new-27, uikit-app-modernization, test-modernizer, c-bounds-safety, audit-xcode-security-settings, device-interaction) -> superagents-lab/xcode27-skills
+  what it does: SwiftUI best practices and idiomatic patterns -- structure, data flow, animations, modifiers (the wider suite also covers UIKit modernization, Swift Testing, C bounds-safety, and Xcode security hardening).
   install: npx skills add superagents-lab/xcode27-skills -s swiftui-specialist

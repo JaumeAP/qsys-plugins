@@ -1,6 +1,8 @@
 # Recommended skills for all projects
 #
 # FORMAT: skill-name -> owner/repo
+#   what it does: <one-line description, shown when offering this entry>
+#   install: <npx skills add command>
 #
 # INSTALL: Each skill can be installed with:
 #   npx skills add owner/repo -s skill-name
@@ -20,9 +22,15 @@
 # this file when told to explicitly (see config-export-import.md's
 # standing rule, 2026-07-31), or when an entry is independently proven
 # wrong (dead pointer, broken without a missing dependency).
+#
+# "what it does" lines added 2026-07-31 (explicit user request): shown
+# alongside the name whenever this entry is offered on import (see
+# config-export-import.md step 2.7) -- condensed from each skill's own
+# SKILL.md `description:` frontmatter, not invented.
 
 # Mandatory fetch-on-demand (required for all projects)
 caveman (full suite: caveman, caveman-commit, caveman-compress, caveman-help, caveman-review, caveman-stats, cavecrew) -> JuliusBrussee/caveman
+  what it does: Ultra-compressed reply style (caveman speak) for token economy, plus matching commit-message, PR-review, memory-file-compression, subagent-delegation, help, and stats variants.
   install: npx skills add JuliusBrussee/caveman -s caveman -s caveman-commit -s caveman-compress -s caveman-help -s caveman-review -s caveman-stats -s cavecrew
 
 # Recommended optional skills
@@ -30,12 +38,17 @@ caveman (full suite: caveman, caveman-commit, caveman-compress, caveman-help, ca
 # karpathy-guidelines, live in programming-optional-skills.txt instead --
 # no skill is listed in both.)
 find-skills -> vercel-labs/skills
+  what it does: Discovers and helps install other agent skills when asked "is there a skill for X".
   install: npx skills add vercel-labs/skills -s find-skills
 frontend-design -> anthropics/claude-code
+  what it does: Aesthetic/UI design guidance for distinctive frontend work that doesn't read as templated defaults.
   install: npx skills add anthropics/claude-code -s frontend-design
 data-visualization -> anthropics/knowledge-work-plugins
+  what it does: Builds charts/dashboards with matplotlib/seaborn/plotly, applying chart-type and accessibility/color-theory design principles.
   install: npx skills add anthropics/knowledge-work-plugins -s data-visualization
 webapp-testing -> anthropics/skills
+  what it does: Playwright-based testing/debugging of local web apps -- screenshots, browser logs, UI verification.
   install: npx skills add anthropics/skills -s webapp-testing
 remotion (suite: remotion-best-practices, remotion-captions, remotion-create, remotion-docs, remotion-interactivity, remotion-maps, remotion-markup, remotion-multimedia, remotion-render, remotion-saas, remotion-upgrade) -> remotion-dev/skills
+  what it does: Programmatic video creation/editing with Remotion -- captions, rendering, maps, multimedia, interactivity, upgrades (remotion-best-practices is the suite's own router into the other ten).
   install: npx skills add remotion-dev/skills -s remotion-best-practices -s remotion-captions -s remotion-create -s remotion-docs -s remotion-interactivity -s remotion-maps -s remotion-markup -s remotion-multimedia -s remotion-render -s remotion-saas -s remotion-upgrade

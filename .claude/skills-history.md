@@ -286,6 +286,24 @@ development & architecture" alongside `superpowers`), `CLAUDE.md`'s
 `karpathy-guidelines` among the enforced-mandatory four — see the
 2026-07-30 entry above for why that hook names them explicitly at all).
 
+## Catalog files — `what it does:` line added per entry (2026-07-31)
+
+Explicit user request, given right after the 2.7a step above landed: when
+offering skills to install from `recommended-skills.txt` or
+`programming-optional-skills.txt`, show a brief one-line explanation of
+what each one does next to its name, not just `name -> owner/repo`. Added a
+`what it does:` line under every entry in both files, condensed from each
+skill's own `SKILL.md` `description:` frontmatter for the ones already
+installed locally, and fetched live from each source repo's `SKILL.md` (via
+a research subagent, WebFetch) for the ones not installed anywhere in this
+repo (`find-skills`, `frontend-design`, `data-visualization`,
+`webapp-testing`, the `remotion` suite, `swift`, `cpp`,
+`swiftui-specialist`) — none guessed or invented. `config-export-import.md`
+step 2.7 updated to say these lines get quoted (not paraphrased) when
+presenting the offer, and that 2.6's bundled-file packs (no catalog line to
+quote from) use their own `SKILL.md` `description:` frontmatter for the
+same purpose instead.
+
 ## `config-export-import.md` — `programming-optional-skills.txt` now offered on import (2026-07-31)
 
 Gap found while walking the import steps by hand: `export-config-skill.sh`

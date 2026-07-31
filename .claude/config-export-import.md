@@ -358,7 +358,16 @@ uninstall.
         actual skill in that repo) and ask the user whether to install
         any of those too — group the ask by source repo/pack so the user
         picks "firecrawl (10 skills)" as one choice rather than facing 26
-        raw lines, but fetch every line individually underneath. These
+        raw lines, but fetch every line individually underneath.
+        **Show each pack's `what it does:` line alongside its name when
+        presenting the offer** (2026-07-31, explicit user request) — every
+        entry in this file carries one; quote it, don't paraphrase or
+        invent one for an entry that's missing it (flag the gap instead).
+        This applies to every offer step below that presents a pack list
+        from a catalog file with `what it does:` lines (2.7a); 2.6's
+        bundled-file packs don't have catalog lines to quote from, so use
+        each skill's own `SKILL.md` `description:` frontmatter there
+        instead, same principle — quote, don't invent. These
         aren't bundled as files at all, only their names and source repos
         are. This step is NOT conditional on 2.6 having found anything to
         offer — run it every time regardless. The already-installed check
