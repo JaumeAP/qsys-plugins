@@ -13,11 +13,20 @@
 -- convention as Gain's Multi-Channel property. Breaking: State/Out renamed
 -- to State_N/Out_N -- a design already wired to the old single-instance
 -- names needs those pins reconnected.
+-- v2.0.0.2: added Detection property (enum: On/Off/Both, default Both).
+-- On fires Out_N only when State_N becomes true, Off only when it becomes
+-- false, Both (default, matches prior behavior) fires on either change.
+-- Non-breaking: no pin renamed, default preserves v2.0.0.1's behavior.
+-- v2.0.0.3: fixed a bug in v2.0.0.2's own EventHandler -- it read
+-- ctrl.Boolean (the callback's own argument), but Q-SYS's own EventHandler
+-- convention here (see MultiFlip-Flop) is not to rely on that argument;
+-- re-reads Controls["State_"..t].Boolean instead, which also matches how
+-- this repo's own test harness calls EventHandler with no argument.
 
 PluginInfo = {
 	Name = "Utility~State Trigger",
 	Version = "2.0",
-	BuildVersion = "2.0.0.1",
+	BuildVersion = "2.0.0.3",
 	Id = "8b93d00a-5281-4dd9-b963-4d5f6d6ec6cc",
 	Author = "Jaume Puig",
 	Description = "Fires a Trigger pulse whenever a Boolean state input changes -- the inverse of the Flip-Flop component",
@@ -39,6 +48,13 @@ function GetProperties()
 		Value = 1,
 		Min = 1,
 		Max = 256,
+	})
+
+	table.insert(props, {
+		Name = "Detection",
+		Type = "enum",
+		Choices = { "On", "Off", "Both" },
+		Value = "Both",
 	})
 	return props
 end
@@ -111,7 +127,11 @@ end
 if Controls then
 	for t = 1, Properties["Channels"].Value do
 		Controls["State_" .. t].EventHandler = function(ctrl)
-			Controls["Out_" .. t]:Trigger()
+			local mode = Properties["Detection"].Value
+			local becameActive = Controls["State_" .. t].Boolean
+			if mode == "Both" or (mode == "On" and becameActive) or (mode == "Off" and not becameActive) then
+				Controls["Out_" .. t]:Trigger()
+			end
 		end
 	end
 end

@@ -958,3 +958,21 @@ history actually matters.)
   (10 checks): control/layout count scales with `Channels`, and a
   multi-instance check that triggering `State_2` only ever fires `Out_2`,
   never `Out_1`/`Out_3`.
+
+- **`StateTrigger` given a `Detection` property (On/Off/Both, default
+  Both), same session, right after the `Channels` entry above.** Explicit
+  user request: gate which edge of `State_n` fires `Out_n` -- On = rising
+  only, Off = falling only, Both = either (matches v2.0.0.1's prior
+  behavior, so the default is non-breaking). First CI build (v2.0.0.2)
+  shipped a real bug: the `EventHandler` read `ctrl.Boolean` off its own
+  callback argument, but this repo's convention (`MultiFlip-Flop`, and the
+  test harness itself, which calls `EventHandler()` with no argument) is
+  to never rely on that argument and re-read `Controls[name]` by closure
+  instead. `test_dist_statetrigger.lua` (rewritten to 14 checks: definition
+  pass plus a runtime pass per `Detection` value) caught it immediately --
+  `lua5.3: ...StateTrigger.qplug:126: attempt to index a nil value (local
+  'ctrl')`. Fixed in `runtime.lua` (`Controls["State_"..t].Boolean`
+  instead of `ctrl.Boolean`), rebuilt via a fresh CI dispatch (v2.0.0.3),
+  confirmed in the job log, re-run against the corrected root file: all
+  14 checks pass. Non-breaking otherwise: no pin renamed, `Detection`
+  defaults to `Both`.
