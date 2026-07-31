@@ -39,6 +39,8 @@ docker-development -> netresearch/docker-development-skill
 # Language-specific
 # NOT included in a bulk "install the programming skills" request -- these
 # are tied to one language, not generic dev practice like the groups above.
-# Install only when asked for by name.
+# Install only when asked for by name. On a bulk request, still MENTION this
+# section by name as an available optional extra rather than silently
+# skipping it -- let the user decide, don't decide for them.
 lua -> mindrally/skills
   install: npx skills add mindrally/skills -s lua
