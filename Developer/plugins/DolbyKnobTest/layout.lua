@@ -2,7 +2,7 @@ local left = -4
 local top = -4
 
 layout["GainDb"] = {
-	PrettyName = "GainDb (QKnob, dB)",
+	PrettyName = "GainDb (native Knob, dB)",
 	Style = "Knob",
 	Color = { 0, 226, 113 },
 	Position = { left + 26, top + 28 },

@@ -1,6 +1,9 @@
 table.insert(ctrls, {
 	Name = "GainDb",
-	ControlType = "Text",
+	ControlType = "Knob",
+	ControlUnit = "dB",
+	Min = -90,
+	Max = 10,
 	UserPin = true,
 	PinStyle = "Both",
 })
