@@ -65,6 +65,16 @@ never apply — there is nothing to commit or push. Detect once per session
 saving/writing files with no bare label for that non-step. Multi-file-edit
 and test-run announcements are unaffected, they don't depend on git.
 
+**Changelog-before-commit** (2026-07-31, explicit user request, auto-detected
+not assumed): when git is present and `changelog-rules` is installed
+(`.claude/skills/changelog-rules/` exists) and a file with a `## Changelog`
+section needs an entry per that skill's own workflow, update the accumulated
+entry as part of the same batch of edits, staged into the same commit —
+right before running `git commit`, never after. **If `changelog-rules`
+isn't installed in this repo, skip this step entirely, no error, proceed
+straight to "Commit." as always** — this is an addition on top of the
+normal flow, never a blocker for repos that don't carry the skill.
+
 **Third exception, 2026-07-31, explicit user request (asked repeatedly
 before being made permanent): collapse a skill suite to one line.** When a
 skill is a suite (several sub-skills fetched from one `owner/repo`, e.g.
