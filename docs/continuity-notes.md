@@ -717,3 +717,54 @@ history actually matters.)
   `settings.json` and `hooks/` were actually part of it.** Eines, checked the
   same day, had received the full import correctly and needed only the
   latest revision.
+
+- **"CP Series Emulator" added (2026-07-31): a complete, all-5-model
+  replacement for the three old single-model `Dolby CP Emulator/*.quc`
+  files, which never covered CP950/CP950A at all.** First attempted in the
+  wrong repo entirely -- the user's initial ask ("un simulador virtual...
+  ha d'imitar tots els processadors que tenim definits", "CP Series
+  Emulator") was built as a Python `cpx50-emulator` package in **CPSeries**
+  (the Dolby cinema-processor Python/Lua toolkit repo), following the wrong
+  thread: CPSeries already HAS a complete simulator
+  (`cpx50.comms.simulator.ProcessorSim`), so "the CP Series plugin" the
+  user actually meant was THIS repo's own Q-SYS plugin
+  (`Developer/plugins/Dolby CPSeries Control/`), not CPSeries the toolkit.
+  Corrected once the user clarified ("l'emulador té que anar en el que
+  estem treballant... la de Plugins"): the CPSeries commit was reverted
+  (`d541d1a`), and the real work landed here instead --
+  `Developer/cp-series-emulator/cp-series-emulator.lua`, a single Control
+  Script covering all five defined models from one file, modeling the
+  CPServices wire vocabulary from `commlib.lua` exactly (not a separate,
+  possibly-diverging reimplementation).
+  **Cannot produce the `.quc` binary directly** (a serialized .NET object,
+  no generator for it outside Q-SYS Designer) -- delivered as plain Lua
+  source instead, meant to be pasted into a new Control Script component
+  in Designer (see `Dolby CP Emulator/README.md`, also added this session,
+  for the exact steps and the gap it fills).
+  **Verified for real, not just written**: `qsys_stub.lua` gained a
+  `TcpSocketServer` stub (`.Listen`/`.EventHandler`, no real network) so
+  `Developer/tests/test_cp_series_emulator.lua` could wire the emulator's
+  server side to the REAL `CPSeries`/`CPModels`/`CPProtocol` client classes
+  in-process and drive a genuine round trip -- 55 checks, added to
+  `run.sh`. Two non-obvious protocol details only surfaced by actually
+  running this against the real client, not by reading the wire spec:
+  (1) **CP650 must raw-echo the sent line before its real reply** -- the
+  client's own `echopending` logic treats a SET's reply as the mechanical
+  echo and discards it if the emulator's only line back is textually
+  identical to what was sent (which it is, for an echoed SET); (2) **the
+  macro-model `sys.macros` burst needs a bare `sys.macros` header line
+  before the `n:name` entries** -- without it, `received()` never
+  recognizes the burst as belonging to the formlist action at all, and the
+  entries silently vanish into the generic "unrecognized action" fallback
+  instead of ever firing a `formlist` event.
+  A related test-design trap, worth remembering for any future test like
+  this: **the CPSeries client's `EventHandler` does not refire for a value
+  the client itself just set** (`setValue(...,isevent=true)` skips the
+  callback), and the device's own confirmation of that exact value is then
+  ALSO swallowed by `received()`'s `isEqual()` short-circuit -- so
+  "call `Action()`, wait for the same event to fire again" silently never
+  passes, for correct reasons on both sides. The test instead checks writes
+  (SET reached the wire) plus a second, independent connection to the same
+  live emulator instance (the value actually persisted), and relies on the
+  client's zero-initialized cache to make the FIRST read of any param a
+  genuine mismatch that does fire.

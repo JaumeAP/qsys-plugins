@@ -80,9 +80,12 @@ docs/continuity-notes.md (dated history). -->
 │                                     SubharmonicSynth had no .qplugx yet.
 │
 ├── Dolby CP Emulator/                Q-SYS User Components (.quc) that emulate
-│   ├── CP650 Emulator.quc            real Dolby processors for bench testing
-│   ├── CP750 Emulator.quc
-│   └── CP850 Emulator.quc
+│   ├── README.md                     real Dolby processors for bench testing --
+│   ├── CP650 Emulator.quc            explains the gap below and points at the
+│   ├── CP750 Emulator.quc            newer Developer/cp-series-emulator/ source
+│   └── CP850 Emulator.quc            (added 2026-07-31). No CP950/CP950A .quc
+│                                     exists in this old hand-written format --
+│                                     those two models never got one.
 │
 ├── vendor/                            Read-only reference material (git submodules) —
 │   │                                 `git submodule update --init --recursive` after
@@ -173,15 +176,31 @@ docs/continuity-notes.md (dated history). -->
     ├── shared/                       Code #include'd by more than one plugin
     │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua
     │   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
+    ├── cp-series-emulator/            Source for "CP Series Emulator" (added
+    │   │                             2026-07-31): a single Control Script
+    │   │                             covering all 5 defined processors, the
+    │   │                             newer alternative to the 3 old
+    │   │                             single-model `Dolby CP Emulator/*.quc`
+    │   │                             files (see that folder's own README.md
+    │   │                             for the gap it fills and how to install
+    │   │                             it in Designer -- this repo can't
+    │   │                             produce the .quc binary directly).
+    │   └── cp-series-emulator.lua     TcpSocketServer-based, models CPServices
+    │                                 from Dolby CPSeries Control/commlib.lua
+    │                                 exactly; `local MODEL = 'CP750'` at the
+    │                                 top selects which processor, one
+    │                                 instance per model like the .quc files.
     ├── host-emulator/                The Q-SYS Designer host stub, its own module
     │   │                             (added 2026-07-29, split out of Developer/tests/)
     │   │                             so it reads as a standalone unit distinct from
     │   │                             `Dolby CP Emulator/` (that one emulates the Dolby
     │   │                             processors, this one emulates the Q-SYS Lua host)
     │   ├── qsys_stub.lua             Stand-in for the Q-SYS host globals (Controls,
-    │   │                             Timer, TcpSocket, Properties, System); every
-    │   │                             test file adds this directory to its own
-    │   │                             package.path alongside Developer/tests/ itself.
+    │   │                             Timer, TcpSocket, TcpSocketServer [added
+    │   │                             2026-07-31, for testing cp-series-emulator/
+    │   │                             above], Properties, System); every test file
+    │   │                             adds this directory to its own package.path
+    │   │                             alongside Developer/tests/ itself.
     │   └── components/                One file per Q-SYS embedded component Type
     │                                 (mixer.lua, sine.lua, gain.lua, filter_lowpass.lua,
     │                                 equalizer_parametric.lua, stepper.lua), each
@@ -201,6 +220,11 @@ docs/continuity-notes.md (dated history). -->
         ├── test_modules.lua          CPSeries class, loaded straight from
         │                             Developer/plugins/Dolby CPSeries Control/
         │                             {models,protocol,commlib}.lua
+        ├── test_cp_series_emulator.lua CP Series Emulator (added 2026-07-31)
+        │                             driven against those same real classes --
+        │                             all 5 models, readiness, GET/SET round
+        │                             trip verified via a second independent
+        │                             connection, both format-list dialects
         ├── test_dist_cpseries.lua    Root CP Series distributable, both host passes
         ├── test_dist_fader.lua       Root Dolby Fader distributable, both host passes
         ├── test_dist_sweep.lua       Root Dolby Sweep distributable, both host passes

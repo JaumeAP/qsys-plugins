@@ -113,6 +113,10 @@ local PLUGIN_GLOBALS = {
 	"period", "timer",
 	-- Dolby CPSeries Control's own globals
 	"DolbyCP", "sock",
+	-- Dolby CP Emulator / CP Series Emulator control script's own globals
+	-- (TcpSocketServer objects are kept global for the same GC-safety
+	-- reason as Timer/TcpSocket, see qsys-plugin-development.md)
+	"server", "SocketHandler",
 }
 
 function M.clear()
@@ -186,6 +190,27 @@ function M.install(opts)
 			function s:ReadLine() return table.remove(self.lines, 1) end
 			sock = s
 			return s
+		end,
+		-- Only .Events.Data is ever compared against in this repo's Control
+		-- Scripts (Dolby CP Emulator's SocketHandler(sock, event) guard);
+		-- the real host defines more (Connected/Closed/Reconnect/Error/
+		-- Timeout) but nothing here reads them yet -- extend on demand, same
+		-- convention as the rest of this file.
+		Events = { Data = "data" },
+	}
+
+	-- Listening side of TcpSocket -- used by Dolby CP Emulator/*.quc-style
+	-- Control Scripts to fake a Dolby processor, not by any plugin (added
+	-- 2026-07-31 for the CP Series Emulator's own test). Listen() just
+	-- records the port, no real network; a test simulates an inbound
+	-- connection by calling `server.EventHandler(a_fake_socket)` by hand,
+	-- the same way env.receive() drives TcpSocket's own Data callback.
+	TcpSocketServer = {
+		New = function()
+			local srv = { EventHandler = nil, port = nil }
+			function srv:Listen(port) self.port = port end
+			function srv:Close() self.port = nil end
+			return srv
 		end,
 	}
 
