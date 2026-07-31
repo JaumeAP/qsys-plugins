@@ -17,6 +17,11 @@
 -- On fires Out_N only when State_N becomes true, Off only when it becomes
 -- false, Both (default, matches prior behavior) fires on either change.
 -- Non-breaking: no pin renamed, default preserves v2.0.0.1's behavior.
+-- v2.0.0.3: fixed a bug in v2.0.0.2's own EventHandler -- it read
+-- ctrl.Boolean (the callback's own argument), but Q-SYS's own EventHandler
+-- convention here (see MultiFlip-Flop) is not to rely on that argument;
+-- re-reads Controls["State_"..t].Boolean instead, which also matches how
+-- this repo's own test harness calls EventHandler with no argument.
 
 --[[ #include "info.lua" ]]
 
