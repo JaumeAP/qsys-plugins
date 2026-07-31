@@ -1033,3 +1033,11 @@ history actually matters.)
   deferred) the explicit, standing, higher-priority rule for this repo.
   Not ported to `Eines` or back into the portable skill -- deliberately
   scoped to this repo only per the user's own choice.
+
+- **Reverted minutes later, same session, explicit user request** ("elimina
+  aquesta regla de projecte"). The `PROJECT.md` "Git" section bullet added
+  above is removed; the repo goes back to relying solely on the portable
+  `github-rules` skill's own 2026-07-29 authorization (session-close-framed
+  full automation), same as before this entry's own change. Kept as a
+  dated tried-and-reverted record here rather than erased, matching this
+  repo's own convention for entries like this one.
