@@ -16,7 +16,7 @@
 # Browse at: https://skills.sh/
 
 # Mandatory fetch-on-demand (required for all projects)
-caveman (full suite: caveman, caveman-commit, caveman-compress, caveman-review, caveman-stats, caveman-shrink) -> JuliusBrussee/caveman
+caveman (full suite: caveman, caveman-commit, caveman-compress, caveman-help, caveman-review, caveman-stats, cavecrew) -> JuliusBrussee/caveman
 karpathy-guidelines -> forrestchang/andrej-karpathy-skills
 
 # Recommended optional skills
@@ -26,4 +26,4 @@ find-skills -> vercel-labs/skills
 frontend-design -> anthropics/claude-code
 data-visualization -> anthropics/knowledge-work-plugins
 webapp-testing -> anthropics/skills
-remotion -> remotion-dev/skills
+remotion (suite: remotion-best-practices, remotion-captions, remotion-create, remotion-docs, remotion-interactivity, remotion-maps, remotion-markup, remotion-multimedia, remotion-render, remotion-saas, remotion-upgrade) -> remotion-dev/skills
