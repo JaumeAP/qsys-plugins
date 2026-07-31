@@ -35,3 +35,7 @@ skill-security-auditor -> borghei/Claude-Skills
 # Development tools & practices
 docker-development -> netresearch/docker-development-skill
   install: npx skills add netresearch/docker-development-skill -s docker-development
+
+# Language-specific
+lua -> mindrally/skills
+  install: npx skills add mindrally/skills -s lua

@@ -169,6 +169,12 @@
       "skillPath": "skills/karpathy-guidelines/SKILL.md",
       "computedHash": "41e8ca055bbde13d240776a14a076a59614057200340c243130a76ba4e64cac8"
     },
+    "lua": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "lua/SKILL.md",
+      "computedHash": "46a1cb96c640e5dd186aee548d329217338fc160088b81696fbe5e809b150002"
+    },
     "mem-search": {
       "source": "thedotmack/claude-mem",
       "sourceType": "github",
