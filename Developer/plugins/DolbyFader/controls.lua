@@ -17,6 +17,7 @@ table.insert(ctrls, {
 	ControlUnit = "dB",
 	Min = -100,
 	Max = 20,
+	UserPin = true,
 	PinStyle = "Both",
 })
 

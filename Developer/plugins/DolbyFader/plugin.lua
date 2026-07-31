@@ -48,6 +48,9 @@
 -- MultiFlip-Flop/Dolby Sweep's own restructuring, since it never shipped
 -- to production and PLUGCC.exe has no equivalent stripping step
 -- build_distributable.sh had.
+-- v2.0.0.3: Gain (a Knob, PinStyle="Both") now also UserPin=true, matching
+-- Level's own pin declaration -- explicit user request. Not a rename, no
+-- existing wiring needs reconnecting.
 
 --[[ #include "info.lua" ]]
 
