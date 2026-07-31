@@ -286,6 +286,23 @@ development & architecture" alongside `superpowers`), `CLAUDE.md`'s
 `karpathy-guidelines` among the enforced-mandatory four — see the
 2026-07-30 entry above for why that hook names them explicitly at all).
 
+## `config-export-import.md` — `programming-optional-skills.txt` now offered on import (2026-07-31)
+
+Gap found while walking the import steps by hand: `export-config-skill.sh`
+already copied `.claude/programming-optional-skills.txt` into the bundle
+(conditionally, if present) but `config-export-import.md` never actually
+offered it during import -- step 2.7 only reads `recommended-skills.txt`.
+Added a new step 2.7a, same offer flow as 2.7 (grouped by source repo/pack,
+same pagination, same batched-commit/sync rule), with one deliberate
+difference: filter out any skill already present in the target's own
+`.claude/skills/<name>/` before presenting the list at all -- no
+newer-version check like 2.7 has, since this file carries no per-skill
+freshness signal, only presence/absence. Also honors that file's own
+language-specific note (Swift/C++/Lua/etc. never bulk-offered, only on
+explicit name request) inside the new step rather than restating it.
+`export-config-skill.sh`'s own bundled `SKILL.md` "What is bundled" list
+updated to mention the file and point at the new step.
+
 ## `github-rules` — push-cadence rule added (2026-07-31)
 
 Explicit user request, given directly: batch several commits locally

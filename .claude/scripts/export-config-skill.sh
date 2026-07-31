@@ -79,6 +79,12 @@ repeated here.
   though it's the very tool that would do the fetching for the rest of
   this list; a target repo that wants it runs `npx skills add
   vercel-labs/skills -s find-skills` like any other line here.
+- `references/programming-optional-skills.txt` (only if present in this
+  repo) -- programming-focused optional skills/packs, same fetch-on-demand
+  `skill-name -> owner/repo` format as `recommended-skills.txt` above, but
+  offered as a separate step on import (see
+  `references/config-export-import.md` step 2.7a) filtered to skills not
+  already installed in the target repo.
 - `references/removed-files.txt` -- files retired from the mandatory
   bundle (hooks, scripts, skills, ...); on import, any of these paths
   still present under the target's `.claude/` get deleted (see

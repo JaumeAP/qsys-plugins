@@ -396,6 +396,25 @@ uninstall.
         branch/main. Syncing after every single pick is wasted
         round-trips for state that might get immediately superseded by
         the next answer.
+   2.7a. **Programming-optional skills (`programming-optional-skills.txt`),
+        same offer flow as 2.7, one difference**: once 2.7 is settled, if
+        the bundle carries `references/programming-optional-skills.txt`,
+        read it (same `skill-name -> owner/repo` format, one real
+        fetchable skill per line) and offer those too, grouped by source
+        repo/pack the same way, same pagination (max 3 packs + "more
+        options" + "install nothing" per round), same
+        per-pick-commit/batched-sync rule as 2.7. The difference: filter
+        out any skill already present in the target's own
+        `.claude/skills/<name>/` before presenting the list -- don't offer
+        an already-installed entry here at all, there is no
+        update-check/newer-version step for this file (unlike 2.7),
+        presence/absence is the only check. Honor this file's own
+        language-specific note verbatim: any skill listed there as tied to
+        one language/platform (e.g. Swift, C++, Lua, or a future entry
+        under that same heading) is never part of a bulk "install the
+        programming skills" pick -- still mention that section by name as
+        an available extra when offering the rest in bulk, install an
+        entry from it only when asked for by name.
    2.8. **Old consolidated-folder format on the target repo**: if the
         target repo still has a skill nested in the old
         `.claude/skills/<pack>/<skill>/` shape (this repo's own
