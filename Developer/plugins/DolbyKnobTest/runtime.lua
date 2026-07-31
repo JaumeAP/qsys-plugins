@@ -1,26 +1,29 @@
--- GainDb (native Knob) <-> GainDbText (editable Text), bidirectionally
--- linked. No QKnob wrapper -- GainDb is already a native numeric control,
--- so this is plain Controls.* wiring, same style as MultiFlip-Flop/
--- StateTrigger's own runtime blocks.
+-- GainDb (native Knob) <-> GainDbText (editable Text) <-> GainComponent's
+-- own "gain" control (embedded native "gain" component, same Type
+-- SubharmonicSynth uses for GainSub/GainDry). Composition, not derivation:
+-- GainComponent is an opaque host DSP block, this file just keeps its
+-- exposed "gain" control in sync with the two UI controls.
 
 local MIN, MAX = -90, 10
 
-local function syncText()
-	Controls.GainDbText.String = string.format("%.1f", Controls.GainDb.Value)
+local function syncFrom(dbValue)
+	Controls.GainDb.Value = dbValue
+	Controls.GainDbText.String = string.format("%.1f", dbValue)
+	GainComponent["gain"].Value = dbValue
 end
 
 Controls.GainDb.EventHandler = function()
-	syncText()
+	syncFrom(Controls.GainDb.Value)
 end
 
 Controls.GainDbText.EventHandler = function()
 	local v = tonumber(Controls.GainDbText.String)
-	if v then
-		v = v < MIN and MIN or v
-		v = v > MAX and MAX or v
-		Controls.GainDb.Value = v
+	if not v then
+		v = Controls.GainDb.Value
 	end
-	syncText()
+	v = v < MIN and MIN or v
+	v = v > MAX and MAX or v
+	syncFrom(v)
 end
 
-syncText()
+syncFrom(Controls.GainDb.Value)

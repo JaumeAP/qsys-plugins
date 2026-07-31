@@ -14,6 +14,12 @@
 -- linked to GainDb -- typing a value into GainDbText updates GainDb.Value
 -- (clamped to -90..10) and vice versa. Brings runtime.lua back, but as a
 -- direct Controls.* wiring, no QKnob wrapper.
+-- v1.0.0.5: embeds a native "gain" component (GainComponent, same Type
+-- SubharmonicSynth uses for GainSub/GainDry) with real Input/Output audio
+-- pins -- GainDb/GainDbText now drive an actual DSP gain stage, not just
+-- each other. Composition, not derivation: the native component is opaque,
+-- this plugin's own runtime layer just keeps its "gain" control in sync
+-- with the two UI controls.
 
 --[[ #include "info.lua" ]]
 
@@ -45,6 +51,30 @@ function GetControlLayout(props)
 	local graphics = {}
 	--[[ #include "layout.lua" ]]
 	return layout, graphics
+end
+
+function GetComponents(props)
+	return {
+		{
+			Name = "GainComponent",
+			Type = "gain",
+			Properties = { ["max_gain"] = 10, ["min_gain"] = -90, ["multi_channel_type"] = 1 },
+		},
+	}
+end
+
+function GetPins(props)
+	return {
+		{ Name = "Input", Direction = "input" },
+		{ Name = "Output", Direction = "output" },
+	}
+end
+
+function GetWiring(props)
+	return {
+		{ "Input", "GainComponent Input 1" },
+		{ "GainComponent Output 1", "Output" },
+	}
 end
 
 if Controls then
