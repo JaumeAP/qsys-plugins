@@ -1125,3 +1125,47 @@ history actually matters.)
   since v1.0.0.3 has no runtime logic at all. `Developer/tests/run.sh`
   green (11 checks in this file, full suite ALL OK). No `.qplugx` for this
   plugin yet -- unchanged from before, still open if ever needed.
+
+- **Config bundle re-imported (2026-08-01), a newer export of this same
+  repo from a concurrent session, not a foreign repo.** Verified NOT
+  identical to a fresh export first (so the auto-apply exception didn't
+  hold), then ran the full `config-export-import.md` procedure. Notable
+  changes: `superpowers` promoted to mandatory (alongside `caveman`);
+  `github-rules`' default is now direct-to-main always, even when a task
+  harness assigns a working branch -- merge/rebase locally, push the
+  default branch, no PR, unless the remote genuinely rejects direct
+  pushes or CI/multiple contributors need a real gate. Confirmed with the
+  user before applying, since this repo has active CI and PR history
+  through today (PR #90) -- the switch is real and intended anyway.
+  `hooks/no-commit-on-main.sh` removed to match (was blocking commits on
+  `main`). `karpathy-guidelines` uninstalled (`npx skills remove`): its
+  2 non-duplicated rules folded into `CLAUDE.md`'s Response style
+  section, the rest was already covered by `superpowers`/
+  `code-simplification`. `systemd-services` installed (explicit user
+  pick from the newly offered optional catalog entries; `firecrawl`/
+  `apple-silicon`/`macos-native` declined, all irrelevant to a Lua/Q-SYS
+  repo). `settings.json`'s auto-merge left one stale duplicate
+  `PreToolUse`/`Bash` group (from the old `no-commit-on-main.sh` +
+  `file-operations-enforcement.sh` pairing sharing one group) -- fixed
+  by hand, not something `merge-settings.sh` handles when a retired hook
+  shares a settings.json group with a still-bundled one.
+  **Real hazard found while landing this on `main` per the new
+  direct-to-main policy**: this container's local `main` branch was
+  stale and unrelated-history-diverged from `origin/main` -- 66 commits
+  of its own, last real content around old PR #11, never kept in sync
+  (all of this session's and prior sessions' actual work happened via
+  `origin/main` and task branches directly, fetched/read via `git log
+  origin/main`, never through a `git checkout main` locally). Caught
+  before any damage: `git merge --ff-only origin/main` while ON local
+  `main` failed with "refusing to merge unrelated histories" -- the
+  first command run against it, before any push. Recovered by returning
+  to the working branch, merging `origin/main` (not local `main`) into
+  it directly, verifying clean (`Developer/tests/run.sh` green, no
+  unexpected diff), and pushing that to `origin/main` via `git push
+  origin <branch>:main`. Local `main` then force-updated to match
+  `origin/main` (`git branch -f main origin/main`) so this can't recur.
+  **Standing caution for any future session**: don't `git checkout
+  main`/`git merge --ff-only main` against the LOCAL branch name without
+  first confirming it actually tracks `origin/main` (`git branch -vv`)
+  -- prefer operating against `origin/main` directly (fetch + merge/push
+  using the `origin/main` ref) until local `main` is confirmed trustworthy.
