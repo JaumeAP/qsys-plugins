@@ -1,22 +1,23 @@
 -- DolbyKnob Test for Q-SYS
 -- by Jaume Puig / james.puig@elcine.com
 -- Jul '26
--- Scratch/test plugin, NOT for production: clones DolbyFader's own DKNob
--- mechanism (QKnob wrapping a Text control, styled as a Knob) but with a
--- plain linear dB range (-100..20) instead of Dolby's own piecewise 0.0-
--- 10.0 scale, to confirm the QKnob mechanism works for a simple linear
--- knob too. Two controls, bidirectionally synced: Gain (a real native
--- Knob) and GainDb (the QKnob clone). DolbyFader itself is untouched by
--- this -- this is a separate plugin, built purely to try the idea out.
--- v1.0.0.1: initial release.
+-- Scratch/test plugin, NOT for production. DolbyFader itself is untouched
+-- by this -- separate plugin, built purely to try ideas out.
+-- v1.0.0.1: initial release, two controls (a native Gain Knob and a
+-- GainDb QKnob clone, bidirectionally synced).
+-- v1.0.0.2: down to a single, standalone control -- GainDb only, no
+-- native Gain Knob, no sync logic, range changed to -90..10.
+-- v1.0.0.3: GainDb is now a native ControlType="Knob" (ControlUnit="dB"),
+-- no QKnob/Text wrapper -- removes the shared/qknob.lua dependency and
+-- the runtime.lua file entirely, nothing left to run.
 
 PluginInfo = {
 	Name = "Utility~DolbyKnob Test",
 	Version = "1.0",
-	BuildVersion = "1.0.0.1",
+	BuildVersion = "1.0.0.3",
 	Id = "192503c5-aa29-4a9b-849e-df6513a7d04e",
 	Author = "Jaume Puig",
-	Description = "Test/scratch plugin: clones DolbyFader's DKNob (QKnob wrapping a Text control) as a plain linear dB knob, bidirectionally synced with a real native Knob -- proves the QKnob mechanism works for a linear scale, not just Dolby's own piecewise one. Not a production plugin.",
+	Description = "Test/scratch plugin: a single GainDb control, native ControlType=Knob, ControlUnit=dB, range -90..10. No external dependency, no runtime logic. Not a production plugin.",
 }
 
 function GetColor(props)
@@ -39,18 +40,11 @@ end
 function GetControls(props)
 	local ctrls = {}
 	table.insert(ctrls, {
-		Name = "Gain",
+		Name = "GainDb",
 		ControlType = "Knob",
 		ControlUnit = "dB",
-		Min = -100,
-		Max = 20,
-		UserPin = true,
-		PinStyle = "Both",
-	})
-
-	table.insert(ctrls, {
-		Name = "GainDb",
-		ControlType = "Text",
+		Min = -90,
+		Max = 10,
 		UserPin = true,
 		PinStyle = "Both",
 	})
@@ -63,17 +57,11 @@ function GetControlLayout(props)
 	local left = -4
 	local top = -4
 
-	layout["Gain"] = {
-		PrettyName = "Gain (native Knob)",
-		Style = "Knob",
-		Position = { left + 26, top + 28 },
-		Size = { 36, 36 },
-	}
 	layout["GainDb"] = {
-		PrettyName = "GainDb (QKnob clone)",
+		PrettyName = "GainDb (native Knob, dB)",
 		Style = "Knob",
 		Color = { 0, 226, 113 },
-		Position = { left + 90, top + 28 },
+		Position = { left + 26, top + 28 },
 		Size = { 36, 36 },
 	}
 
@@ -84,229 +72,14 @@ function GetControlLayout(props)
 		StrokeWidth = 1,
 		CornerRadius = 8,
 		Position = { left + 8, top + 8 },
-		Size = { 155, 100 },
+		Size = { 90, 100 },
 	})
 
 	table.insert(graphics, {
 		Type = "Label",
-		Text = "Native",
+		Text = "GainDb\n(dB)",
 		Position = { left + 12, top + 72 },
-		Size = { 64, 16 },
-	})
-
-	table.insert(graphics, {
-		Type = "Label",
-		Text = "QKnob\nclone",
-		Position = { left + 76, top + 72 },
 		Size = { 64, 32 },
 	})
 	return layout, graphics
-end
-
-if Controls then
-
-		--///////////////////////  QKNob Class //////////////////////////////
-
-	  do
-
-	    -- declare local variables & functions
-	    local setposition,getposition,formatstr,formatval,todigits,compare
-	    local privates = setmetatable({}, {__mode = "k"})
-	    local propvalues = setmetatable({}, {__mode = "k"})
-	    local properties = {}
-
-	    QKnob = {}
-
-	    -- declare a computed property: {value=default, get=function(self,raw), set=function(self,newVal,oldVal)}
-	    function QKnob:set(name, def)
-	      properties[name] = def
-	    end
-
-	    QKnob.__index = function(self, key)
-	      local def = properties[key]
-	      if def then return def.get(self, propvalues[self][key]) end
-	      return QKnob[key]
-	    end
-
-	    QKnob.__newindex = function(self, key, value)
-	      local def = properties[key]
-	      if def then
-	        local raw = propvalues[self]
-	        value = def.set(self, value, raw[key])
-	        raw[key] = value
-	      else
-	        rawset(self, key, value)
-	      end
-	    end
-
-	    function QKnob:new(...)
-	      local obj = setmetatable({}, QKnob)
-	      local raw = {}
-	      for name, def in pairs(properties) do
-	        raw[name] = def.value
-	      end
-	      propvalues[obj] = raw
-	      if obj.init then obj:init(...) end
-	      return obj
-	    end
-
-	    QKnob:set("Value",{
-	        value = 0,
-	        get = function(self,value) return value end,
-	        set = function(self, newVal,oldVal)
-	          newVal = formatval(self,newVal)
-	          privates[self].ctrl.Value = newVal
-	          if not privates[self].nested then
-	          	privates[self].nested = true
-	          	self.Position = setposition(self,newVal)
-	          	self.String = newVal
-	          	privates[self].nested = false
-	          end
-	          return newVal
-	        end,
-	        } )
-
-	    QKnob:set("String",{
-	        value = "",
-	        get = function(self,value) return value end,
-	        set = function(self, newVal,oldVal)
-	          newVal = formatstr(self,newVal)
-	          privates[self].ctrl.String = newVal
-	          if not privates[self].nested then
-	          	privates[self].nested = true
-	          	self.Value = newVal
-	          	self.Position = setposition(self,self.Value)
-	          	privates[self].nested = false
-	          end
-	          return newVal
-	        end,
-	      })
-
-	    QKnob:set("Position",{
-	        value = 0,
-	        get = function(self,value) return value end,
-	        set = function(self, newVal,oldVal)
-	          local val = getposition(self,newVal)
-	          newVal = setposition(self,val)
-	          privates[self].ctrl.Position = newVal
-	          if not privates[self].nested then
-	          	privates[self].nested = true
-	          	self.Value = getposition(self,newVal)
-	          	self.String = self.Value
-	          	privates[self].nested = false
-	          end
-	          return newVal
-	        end,
-	        } )
-
-
-	    function QKnob:SetString(val)
-	      return val
-	    end
-
-	    function QKnob:init(ctlName, Min, Max, numDecs )
-	      local ctrldef = nil
-	      for _,def in ipairs(GetControls(Properties)) do
-	        if def.Name == ctlName then	 ctrldef = def break end
-	      end
-	      assert(ctrldef,"GetComponents: "..ctlName.." not found")
-	      assert(ctrldef.ControlType=="Text","GetComponents: "..ctlName..".Type is not 'Text'")
-	      privates[self] = { ctrl = Controls[ctlName], nested = false, min=Min, max=Max,
-	        numdecs = numDecs, tm = Timer.New() }
-	      self.EventHandler = nil
-	      privates[self].ctrl.EventHandler = function()
-	         local newVal = formatstr(self,privates[self].ctrl.String)
-			 if self.String ~=newVal then
-	        	self.String =  newVal
-	    		if self.EventHandler then
-	            	self.EventHandler(privates[self].ctrl)
-	        	end
-	        end
-	      end
-	      self.String = privates[self].ctrl.String
-	      privates[self].tm.EventHandler = function()
-	        compare(self)
-	      end
-	      privates[self].tm:Start(1/1000)
-	    end
-
-	    todigits = function (a)
-	      local _
-	      a = tostring(a) or ""
-	      a,_ = a:gsub("[^%d.-]", "")
-	      return tonumber(a) or 0
-	    end
-
-	    setposition = function(self,value)
-	      local p = (value-privates[self].min)/(privates[self].max-privates[self].min)
-	      return p<0 and 1+p or p
-	    end
-
-	    getposition = function(self,value)
-	      value = value * ( privates[self].max-privates[self].min ) + privates[self].min
-	      return value
-	    end
-
-	    compare = function(self)
-	      if math.abs(privates[self].ctrl.Position - self.Position)>=1e-3 and not privates[self].nested then
-	        self.Position = privates[self].ctrl.Position
-	    	if self.EventHandler then
-	            self.EventHandler(privates[self].ctrl)
-	        end
-	      end
-	    end
-
-	    formatval = function(self,val)
-	      val = todigits(val)
-	      val = val < privates[self].min and privates[self].min or val
-	      val = val > privates[self].max and privates[self].max or val
-	      if privates[self].numdecs then
-	        val = tonumber(string.format("%."..privates[self].numdecs.."f",val))
-	      end
-	      return val
-	    end
-
-	    formatstr = function(self,val)
-	      val = todigits(val)
-	      val = val < privates[self].min and privates[self].min or val
-	      val = val > privates[self].max and privates[self].max or val
-	      local neg = val<0 and true or false
-	      val = math.abs(val)
-	      local num = 0
-	      num = val<100 and 1 or num
-	      num = val<10  and 2 or num
-	      num = val< 1  and 3 or num
-	      if privates[self].numdecs then
-	        num = num>privates[self].numdecs and privates[self].numdecs or num
-	      end
-	      val = string.format("%."..num.."f",val)
-	      if not privates[self].numdecs then
-	        val = tonumber(val)<1 and val:sub(2) or val
-	        val = tonumber(val)==0 and 0 or val
-	      end
-	      if neg then val = '-'.. val end
-	      val = self:SetString(tostring(val))
-	      return tostring(val)
-	    end
-
-	  end
-	-- GainDbKnob: same QKnob mechanism as DolbyFader's own DKNob, but with
-	-- Min/Max set directly to the dB range (-100..20) instead of the Dolby
-	-- 0.0-10.0 scale -- QKnob's own Position<->Value mapping is already
-	-- linear (see qknob.lua's setposition/getposition), so no extra
-	-- convertToDb/convertToDolby step is needed for a plain dB knob.
-	GainDbKnob = QKnob:new('GainDb', -100, 20, 1)
-
-	GainDbKnob.EventHandler = function(ctrl)
-		if ctrl ~= Controls.Gain then
-			Controls.Gain.Value = GainDbKnob.Value
-		end
-	end
-
-	Controls.Gain.EventHandler = function(ctrl)
-		GainDbKnob.Value = Controls.Gain.Value
-		GainDbKnob.EventHandler(Controls.Gain)
-	end
-
-	Controls.Gain.EventHandler()
 end

@@ -1112,3 +1112,16 @@ history actually matters.)
   this one): rebuild via CI, rewrite the root `.qplug` from the job log,
   and rewrite the test for the single-native-Knob shape before trusting
   either as current.
+
+- **DolbyKnobTest staleness above resolved (2026-08-01, "Continuació").**
+  `build-qplug.yml` dispatched for `DolbyKnobTest` against
+  `claude/continuacio-2wtw1r` (run 30714152120, success, no unexpanded
+  `#include` markers in the job log). Root `DolbyKnobTest.qplug` rewritten
+  from that log -- now matches the v1.0.0.3 single-native-Knob Developer
+  source exactly. `Developer/tests/test_dist_dolbyknobtest.lua` rewritten
+  to match: definition-pass checks on the single `GainDb` control
+  (`ControlType="Knob"`, `ControlUnit="dB"`, `-90..10`) and its layout,
+  plus a runtime-pass load check -- no more Gain<->GainDb sync assertions,
+  since v1.0.0.3 has no runtime logic at all. `Developer/tests/run.sh`
+  green (11 checks in this file, full suite ALL OK). No `.qplugx` for this
+  plugin yet -- unchanged from before, still open if ever needed.
