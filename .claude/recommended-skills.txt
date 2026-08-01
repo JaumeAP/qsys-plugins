@@ -1,41 +1,21 @@
-# Recommended skills for all projects
-#
-# FORMAT: skill-name -> owner/repo
-#
-# INSTALL: Each skill can be installed with:
-#   npx skills add owner/repo -s skill-name
-# Or all from a repository:
-#   npx skills add owner/repo
-#
-# Example installations:
-#   npx skills add vercel-labs/skills -s find-skills
-#   npx skills add obra/superpowers -s brainstorming
-#   npx skills add anthropics/knowledge-work-plugins -s data-visualization
-#
-# Search available skills: npx skills find <query>
-# Browse at: https://skills.sh/
-#
-# DO NOT remove an entry here just because a skill was uninstalled from a
-# repo -- "uninstall X" means the local .claude/skills/X only. Only edit
-# this file when told to explicitly (see config-export-import.md's
-# standing rule, 2026-07-31), or when an entry is independently proven
-# wrong (dead pointer, broken without a missing dependency).
+# Standing rule (2026-08-01, explicit user request): before adding ANY new
+# entry to this file or to programming-optional-skills.txt, run it through
+# skill-security-auditor first (all 3 scanners: prompt_injection_scanner,
+# code_scanner, supply_chain_checker) and record the verdict in the entry's
+# own parenthetical note. A raw FAIL/finding is not automatically a real
+# risk -- the scanner is static/pattern-based and produces known false
+# positives (e.g. re.compile() misread as dynamic code exec, the auditor
+# matching its own detection-pattern strings, stdlib modules misread as
+# typosquats) -- review each finding by hand before recording the verdict,
+# same as the 2026-08-01 pass that audited every pre-existing entry below.
 
-# Mandatory fetch-on-demand (required for all projects)
-caveman (full suite: caveman, caveman-commit, caveman-compress, caveman-help, caveman-review, caveman-stats, cavecrew) -> JuliusBrussee/caveman
-  install: npx skills add JuliusBrussee/caveman -s caveman -s caveman-commit -s caveman-compress -s caveman-help -s caveman-review -s caveman-stats -s cavecrew
-
-# Recommended optional skills
-# (Programming-specific skills, e.g. the obra/superpowers suite and
-# karpathy-guidelines, live in programming-optional-skills.txt instead --
-# no skill is listed in both.)
-find-skills -> vercel-labs/skills
-  install: npx skills add vercel-labs/skills -s find-skills
-frontend-design -> anthropics/claude-code
-  install: npx skills add anthropics/claude-code -s frontend-design
-data-visualization -> anthropics/knowledge-work-plugins
-  install: npx skills add anthropics/knowledge-work-plugins -s data-visualization
-webapp-testing -> anthropics/skills
-  install: npx skills add anthropics/skills -s webapp-testing
-remotion (suite: remotion-best-practices, remotion-captions, remotion-create, remotion-docs, remotion-interactivity, remotion-maps, remotion-markup, remotion-multimedia, remotion-render, remotion-saas, remotion-upgrade) -> remotion-dev/skills
-  install: npx skills add remotion-dev/skills -s remotion-best-practices -s remotion-captions -s remotion-create -s remotion-docs -s remotion-interactivity -s remotion-maps -s remotion-markup -s remotion-multimedia -s remotion-render -s remotion-saas -s remotion-upgrade
+caveman (mandatory, full suite: caveman, caveman-commit, caveman-compress, caveman-help, caveman-review, caveman-stats, cavecrew; security-audited PASS 2026-08-01) -> JuliusBrussee/caveman
+superpowers (mandatory 2026-08-01 explicit user request, full suite installed 2026-07-31; security-audited PASS 2026-08-01) -> obra/superpowers
+firecrawl (security-audited PASS 2026-08-01; precedence note 2026-08-01, explicit user request, corrected same day after review -- framing is capability, not "native first": firecrawl is the more capable side in all 3 overlaps below; the native tools' only edge is zero cost/credits, not coverage. Use native only when its narrower capability is already known to be enough; go straight to firecrawl when it isn't, rather than trying native first and paying for a fallback call on top. firecrawl-parse vs account-level pdf/docx/xlsx/pptx skills: native covers only those 4 formats plain; firecrawl-parse also covers .odt/.rtf/.html/.htm/.xhtml (native doesn't at all) plus -S/--summary and -Q/--query. firecrawl-scrape vs native WebFetch tool: WebFetch is a plain HTTP fetch + HTML-to-markdown convert with no real rendering -- fails/returns empty on JS-heavy SPAs and on authenticated/private URLs; firecrawl-scrape actually renders via headless browser, strictly more capable. firecrawl-search vs native WebSearch tool: WebSearch returns snippet-level result blocks only and is US-only; firecrawl-search returns full-page markdown per result, strictly more capable) -> firecrawl/firecrawl-claude-plugin
+frontend-design (security-audited PASS 2026-08-01) -> anthropics/claude-code
+code-simplification (security-audited PASS 2026-08-01) -> addyosmani/agent-skills
+skill-security-auditor (highly recommended, not mandatory -- proven effective 2026-08-01: it's the tool that ran every audit recorded in this file, catching and helping triage real findings before any of these entries got added; security-audited PASS 2026-08-01) -> borghei/Claude-Skills
+data-visualization (installed 2026-07-31; security-audited PASS 2026-08-01) -> anthropics/knowledge-work-plugins
+remotion (suite: remotion-best-practices, remotion-captions, remotion-create, remotion-docs, remotion-interactivity, remotion-maps, remotion-markup, remotion-multimedia, remotion-render, remotion-saas, remotion-upgrade; installed 2026-07-31; security-audited PASS 2026-08-01) -> remotion-dev/skills
+lua (installed 2026-08-01; security-audited PASS 2026-08-01) -> mindrally/skills
+systemd-services (create/manage/monitor systemd services and timers on Linux: unit files, socket activation, resource limits, journalctl, production hardening; installed 2026-08-01; security-audited PASS 2026-08-01, skill-security-auditor, markdown-only skill, 0 findings across all 3 scanners) -> bagelhole/devops-security-agent-skills

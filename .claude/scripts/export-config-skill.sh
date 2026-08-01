@@ -108,9 +108,10 @@ repeated here.
   import destination.
 - `references/skills/<name>/<name>.md` -- three bundled skills, all
   mandatory (step 2.2): `file-operations`, `github-rules`, and
-  `changelog-rules`. `caveman` is also mandatory but fetch-on-demand
-  remote only (see `recommended-skills.txt` above — listed there for
-  remote installation). `find-skills` used to be bundled here too and no
+  `changelog-rules`. `caveman` and `superpowers` are also mandatory but
+  fetch-on-demand remote only, no-ask (see `recommended-skills.txt`
+  above — listed there tagged `(mandatory ...)` for remote
+  installation). `find-skills` used to be bundled here too and no
   longer is: moved to fetch-on-demand only. Full history of what has been
   bundled/optional/removed and why, for every skill here:
   `.claude/skills-history.md`. Each bundled skill's entry point is
@@ -165,15 +166,20 @@ done
 # longer states. check-reply-format.sh and reply-format-preflight.sh
 # (mandatory leading "Rebut:" line, Catalan-only, bold/em-dash/ellipsis/
 # header/table ban, numbered-lists-only -- superseded by deferring to the
-# `caveman` skill) and skill-creation-reminder.sh (mandatory
-# skill-creator process for SKILL.md edits -- retired) are all excluded
+# `caveman` skill), skill-creation-reminder.sh (mandatory
+# skill-creator process for SKILL.md edits -- retired), and
+# no-commit-on-main.sh (hard block on committing on main, dropped
+# 2026-08-01 when this repo switched to direct-to-main -- tracked in
+# `removed-files.txt` so re-import doesn't reinstate it) are all excluded
 # for this reason; the "Rebut:" line was later reactivated as a plain
 # CLAUDE.md rule, not by re-registering its old hook. Full history:
 # `.claude/skills-history.md`.
 bundled_hooks=(config-ingest-reminder.sh
+  continuity-notes-reminder.sh
+  export-sendfile-reminder.sh
   file-operations-enforcement.sh
-  init-submodules.sh no-commit-on-main.sh precompact-hygiene-flag.sh
-  rule-check-reminder.sh submodule-clone-fixup.sh)
+  init-submodules.sh precompact-hygiene-flag.sh
+  rule-check-reminder.sh skill-install-reminder.sh submodule-clone-fixup.sh)
 
 # settings.json is NOT a blind copy: it can carry two kinds of
 # project-specific leakage that would otherwise ship into every target

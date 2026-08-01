@@ -32,3 +32,9 @@ a dated entry in this repo's continuity notes first —
 (this file is portable, so don't assume `docs/continuity-notes.md` already
 exists). This applies regardless of git presence — continuity notes are
 plain files.
+
+**Read-back is mechanized (2026-08-01, explicit user request):** the
+`continuity-notes-reminder.sh` SessionStart hook surfaces this file at the
+start of every new session (naming its most recent entry), so notes
+written at close actually get read at the next open instead of relying on
+the user pointing at them. Silent in repos without the file.

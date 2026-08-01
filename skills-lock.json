@@ -157,12 +157,6 @@
       "skillPath": "plugin/skills/how-it-works/SKILL.md",
       "computedHash": "121ff2926b3de14b8b1ffdb883b736004a3b25e3fcb3589ca386ecca5bff1900"
     },
-    "karpathy-guidelines": {
-      "source": "forrestchang/andrej-karpathy-skills",
-      "sourceType": "github",
-      "skillPath": "skills/karpathy-guidelines/SKILL.md",
-      "computedHash": "41e8ca055bbde13d240776a14a076a59614057200340c243130a76ba4e64cac8"
-    },
     "lua": {
       "source": "mindrally/skills",
       "sourceType": "github",
@@ -204,6 +198,12 @@
       "sourceType": "github",
       "skillPath": "skills/systematic-debugging/SKILL.md",
       "computedHash": "a2750dfbaed1690da73b120254892c4f926b4576cb82eb16fc877783941fe39b"
+    },
+    "systemd-services": {
+      "source": "bagelhole/devops-security-agent-skills",
+      "sourceType": "github",
+      "skillPath": "infrastructure/servers/systemd-services/SKILL.md",
+      "computedHash": "71f0641fd06e3ef029fd99cc0fc959ec66312d8e8450e24a00252441e9515b74"
     },
     "test-driven-development": {
       "source": "obra/superpowers",

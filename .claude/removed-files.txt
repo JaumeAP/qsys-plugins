@@ -61,3 +61,11 @@ hooks/reply-format-preflight.sh
 # lines as the whole job.
 hooks/require-handoff-read.sh
 hooks/check-handoff-pushed.sh
+
+# hooks/no-commit-on-main.sh -- removed 2026-08-01, explicit user
+# request. This repo switched from branch+PR to direct-to-main commits
+# (github-rules' own default for a solo repo with no CI), so the hard
+# block on `git commit` while HEAD is on main no longer fits this
+# repo's chosen workflow. Re-importing a bundle that still bundles this
+# hook must not silently reinstate it here.
+hooks/no-commit-on-main.sh

@@ -286,6 +286,26 @@ development & architecture" alongside `superpowers`), `CLAUDE.md`'s
 `karpathy-guidelines` among the enforced-mandatory four — see the
 2026-07-30 entry above for why that hook names them explicitly at all).
 
+**Fully removed (2026-08-01, explicit user request), not just demoted.**
+A content review found its 4 guideline sections almost entirely duplicated
+by existing enforcement (the system prompt's own coding guidance,
+`code-simplification`, and `superpowers:verification-before-completion`
+already cover simplicity, surgical changes, and goal-driven verification
+more strictly). Only two specifics weren't stated anywhere else verbatim —
+present multiple genuine interpretations instead of picking one silently,
+and clean up only orphans the current edit itself introduced, never
+pre-existing dead code unless asked — and those were folded directly into
+`CLAUDE.md`'s "Response style" section instead. Removed via `npx skills
+remove karpathy-guidelines` (deleted `.agents/skills/karpathy-guidelines/`,
+the `.claude/skills/` symlink, and its `skills-lock.json` entry), plus its
+entry dropped from BOTH `recommended-skills.txt` and
+`programming-optional-skills.txt` — the former still had a stray entry
+despite the 2026-07-31 move above having said it was removed from there
+(found still present on inspection, corrected now) — this time as an
+explicit full-removal request, not the narrower "uninstall only" case
+`config-export-import.md`'s own standing rule usually treats separately
+from a catalog-entry removal.
+
 ## `github-rules` — push-cadence rule added (2026-07-31)
 
 Explicit user request, given directly: batch several commits locally

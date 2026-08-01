@@ -27,6 +27,12 @@ rename an output file without explicit request. One question per reply
 except technical tasks needing several. No unsolicited closing
 offers/summaries/tangents.
 
+**Two minor additions (2026-08-01, explicit user request, from a
+karpathy-guidelines review):** if multiple genuine interpretations exist,
+present them rather than picking one silently. When editing, clean up
+only the imports/variables/functions YOUR OWN change made unused —
+never pre-existing dead code, unless asked.
+
 Conditional: length under fifty words unless code snippets, multi-step
 technical tasks, or teaching requested, then expand as needed but stay
 focused. Verify with search first for changing facts (prices, versions,
@@ -98,6 +104,13 @@ only here, current state only, never summaries or backstory:
    `.claude/recommended-skills.txt`, not bundled as a file). Compression,
    terseness, token economy in replies; applies to any project regardless
    of language or domain.
+5. `superpowers` (obra/superpowers) — mandatory, fetch-on-demand (listed in
+   `.claude/recommended-skills.txt`, not bundled as files), added
+   2026-08-01 explicit user request. Suite of process skills
+   (brainstorming, systematic-debugging, test-driven-development, etc.)
+   governing HOW work gets done; installs/fires on import same as the
+   other mandatory entries, no ask step (see `config-export-import.md`
+   step 2.2/2.7).
 
 **"Mandatory" is enforced, not just stated.** Two mechanisms back it, per
 skill's own tooling: `.claude/hooks/file-operations-enforcement.sh`

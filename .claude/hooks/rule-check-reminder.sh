@@ -121,7 +121,11 @@ if (( count == 1 || count % 15 == 0 )); then
   # karpathy-guidelines removed from this named list 2026-07-31 (explicit
   # user request): moved out of CLAUDE.md's mandatory set into
   # programming-optional-skills.txt, no longer obligatory for every repo.
-  msg="${msg} Excepcio (nomes els mandatory, no els recomanats): file-operations, github-rules, caveman i changelog-rules son 'mandatory' segons CLAUDE.md -- invoca'ls de veritat amb el tool Skill quan la tasca hi encaixi (fitxers, treball amb PR/GitHub, canvi a un fitxer amb seccio de changelog, o sempre per estil/compressio de resposta), no nomes com a referencia de fons."
+  # `superpowers` joined this named list 2026-08-01 (explicit user
+  # request): promoted from merely-recommended to mandatory, same
+  # fetch-on-demand treatment as `caveman` -- see CLAUDE.md's "Portable
+  # skills" item 5 and config-export-import.md step 2.2/2.7.
+  msg="${msg} Excepcio (nomes els mandatory, no els recomanats): file-operations, github-rules, caveman, changelog-rules i superpowers son 'mandatory' segons CLAUDE.md -- invoca'ls de veritat amb el tool Skill quan la tasca hi encaixi (fitxers, treball amb PR/GitHub, canvi a un fitxer amb seccio de changelog, procés de treball, o sempre per estil/compressio de resposta), no nomes com a referencia de fons."
 fi
 
 # Job 3, added 2026-07-31 (explicit user request): mechanize the git-presence
