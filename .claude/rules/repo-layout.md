@@ -90,16 +90,15 @@ docs/continuity-notes.md (dated history). -->
 │   │                                 State change; Detection property
 │   │                                 (On/Off/Both, default Both) gates which
 │   │                                 direction fires. No .qplugx built yet.
-│   └── DolbyKnobTest.qplug           (v1.0, added 2026-07-31) -- scratch/test
-│                                     plugin, not production: clones
-│                                     DolbyFader's own DKNob mechanism
-│                                     (QKnob wrapping a Text control) with a
-│                                     plain linear dB range (-100..20)
-│                                     instead of Dolby's piecewise 0.0-10.0
-│                                     scale. Gain (native Knob) <-> GainDb
-│                                     (QKnob clone), bidirectionally synced.
-│                                     DolbyFader itself untouched. No
-│                                     .qplugx built yet.
+│   └── DolbyKnobTest.qplug           (v1.0.0.3, added 2026-07-31, rebuilt
+│                                     2026-08-01) -- scratch/test plugin,
+│                                     not production: a single native
+│                                     ControlType="Knob" control (GainDb,
+│                                     ControlUnit="dB", -90..10), no
+│                                     QKnob/Text wrapper, no
+│                                     shared/qknob.lua dependency, no
+│                                     runtime logic. DolbyFader itself
+│                                     untouched. No .qplugx built yet.
 │
 ├── Dolby CP Emulator/                Once held 3 hand-written .quc Control
 │   └── README.md                     Scripts (CP650/CP750/CP850, no CP950/CP950A)
@@ -219,15 +218,15 @@ docs/continuity-notes.md (dated history). -->
     │   │                             own ctrl arg -- MultiFlip-Flop convention) and
     │   │                             fires Controls["Out_"..t]:Trigger() per Detection.
     │   └── DolbyKnobTest/            Scratch/test plugin (added 2026-07-31), not
-    │       ├── plugin.lua            production: clones DolbyFader's own DKNob
-    │       ├── info.lua              mechanism directly (#include's shared/qknob.lua,
-    │       ├── controls.lua          not shared/dolbyfader.lua) with a plain linear
-    │       ├── layout.lua            dB range (-100..20) instead of the Dolby
-    │       └── runtime.lua           piecewise scale. Gain (native Knob) and GainDb
-    │                                 (the QKnob clone) stay bidirectionally synced.
-    │                                 DolbyFader itself is untouched by this.
+    │       ├── plugin.lua            production. v1.0.0.3: a single native
+    │       ├── info.lua              ControlType="Knob" control (GainDb,
+    │       ├── controls.lua          ControlUnit="dB", -90..10) -- no
+    │       └── layout.lua            QKnob/Text wrapper, no shared/qknob.lua
+    │                                 dependency, no runtime.lua (deleted,
+    │                                 nothing left to run). DolbyFader itself
+    │                                 is untouched by this.
     ├── shared/                       Code #include'd by more than one plugin
-    │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua, Dolby Sweep's own runtime.lua, and DolbyKnobTest's own plugin.lua directly
+    │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua (DolbyKnobTest no longer #include's this since v1.0.0.3 -- switched to a native Knob control)
     │   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
     ├── host-emulator/                The Q-SYS Designer host stub, its own module
     │   │                             (added 2026-07-29, split out of Developer/tests/)
@@ -277,10 +276,12 @@ docs/continuity-notes.md (dated history). -->
         │                             ever fires its own Out_n, gated by the
         │                             selected edge(s)
         ├── test_dist_dolbyknobtest.lua Root DolbyKnobTest distributable (added
-        │                             2026-07-31, 13 checks): definition pass,
-        │                             both-direction sync between Gain and
-        │                             GainDb, range clamping (-100..20), and a
-        │                             value-storm pass across/beyond the range
+        │                             2026-07-31, rewritten 2026-08-01 for the
+        │                             v1.0.0.3 single-native-Knob shape, 11
+        │                             checks): definition pass (control count,
+        │                             ControlType/ControlUnit/Min/Max, layout),
+        │                             plus a runtime-pass load check -- no sync
+        │                             assertions, v1.0.0.3 has no runtime logic
         ├── test_stress.lua           Stress/fuzz over all five plugins: asserts invariants
         │                             (nothing throws, nothing publishes nil, every written
         │                             value stays in range) rather than exact values. Fixed
