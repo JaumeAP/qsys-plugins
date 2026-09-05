@@ -1,0 +1,37 @@
+# Permission entries that must never travel into the portable config
+# bundle, because they are not generic -- either they exist only for
+# this repo's own project-specific tooling, or they are tied to this
+# particular session/environment rather than to the repo at all. One
+# exact permission string per line, must match an entry under
+# .claude/settings.json's permissions.allow/ask/deny verbatim.
+#
+# Consumed only by export-config-skill.sh at export time, to filter
+# settings.json before bundling it. This file itself is never copied
+# into the bundle -- same treatment as ensure-lua53.sh.
+
+# Project-specific: Lua 5.3 test suite tooling (see ensure-lua53.sh and
+# CLAUDE.md's "What this repo is") -- meaningless grants for a repo
+# without that same tooling.
+Bash(lua *)
+Bash(lua5.3 *)
+Bash(lua5.4 *)
+Bash(luac *)
+Bash(luac5.3 *)
+Bash(luac5.4 *)
+Bash(luarocks *)
+Bash(apt-get update *)
+Bash(apt-get install *)
+Bash(apt-get remove *)
+
+# mcp__bf7c680d-5fdc-5ef4-b4a0-abadb619bf0a__add_repo -- removed 2026-07-30
+# (found during a config audit, explicit user request), not just from this
+# file but from settings.json's own permissions.allow too. This comment
+# already called it "instance-specific... likely invalid in any other
+# session" when it was still meant to travel-exclude; turns out it was
+# already invalid in THIS session too. The connector this session actually
+# uses grants add_repo as `mcp__Claude_Code_Remote__add_repo` (see the
+# entry right above this one in settings.json), which was already present
+# alongside it -- the UUID-suffixed form is some earlier session's
+# connector instance ID and can never match a real tool-call name again.
+# Dead permission grant, not a security-relevant one (it only ever widened
+# what could match, never narrowed it), just clutter.

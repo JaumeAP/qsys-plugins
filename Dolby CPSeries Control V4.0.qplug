@@ -1,0 +1,1516 @@
+-- CP Series Control Plugin for Q-SYS
+-- by James Puig / james.puig@elcine.com
+-- Febr '20
+--
+-- v3.0 - adds CP950 and CP950A. Wire communication now goes through the
+--        cpseries_models / cpseries_protocol modules instead of per-model
+--        string concatenation, and the old setmeta/searchelem reflection
+--        hack on Model/CP750/Actions is gone -- Model is now a plain array
+--        with real index/key/value fields. Bug fixes: RectifyProperties hid
+--        the TCP Log with 'not Value' (0 is truthy in Lua -> never hid) ->
+--        '== 0'; guard Get* against a nil props (Q-SYS can call them with no
+--        props during plugin registration, before any instance exists).
+-- v3.0.0.3 - pressing a format button before the processor had reported its
+--        format list published a nil format name, which the plugin's event
+--        handler asserts on, crashing the component. The name mirror is now
+--        left alone when the format index resolves to no list entry.
+-- v4.0 - rebuilt to the plugin structure/naming convention confirmed against
+--        QSC's own vendor/qsys-plugins/{BasePlugin,ExamplePlugin} templates
+--        and the community vendor/q-sys-community/q-sys-plugin-guide
+--        (2026-07-27): mandatory section order, PascalCase Controls/fns/
+--        globals, camelCase locals. Breaking: Controls renamed to PascalCase
+--        (Start/Ref/Level/Gain/Increase/Decrease/Address/Status/Status.Led/
+--        Refresh/Select/Selector/Mute, were start/ref/level/.../mute) -- a
+--        design already wired to the old pin names needs those pins
+--        reconnected. Also: TcpSocket.New() uses dot-notation construction
+--        (was TcpSocket:New() with colon; confirmed correct against the
+--        Q-SYS Lua reference); the socket and the CPSeries instance are now
+--        global (were local), matching the documented Timer/socket
+--        GC-safety convention -- neither was actually being collected
+--        (both are reachable through closures already stored in global
+--        Controls.*.EventHandler fields), but this removes any doubt.
+--        Bugfix: GetControlLayout had layout['decrease'].PrettyName =
+--        "decrease" (lowercase, inconsistent with the sibling "Increase"
+--        label).
+--        Signal chain: DKNob (a QKnob wrapping the 'Level' Text control)
+--        mirrors the Dolby 0.0-10.0 fader scale against the 'Gain' Knob
+--        (dB); CPSeries (commlib/models/protocol) drives a TcpSocket
+--        connection to the processor and reports fader/mute/format/
+--        formname/formlist back through DolbyCP.EventHandler in runtime.lua.
+-- v4.0.0.1 - a fader/mute value that round-trips through the '%.f' formatting
+--        step to "inf"/"nan" (e.g. the wire reporting a value like 1e400,
+--        which overflows to +/-inf) turned back into a nil on the second
+--        tonumber() call, crashing the next arithmetic on it. Found by a
+--        stress test feeding malformed numeric payloads; now bails out like
+--        the first non-numeric check already does.
+-- v4.0.0.2 - the one-time init block (fader=7.0, Mute=0, Selector[1]=1) never
+--        ran on first compile: it was gated on 'Controls.Start.Value == false',
+--        and .Value is always numeric (confirmed via vendor/qsc-q-sys's
+--        Component.GetControls docs), so a number can never equal the Lua
+--        literal false. Now compares against 0/1 (Start has no declared
+--        ControlType, so .Boolean isn't confirmed safe on it, unlike
+--        DolbySweep/MultiFlip-Flop's own explicitly-Button 'Start'). Also:
+--        the Selector radio-button reads (ctl.Value == 1) now use ctl.Boolean
+--        instead -- not a bug fix, Selector IS ControlType="Button", just the
+--        clearer accessor now that the type is confirmed.
+-- v4.0.0.3 - restructured onto QSC's official PLUGCC.exe build convention
+--        (vendor/qsys-plugins/BasePlugin/PluginCompile, PLUGCC.exe) instead
+--        of this repo's own build_distributable.sh -- split into this file
+--        plus info.lua/properties.lua/controls.lua/layout.lua, and the
+--        former Developer/Modules/cpseries_models.lua /
+--        cpseries_protocol.lua / cpseries_commlib.lua / cpseries.lua (this
+--        plugin's own private code, not shared with any other plugin) moved
+--        here as models.lua/protocol.lua/commlib.lua/runtime.lua, their own
+--        require() calls dropped in favor of a fixed load order enforced
+--        directly by this file's own #include sequence below. Reuses
+--        Developer/shared/dolbyfader.lua (also used by DolbyFader), which
+--        pulls in Developer/shared/qknob.lua itself. All #include's here
+--        are direct, depth-1 includes (written straight in this file), so
+--        PLUGCC.exe's nested-include-must-be-first-line rule (see
+--        DolbyFader's own plugin.lua header, and CLAUDE.md continuity
+--        notes) doesn't apply to any of them. No functional change from
+--        v4.0.0.2; guard style switched from `if not Controls and Reflect
+--        then return end` to `if Controls then ... end` to match the other
+--        three restructured plugins (behaviorally identical, both just
+--        skip runtime logic during the definition pass); the dev-only
+--        'strict' globals guard is dropped rather than carried over, same
+--        call as the other three restructurings, since it never shipped to
+--        production and PLUGCC.exe has no equivalent stripping step
+--        build_distributable.sh had.
+-- v4.0.0.4 - commlib.lua's readData(self,true) call passed a second argument
+--        readData() doesn't take (it only takes self), silently ignored by
+--        Lua -- dead/misleading, not a functional bug; dropped. Also: Mute
+--        (ControlType="Button", ButtonType="Toggle") was the one Button
+--        control in this plugin still read/written via .Value instead of
+--        .Boolean -- not a bug (.Value is always numeric and valid on any
+--        control type), just inconsistent with the .Boolean idiom the rest
+--        of this codebase already settled on; switched for consistency.
+-- v4.0.0.12 - crash fix, long-standing and unrelated to the timer work
+--        above: pressing Mute threw out of the poll timer. runtime.lua
+--        wires the button through as Action("mute", Controls.Mute.Boolean),
+--        a Lua boolean, and the poll loop fed that straight to
+--        string.format('%.0f', ...), which rejects a boolean outright --
+--        "bad argument #2 to 'format' (number expected, got boolean)". The
+--        value is now normalized to 0/1 first, exactly the way isEqual()
+--        already did for the same boolean-vs-number reason, and anything
+--        still not numeric falls back to a query rather than crashing or
+--        putting garbage on the wire, matching the rule the format branch
+--        already applied. Found while testing the poll-interval change; no
+--        test had ever driven the boolean path, which is how it survived.
+--        Unmute from the default state remains a deliberate no-op: the
+--        mirror already reads 0, so isEqual() drops it -- it only travels
+--        once the device has reported itself muted.
+-- v4.0.0.11 - idle poll interval, completing the spec's four separated
+--        timers. The loop used to query the processor on every tick the gap
+--        allowed -- ~10 queries/s, or ~4 on a CP650 -- where the spec asks
+--        for one per second. Queries are now rate-limited to POLL_INTERVAL.
+--        Deliberately queries ONLY: a pending local change (fader, mute,
+--        format) still goes out at gap rate, mirroring how the reference
+--        implementation keeps its poll loop (1s) separate from its command
+--        drain loop (continuous). Rate-limiting both would have put up to a
+--        second of latency on every fader move. The check sits before
+--        pollAction() so a held tick doesn't consume a rotation slot, and
+--        gates the whole send block rather than individual messages --
+--        holding only the query slots would stall the rotation on a held
+--        slot and never reach the one carrying the SET.
+--        Consequence worth knowing on the bench: state changed at the
+--        processor's own front panel is now reflected in Q-SYS within a
+--        couple of seconds rather than a couple of hundred milliseconds.
+--        That is the spec's own trade, not an accident of this change.
+-- v4.0.0.10 - query timeout, the last of the spec's four separated timers
+--        the poll loop was missing. A response lost in transit used to be
+--        indistinguishable from a dead link: nothing was retransmitted, so
+--        the connection simply sat idle until the 3s watchdog tore it down,
+--        losing the link over a single dropped packet. writeSocket() now
+--        remembers the message in flight and Poll() retransmits it once, at
+--        1.5s, byte-identical. The waiting counter deliberately keeps
+--        running underneath, so a link that really is dead is still
+--        declared dead on the same 3s schedule -- the retry buys a lost
+--        response a second chance, it does not extend the watchdog. Fires
+--        on exact tick equality, so it can never become a retry storm.
+-- v4.0.0.9 - CP650 echo fix ("Protocol Guarantees": expect RESPONSE, not
+--        echo). readData() had no way to tell the device's own raw echo of
+--        the sent line from a real reply. This was concretely wrong, not
+--        just theoretically: CP650's readiness handshake reuses the fader
+--        wire key ('fader_level'), so the echoed query structurally matched
+--        the fader/readiness pattern and flipped readiness to true on the
+--        plugin's own bytes bouncing back, before the processor had said
+--        anything at all -- confirmed by a reproduction script before this
+--        fix, not just by inspection. writeSocket() now records the raw
+--        sent line; readData() discards exactly one matching line before
+--        treating anything as a real response, without touching the
+--        watchdog/busy counter for that discarded line. Only armed for
+--        CP650 -- the other four models are unaffected, don't echo, and
+--        their own coincidental reuse of the same wire key across rows
+--        (e.g. CP850's 'sys.fader') is unrelated existing behaviour, not
+--        something this touches.
+-- v4.0.0.8 - private.cache (the pending-message queue ahead of the regular
+--        poll cycle) honours two more of the "Protocol Guarantees": it now
+--        drains oldest-first (was table.remove() with no index, which pops
+--        the LAST item -- LIFO, not FIFO) and is capped at QMAX=10, dropping
+--        the oldest entry first past capacity. request() is currently the
+--        queue's only producer and is only ever called once per Start(), so
+--        the queue never actually holds more than one entry today -- this
+--        guards a future second caller from inheriting silently wrong
+--        ordering or unbounded growth, not an observed bug in current
+--        behaviour.
+-- v4.0.0.7 - commlib.lua now honours two of the "Protocol Guarantees" of the
+--        Dolby CP Cinema Control spec it previously ignored. (1) Minimum gap
+--        between sent commands: there was none -- the poll loop sent again
+--        on the first 0.02s tick after a response, which on a CP650 is far
+--        under the 250ms that model's hardware needs (100ms for the others).
+--        Poll now holds the wire until the model's gap has elapsed,
+--        measured from the last send. (2) The no-response watchdog was 30
+--        ticks, i.e. 0.6s, five times more aggressive than the documented
+--        3.0s, so a merely slow link was declared dead; it is now 150 ticks.
+--        Both are expressed as seconds and converted to ticks against
+--        POLLTIME rather than hardcoded as tick counts. The waiting counter
+--        now only advances once a command is actually in flight, which is
+--        what keeps the new gap a hold rather than a deadlock.
+-- v4.0.0.6 - TcpSocket construction, IPv4 address validation, and
+--        Connect/Disconnect/IsConnected now go through the new shared
+--        Developer/shared/socket.lua module (SocketConn), so any future
+--        plugin needing a TCP client can reuse them instead of duplicating
+--        this boilerplate -- per an explicit request to put socket
+--        operations in a module other plugins can call. Connection
+--        orchestration (when to reconnect, what status to show) stays in
+--        this plugin's own runtime.lua, since that part is plugin-specific.
+--        sock is now a SocketConn instance; the raw TcpSocket is
+--        sock.Socket (needed by CPSeries:Start(sock.Socket), which still
+--        wants the raw socket object). No functional change.
+-- v4.0.0.5 - commlib.lua's isEqual() compared a stored value against an
+--        incoming one with plain '==', so a value stored as a Lua boolean
+--        (Actions.reset's `value or true`, Mute's .Boolean writes) never
+--        matched the same value arriving off the wire as a number (no
+--        boolean/number coercion in Lua) -- the "already equal, skip"
+--        check silently missed, redundantly re-firing the EventHandler on
+--        every wire echo of an already-known value. Not a crash, just a
+--        needless re-fire; found while double-checking the Mute .Boolean
+--        switch against Q-SYS Help's docs. Now normalizes booleans to 0/1
+--        before comparing.
+
+PluginInfo =
+{
+	Name = "Dolby~CP Series Control",
+	Version = "4.0",
+	BuildVersion = "4.0.0.12",
+	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
+	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
+	Manufacturer = "Dolby",
+	Author = "James Puig - james.puig@elcine.com",
+}
+
+-- Constants
+
+-- Supported processor models, as plain records. `Model` is an ordered
+-- array (iterate with ipairs / #Model) AND is keyed by symbol
+-- (Model.CP650, ...); every entry carries value (display name), key
+-- and index.
+Model = {}
+for i, m in ipairs({
+	{ key = 'CP650',  value = 'CP 650'  },
+	{ key = 'CP750',  value = 'CP 750'  },
+	{ key = 'CP850',  value = 'CP 850'  },
+	{ key = 'CP950',  value = 'CP 950'  },
+	{ key = 'CP950A', value = 'CP 950A' },
+}) do
+	m.index = i
+	Model[i] = m
+	Model[m.key] = m
+end
+
+local ButtonLabel = { { '01', '04', '05', '10', '11', 'U1', 'U2', 'NS' },
+					  { 'Dig1', 'Dig2', 'Dig3', 'Dig4', 'Ana', 'NS', 'Mic' },
+					  { '1', '2', '3', '4', '5', '6', '7', '8' },
+					  { '1', '2', '3', '4', '5', '6', '7', '8' },
+					  { '1', '2', '3', '4', '5', '6', '7', '8' } }
+
+-- Model value, tolerant of a nil / partial props: Q-SYS may call the
+-- Get* functions with no props during plugin registration, before any
+-- instance exists. Without this guard `props.Model.Value` throws
+-- "index a nil value".
+local function ModelValue(props)
+	return (props and props.Model and props.Model.Value) or Model.CP850.value
+end
+
+function GetColor(props)
+	return { 0, 127, 255 }
+end
+
+function GetPrettyName(props)
+	return "Dolby " .. ModelValue(props) .. " Control"
+end
+
+function GetProperties()
+	local props = {}
+	local list = {}
+	for _, elem in ipairs(Model) do
+		table.insert(list, elem.value)
+	end
+	table.insert(props, { Name = "Model", Type = "enum", Choices = list, Value = Model.CP850.value })
+	table.insert(props, { Name = "TCP Log", Type = "enum", Choices = { 'Command', 'All' }, Value = 'Command' })
+	return props
+end
+
+function RectifyProperties(props)
+	if props and props["TCP Log"] and props.plugin_show_debug then
+		props["TCP Log"].IsHidden = (props.plugin_show_debug.Value == 0) -- FIX: 'not Value' never hid (0 is truthy in Lua)
+	end
+	return props
+end
+
+function GetControls(props)
+	local ctrls = {}
+	local numButtons = ModelValue(props) == Model.CP750.value and 7 or 8
+	
+	table.insert(ctrls, { Name = "Start" })
+	table.insert(ctrls, { Name = "Ref", ControlType = "Button", ButtonType = "Momentary" })
+	table.insert(ctrls, { Name = "Level", ControlType = "Text", UserPin = true, PinStyle = "Both" })
+	table.insert(ctrls, { Name = "Gain", ControlType = "Knob", ControlUnit = "dB", Min = -100, Max = 20, UserPin = true, PinStyle = "Both" })
+	table.insert(ctrls, { Name = "Increase", ControlType = "Button", ButtonType = "Momentary", IconType = "Icon", Icon = "Plus", IconColor = { 0, 0, 0 } })
+	table.insert(ctrls, { Name = "Decrease", ControlType = "Button", ButtonType = "Momentary", IconType = "Icon", Icon = "Minus", IconColor = { 0, 0, 0 } })
+	table.insert(ctrls, { Name = "Address", ControlType = "Text", Count = 1, UserPin = false })
+	table.insert(ctrls, { Name = "Status", ControlType = "Indicator", IndicatorType = "Status", UserPin = true, PinStyle = "Output" })
+	table.insert(ctrls, { Name = "Status.Led", ControlType = "Indicator", IndicatorType = "Status" })
+	table.insert(ctrls, { Name = "Refresh", ControlType = "Button", ButtonType = "Trigger", Icon = 'Refresh' })
+	table.insert(ctrls, { Name = "Select", ControlType = "Text", UserPin = true, PinStyle = "Both" })
+	table.insert(ctrls, { Name = "Selector", ControlType = "Button", ButtonType = "Toggle", Count = numButtons, UserPin = true, PinStyle = "Both" })
+	table.insert(ctrls, { Name = "Mute", ControlType = "Button", ButtonType = "Toggle", Icon = 'Volume Strike', UserPin = true, PinStyle = "Both" })
+	return ctrls
+end
+
+function GetControlLayout(props)
+	local layout = {}
+	local graphics = {}
+	local col = 70
+	local row = 6
+	local gutter = 50
+	local mv = ModelValue(props)
+	local numButtons = mv == Model.CP750.value and 7 or 8
+	table.insert(graphics, { Type = "GroupBox", CornerRadius = 5, Fill = { 255, 245, 232, 255 }, StrokeWidth = 1, StrokeColor = { 241, 199, 245 }, Position = { -5, -5 }, Size = { 358, 368 }, Padding = 0, Margin = 0 })
+	table.insert(graphics, { Type = "Label", Text = mv, Fill = { 255, 245, 232, 255 }, Size = { 160, 28 }, Position = { 46 + gutter, row }, IsBold = true, FontSize = 24 })
+	row = row + 40
+	table.insert(graphics, { Type = "Label", HTextAlign = "Right", Text = "IP:", Position = { gutter, row }, Size = { 44, 16 } })
+	layout['Address'] = { PrettyName = 'Address', Position = { gutter + 50, row }, Size = { 140, 16 } }
+	layout['Refresh'] = { PrettyName = 'Refresh Connection', FontStyle = 'Black', Position = { gutter + 190, row }, Size = { 36, 16 }, Margin = 0 }
+	row = row + 32
+	table.insert(graphics, { Type = "GroupBox", HTextAlign = "Left", Text = "Status", StrokeWidth = 1, CornerRadius = 8, Position = { 10, row - 5 }, Size = { 330, 64 } })
+	layout['Status.Led'] = { PrettyName = 'CP Status', Style = "Led", Margin = 3, Position = { gutter - 14, row + 22 }, Size = { 16, 16 } }
+	layout['Status'] = { PrettyName = 'CP Status', Position = { gutter + 10, row + 14 }, Size = { 262, 32 } }
+	row = row + 48 + 24
+	local left = 0
+	local top = row
+	layout['Ref'] = { PrettyName = "Ref Level", Style = "Button", ButtonStyle = "Momentary", Color = { 242, 137, 174 }, Size = { 36, 16 }, Position = { left + 26, top + 48 } }
+	layout['Level'] = { PrettyName = 'Dolby Level', Style = "Knob", Color = { 0, 226, 113 }, Position = { left + 90, top + 28 }, Size = { 36, 36 } }
+	layout['Increase'] = { PrettyName = "Increase", Style = "Button", ButtonStyle = "Momentary", Color = { 255, 255, 255 }, Position = { left + 154, top + 28 }, Size = { 36, 16 } }
+	layout['Decrease'] = { PrettyName = "Decrease", Style = "Button", ButtonStyle = "Momentary", Color = { 255, 255, 255 }, Size = { 36, 16 }, Position = { left + 154, top + 48 } }
+	layout["Gain"] = { PrettyName = "Gain", Style = "Knob", Position = { left + 214, top + 28 }, Size = { 36, 36 } }
+	layout['Mute'] = { PrettyName = 'Mute', CornerRadius = 20, Color = { 255, 0, 0 }, UnlinkOffColor = true, OffColor = { 100, 100, 100 }, Padding = 10, Radius = 5, Position = { left + 214 + 64, top + 22 }, Size = { 46, 46 } }
+	table.insert(graphics, { Type = "GroupBox", Text = "Level", HTextAlign = "Left", StrokeWidth = 1, CornerRadius = 8, Position = { left + 10, top + 8 }, Size = { 330, 100 } })
+	table.insert(graphics, { Type = "Label", Text = "Reference", Position = { left + 12, top + 72 }, Size = { 64, 16 } })
+	table.insert(graphics, { Type = "Label", Text = "Dolby\nLevel", Position = { left + 76, top + 72 }, Size = { 64, 32 } })
+	table.insert(graphics, { Type = "Label", Text = "Inc/Dec", Position = { left + 140, top + 72 }, Size = { 64, 16 } })
+	table.insert(graphics, { Type = "Label", Text = "RMS Level (dBFS)", Position = { left + 202, top + 72 }, Size = { 64, 32 } })
+	table.insert(graphics, { Type = "Label", Text = "Mute", Position = { left + 202 + 64, top + 72 }, Size = { 64, 32 } })
+	row = row + 130
+	table.insert(graphics, { Type = "Label", Text = "Format:", HTextAlign = "Right", Position = { gutter - 46, row + 1 }, Size = { 90, 16 } })
+	layout['Select'] = { PrettyName = 'Select', Style = "ComboBox", TextFontSize = 12, Position = { gutter + 50, row }, Size = { 170, 18 } }
+	row = row + 32 col = 36
+	local btnLayout, macro, proc
+	local assign = {
+		[Model.CP650.value] = function() macro = 'Button' proc = Model.CP650.index btnLayout = ButtonLabel[1] end,
+		[Model.CP750.value] = function() macro = 'Button' proc = Model.CP750.index btnLayout = ButtonLabel[2] end,
+		[Model.CP850.value] = function() macro = 'Macro'  proc = Model.CP850.index btnLayout = ButtonLabel[3] end,
+		[Model.CP950.value] = function() macro = 'Macro'  proc = Model.CP950.index btnLayout = ButtonLabel[4] end,
+		[Model.CP950A.value] = function() macro = 'Macro'  proc = Model.CP950A.index btnLayout = ButtonLabel[5] end,
+	}
+	assign[mv]()
+	local v = mv == Model.CP750.value and gutter or gutter - 20
+	for i = 1, numButtons do
+		layout['Selector ' .. i] = { PrettyName = macro .. '~' .. ButtonLabel[proc][i], Legend = btnLayout[i], Position = { v, row },
+				Color = { 0, 255, 0 }, FontStyle = 'Bold', fontSize = 14, CornerRadius = 20, ButtonStyle = "On", Size = { 36, 36 } }
+		v = v + col
+	end
+	return layout, graphics
+end
+
+function GetComponents(props)
+	return {
+		{
+			Name = "Step",
+			Type = "stepper",
+			Properties =
+			{
+				control_type = 2,
+				num_steps = 100,
+			}
+		},
+	}
+end
+
+if Controls then
+		
+			--///////////////////////  QKNob Class //////////////////////////////
+		
+		  do
+		
+		    -- declare local variables & functions
+		    local setposition,getposition,formatstr,formatval,todigits,compare
+		    local privates = setmetatable({}, {__mode = "k"})
+		    local propvalues = setmetatable({}, {__mode = "k"})
+		    local properties = {}
+		
+		    QKnob = {}
+		
+		    -- declare a computed property: {value=default, get=function(self,raw), set=function(self,newVal,oldVal)}
+		    function QKnob:set(name, def)
+		      properties[name] = def
+		    end
+		
+		    QKnob.__index = function(self, key)
+		      local def = properties[key]
+		      if def then return def.get(self, propvalues[self][key]) end
+		      return QKnob[key]
+		    end
+		
+		    QKnob.__newindex = function(self, key, value)
+		      local def = properties[key]
+		      if def then
+		        local raw = propvalues[self]
+		        value = def.set(self, value, raw[key])
+		        raw[key] = value
+		      else
+		        rawset(self, key, value)
+		      end
+		    end
+		
+		    function QKnob:new(...)
+		      local obj = setmetatable({}, QKnob)
+		      local raw = {}
+		      for name, def in pairs(properties) do
+		        raw[name] = def.value
+		      end
+		      propvalues[obj] = raw
+		      if obj.init then obj:init(...) end
+		      return obj
+		    end
+		
+		    QKnob:set("Value",{
+		        value = 0,
+		        get = function(self,value) return value end,
+		        set = function(self, newVal,oldVal)
+		          newVal = formatval(self,newVal)
+		          privates[self].ctrl.Value = newVal
+		          if not privates[self].nested then
+		          	privates[self].nested = true
+		          	self.Position = setposition(self,newVal)
+		          	self.String = newVal
+		          	privates[self].nested = false
+		          end
+		          return newVal
+		        end,
+		        } )
+		
+		    QKnob:set("String",{
+		        value = "",
+		        get = function(self,value) return value end,
+		        set = function(self, newVal,oldVal)
+		          newVal = formatstr(self,newVal)
+		          privates[self].ctrl.String = newVal
+		          if not privates[self].nested then
+		          	privates[self].nested = true
+		          	self.Value = newVal
+		          	self.Position = setposition(self,self.Value)
+		          	privates[self].nested = false
+		          end
+		          return newVal
+		        end,
+		      })
+		
+		    QKnob:set("Position",{
+		        value = 0,
+		        get = function(self,value) return value end,
+		        set = function(self, newVal,oldVal)
+		          local val = getposition(self,newVal)
+		          newVal = setposition(self,val)
+		          privates[self].ctrl.Position = newVal
+		          if not privates[self].nested then
+		          	privates[self].nested = true
+		          	self.Value = getposition(self,newVal)
+		          	self.String = self.Value
+		          	privates[self].nested = false
+		          end
+		          return newVal
+		        end,
+		        } )
+		
+		
+		    function QKnob:SetString(val)
+		      return val
+		    end
+		
+		    function QKnob:init(ctlName, Min, Max, numDecs )
+		      local ctrldef = nil
+		      for _,def in ipairs(GetControls(Properties)) do
+		        if def.Name == ctlName then	 ctrldef = def break end
+		      end
+		      assert(ctrldef,"GetComponents: "..ctlName.." not found")
+		      assert(ctrldef.ControlType=="Text","GetComponents: "..ctlName..".Type is not 'Text'")
+		      privates[self] = { ctrl = Controls[ctlName], nested = false, min=Min, max=Max,
+		        numdecs = numDecs, tm = Timer.New() }
+		      self.EventHandler = nil
+		      privates[self].ctrl.EventHandler = function()
+		         local newVal = formatstr(self,privates[self].ctrl.String)
+				 if self.String ~=newVal then
+		        	self.String =  newVal
+		    		if self.EventHandler then
+		            	self.EventHandler(privates[self].ctrl)
+		        	end
+		        end
+		      end
+		      self.String = privates[self].ctrl.String
+		      privates[self].tm.EventHandler = function()
+		        compare(self)
+		      end
+		      privates[self].tm:Start(1/1000)
+		    end
+		
+		    todigits = function (a)
+		      local _
+		      a = tostring(a) or ""
+		      a,_ = a:gsub("[^%d.-]", "")
+		      return tonumber(a) or 0
+		    end
+		
+		    setposition = function(self,value)
+		      local p = (value-privates[self].min)/(privates[self].max-privates[self].min)
+		      return p<0 and 1+p or p
+		    end
+		
+		    getposition = function(self,value)
+		      value = value * ( privates[self].max-privates[self].min ) + privates[self].min
+		      return value
+		    end
+		
+		    compare = function(self)
+		      if math.abs(privates[self].ctrl.Position - self.Position)>=1e-3 and not privates[self].nested then
+		        self.Position = privates[self].ctrl.Position
+		    	if self.EventHandler then
+		            self.EventHandler(privates[self].ctrl)
+		        end
+		      end
+		    end
+		
+		    formatval = function(self,val)
+		      val = todigits(val)
+		      val = val < privates[self].min and privates[self].min or val
+		      val = val > privates[self].max and privates[self].max or val
+		      if privates[self].numdecs then
+		        val = tonumber(string.format("%."..privates[self].numdecs.."f",val))
+		      end
+		      return val
+		    end
+		
+		    formatstr = function(self,val)
+		      val = todigits(val)
+		      val = val < privates[self].min and privates[self].min or val
+		      val = val > privates[self].max and privates[self].max or val
+		      local neg = val<0 and true or false
+		      val = math.abs(val)
+		      local num = 0
+		      num = val<100 and 1 or num
+		      num = val<10  and 2 or num
+		      num = val< 1  and 3 or num
+		      if privates[self].numdecs then
+		        num = num>privates[self].numdecs and privates[self].numdecs or num
+		      end
+		      val = string.format("%."..num.."f",val)
+		      if not privates[self].numdecs then
+		        val = tonumber(val)<1 and val:sub(2) or val
+		        val = tonumber(val)==0 and 0 or val
+		      end
+		      if neg then val = '-'.. val end
+		      val = self:SetString(tostring(val))
+		      return tostring(val)
+		    end
+		
+		  end
+	
+	   -- ##############################################################
+	   --			Dolby Fader
+	   -- ##############################################################
+	
+		do
+	
+			-- Objects
+			-- QKnob wraps the 'Level' Text control; must stay global (never
+			-- local) -- Timer/socket-holding objects are killed by the GC once
+			-- nothing else references them, and DKNob is that anchor for the
+			-- Timer QKnob:init() creates internally.
+			DKNob = QKnob:new('Level', 0, 10, 1)
+	
+			-- Custom functions
+	
+			local function convertToDb(val)
+				if val <= 4 then return val * 20 - 90
+				else return (val - 7) * 10 / 3 end
+			end
+	
+			local function convertToDolby(dB)
+				if dB <= -10 then return (dB + 90) / 20
+				else return (dB * 3 / 10) + 7 end
+			end
+	
+			-- Event handlers
+	
+			-- Step: embedded stepper component (GetComponents); Q-SYS exposes
+			-- it as the global 'Step', which is what _G["Step"] would return.
+			Step.value.EventHandler = function(ctrl)
+				DKNob.Position = Step.value.Value / 100
+				DKNob.EventHandler(Step)
+			end
+	
+			DKNob.EventHandler = function(ctrl)
+				if ctrl ~= Controls.Gain then
+					Controls.Gain.Value = convertToDb(DKNob.Value)
+				end
+				Step.value.Value = DKNob.Position * 100
+				if DolbyFaderEventHandler then
+					DolbyFaderEventHandler(ctrl)
+				end
+			end
+	
+			Controls.Gain.EventHandler = function(ctrl)
+				DKNob.Value = convertToDolby(Controls.Gain.Value)
+				DKNob.EventHandler(Controls.Gain)
+			end
+	
+			Controls.Ref.EventHandler = function(ctrl)
+				if Controls.Ref.Boolean then
+					DKNob.Value = 7.0
+					DKNob.EventHandler(Controls.Ref)
+				end
+			end
+	
+			Controls.Increase.EventHandler = function()
+				Step.increase.Value = Controls.Increase.Value
+			end
+	
+			Controls.Decrease.EventHandler = function()
+				Step.decrease.Value = Controls.Decrease.Value
+			end
+	
+			-- Init
+	
+			Controls.Gain.EventHandler()
+			DolbyFaderEventHandler = nil
+	
+		end
+	-- Generic TcpSocket construction + IPv4 address validation, factored out of
+	-- Dolby CPSeries Control's own runtime.lua so any future plugin needing a
+	-- TCP client can reuse it instead of duplicating this boilerplate. Kept as
+	-- a plain global table with no require/return (PLUGCC.exe inlines
+	-- #include'd files as plain source, not loadable modules), same pattern as
+	-- qknob.lua/dolbyfader.lua.
+	
+	SocketConn = {}
+	SocketConn.__index = SocketConn
+	
+	-- IPv4 dotted-quad validator.
+	function SocketConn.ValidateAddress(ip)
+		local chunks = { string.match(ip, "^(%d+)%.(%d+)%.(%d+)%.(%d+)$") }
+		if #chunks < 4 then
+			return false
+		end
+		for _, v in pairs(chunks) do
+			if tonumber(v) > 255 then
+				return false
+			end
+		end
+		return true
+	end
+	
+	-- Wraps TcpSocket.New(): sets WriteTimeout (default 2s) and exposes the raw
+	-- socket as .Socket for the caller to wire event handlers (.Connected,
+	-- .Closed, .Timeout, .Error, .Reconnect) and to pass to code that needs the
+	-- raw TcpSocket instance itself (e.g. CPSeries:Start(sock.Socket)). The
+	-- returned instance must stay global, never local -- same GC-safety
+	-- convention as a bare TcpSocket (see qsys-plugin-development.md's "Q-SYS
+	-- runtime globals" section): a local one can be collected once nothing else
+	-- references it, silently killing the connection.
+	function SocketConn.New(writeTimeout)
+		local self = setmetatable({}, SocketConn)
+		self.Socket = TcpSocket.New()
+		self.Socket.WriteTimeout = writeTimeout or 2
+		return self
+	end
+	
+	function SocketConn:Connect(address, port)
+		self.Socket:Connect(address, port)
+	end
+	
+	function SocketConn:Disconnect()
+		self.Socket:Disconnect()
+	end
+	
+	function SocketConn:IsConnected()
+		return self.Socket.IsConnected
+	end
+	
+	   -- ##############################################################
+	   --			CPSeries Models
+	   -- ##############################################################
+	   --
+	   -- Per-model wire config: TCP port and whether the model speaks the
+	   -- CP650 KEY=VALUE dialect or the "param value" dialect used by every
+	   -- other processor.
+	
+		do
+	
+			CPModels = {}
+	
+			CPModels.CONFIG = {
+				CP650  = { port = 61412, namespace = "KEY=VALUE" },
+				CP750  = { port = 61408, namespace = "cp750.*"   },
+				CP850  = { port = 61408, namespace = "sys.*"     },
+				CP950  = { port = 61408, namespace = "sys.*"     },
+				CP950A = { port = 61408, namespace = "sys.*"     },
+			}
+	
+			function CPModels.DefaultPort(model)
+				local c = CPModels.CONFIG[model]
+				assert(c,"CPModels.DefaultPort: unknown model '"..tostring(model).."'")
+				return c.port
+			end
+	
+			function CPModels.UsesKeyValue(model)
+				local c = CPModels.CONFIG[model]
+				assert(c,"CPModels.UsesKeyValue: unknown model '"..tostring(model).."'")
+				return c.namespace == "KEY=VALUE"
+			end
+	
+		end
+	
+	   -- ##############################################################
+	   --			CPSeries Protocol
+	   -- ##############################################################
+	   --
+	   -- Per-model wire formatting.
+	   --   CP650                        -> KEY=VALUE   ("MASTER=100")
+	   --   CP750 / CP850 / CP950 / 950A -> "param value" ("sys.mute 0")
+	   -- The GET framing ("KEY=?" / "param ?") is this plugin's own
+	   -- Dolby-verified convention.
+	
+		do
+	
+			CPProtocol = {}
+	
+			local function fmtvalue(v)
+				if type(v) == "boolean" then return v and "1" or "0" end
+				if type(v) == "number" then
+					if v == math.floor(v) then return tostring(math.floor(v)) end -- whole numbers as ints: 70.0 -> "70"
+					return tostring(v)
+				end
+				return tostring(v)
+			end
+	
+			-- Reject a param/value with an embedded newline/CR: commands are framed
+			-- one per line, so it would split into two commands or corrupt the stream.
+			local function rejectcontrol(s,what)
+				if s:find("[\r\n]") then
+					error(what.." contains a newline/CR ("..s.."); would corrupt the wire framing")
+				end
+			end
+	
+			function CPProtocol.FormatMessage(model,param,value)
+				local val = fmtvalue(value)
+				rejectcontrol(param,"param")
+				rejectcontrol(val,"value")
+				if CPModels.UsesKeyValue(model) then
+					return param.."="..val
+				end
+				return param.." "..val
+			end
+	
+			function CPProtocol.FormatQuery(model,param)
+				rejectcontrol(param,"param")
+				if CPModels.UsesKeyValue(model) then
+					return param.."=?"
+				end
+				return param.." ?"
+			end
+	
+		end
+	
+	   -- ##############################################################
+	   --			CPSeries Class
+	   -- ##############################################################
+	   --
+	   -- v3.0: adds CP950 / CP950A. Wire formatting/framing now goes through the
+	   -- cpseries_models / cpseries_protocol modules -- CPProtocol.FormatMessage /
+	   -- CPProtocol.FormatQuery and CPModels.CONFIG replace the old per-model
+	   -- string concatenation, so all five processors share one code path instead
+	   -- of a growing branch tree. The old setmeta/searchelem reflection hack on
+	   -- Model/CP750/Actions is gone too: those are now plain tables carrying
+	   -- their own index/key fields.
+	   --
+	   -- Bug fixes: a format/reset index read off the wire is now bounds-checked
+	   -- before it's used to look up CP750/Actions (an out-of-range value used to
+	   -- index a nil entry and crash); Action() ignores an unknown control or a
+	   -- write to the device-populated formlist instead of corrupting state; the
+	   -- macro-list accumulator is capped at 512 entries so a stream of orphan/
+	   -- garbage "n:name" lines can't grow it without bound.
+	
+		do
+	
+			local POLLTIME = 0.02
+	
+			-- Minimum gap between two sent commands, and the no-response
+			-- watchdog, both in seconds. These are the "Protocol Guarantees" of
+			-- the Dolby CP Cinema Control spec: the CP650 needs more headroom
+			-- than the general case (250ms minimum, not 100ms), and a link that
+			-- stops answering is declared dead after 3s rather than polled
+			-- forever.
+			local GAP_CP650 = 0.25
+			local GAP_DEFAULT = 0.10
+			local WATCHDOG = 3.0
+			-- Query timeout, deliberately separate from the watchdog above: a
+			-- single lost response is a lost response, not a dead link. At this
+			-- point the in-flight message is retransmitted ONCE ("fast recovery
+			-- for a lost poll/query response"); only if that also draws nothing
+			-- does the watchdog eventually declare the connection dead.
+			local QUERY_TIMEOUT = 1.5
+			-- Idle poll interval. This rate-limits QUERIES only. A pending local
+			-- change (a fader move, a mute, a format press) is still delivered
+			-- at gap rate, mirroring how the reference implementation separates
+			-- its poll loop (poll_interval, 1.0s) from its command drain loop
+			-- (continuous, gap-limited): the spec rate-limits asking the device
+			-- for state, never telling it about a user action.
+			local POLL_INTERVAL = 1.0
+	
+			-- Poll runs off a POLLTIME timer and counts ticks, so both live here
+			-- as tick counts. Rounded up: rounding down would sit just under the
+			-- documented minimum, which is the one direction that matters.
+			local GAP_TICKS_CP650 = math.ceil(GAP_CP650 / POLLTIME)
+			local GAP_TICKS_DEFAULT = math.ceil(GAP_DEFAULT / POLLTIME)
+			local WATCHDOG_TICKS = math.ceil(WATCHDOG / POLLTIME)
+			local QUERY_TIMEOUT_TICKS = math.ceil(QUERY_TIMEOUT / POLLTIME)
+			local POLL_INTERVAL_TICKS = math.ceil(POLL_INTERVAL / POLLTIME)
+	
+			-- private.cache's own guarantee, per the same spec: a single FIFO
+			-- queue of pending outbound messages ahead of the regular poll
+			-- cycle, capped at QMAX -- past capacity the OLDEST entry is
+			-- dropped first, so the most recent request always survives.
+			-- request() (below) is currently this queue's only producer, and it
+			-- is only ever called once per Start() (the readiness handshake),
+			-- so today the queue never actually holds more than one entry --
+			-- this exists so a future second caller doesn't inherit a queue
+			-- that silently reordered or grew without bound.
+			local QMAX = 10
+	
+			local setValue,getValue,setState,getState,Poll,readData,request,received
+			local privates = setmetatable({}, {__mode = "k"}) -- set 'privates' as private field
+	
+			local CP750 ={ { key='dig_1',value='digital 1' }, { key='dig_2',value='digital 2' },
+						   { key='dig_3',value='digital 3' }, { key='dig_4',value='digital 4' },
+						   { key='analog',value='Analog Input' },{ key='non_sync',value='Non Sync' },
+						   { key='mic',value='Microphone' } }
+			for i,elem in ipairs(CP750) do elem.index = i end
+	
+			local Actions = {}
+			for i,name in ipairs({'fader','mute','format','formname','formlist','reset'}) do
+				local a = { index=i, key=name }
+				Actions[i] = a
+				Actions[name] = a
+			end
+	
+	  		local SEP = 7	 	--	- CP650 -	     - CP750 -			    - CP850 -          - CP950 -          - CP950A -
+	 		local CPServices ={  {'fader_level',  'cp750.sys.fader',      'sys.fader',        'sys.fader',        'sys.fader'        },    -- FADER
+	 							 {'mute',         'cp750.sys.mute',       'sys.mute',         'sys.mute',         'sys.mute'         },	-- MUTE
+	 						     {'format_button','cp750.sys.input_mode', 'sys.macro_preset', 'sys.macro_preset', 'sys.macro_preset' },	-- FORMAT
+	 							 { nil,			  nil,                    'sys.macro_name',   'sys.macro_name',   'sys.macro_name'   },	-- FORMNAME
+	 							 {'format_list',  nil,                    'sys.macros',       'sys.macros',       'sys.macros'       },	-- FORMLIST
+	 							 {'fader_level',  'cp750.sysinfo.version','sys.fader',        'sys.fader',        'sys.fader' 		},	-- QUERY
+								 { '=',' ',' ',' ',' ' } }												-- SEP
+	
+			-- A "macro model" drives formats as named macros (sys.macro_*): CP850/CP950/CP950A.
+			local function isMacro(model)
+				return CPServices[Actions.formname.index][model.index] ~= nil
+			end
+	
+			--- Creating the Class itself ---
+	
+			CPSeries = { EventHandler = nil }
+			CPSeries.__index = CPSeries
+	
+		--	------------------------------------
+		--		public function .New(processorType)
+		--			param: processor
+		--			return: object
+		--	------------------------------------
+	
+	 		function CPSeries.New(model)
+	 		 	-- private variables --
+	 			local self = {}
+	 			privates[self] = { value={	{ fader=0,state=false }, { mute=0,state=false }, { format=0,state=false },
+	 						{ formname="",state=false }, { formlist={},state=false }, { reset=false,state=false } },
+	 						npoll=0, model=Model.CP850, sock=nil, ready=false, cache ={}, waiting=0,tmplist={} }
+	 			local private = privates[self]
+				for _,elem in ipairs(Model) do
+					if elem.value == model then private.model = elem end
+				end
+				-- resolve per-connection model facts once (used on every Poll/received)
+				private.libmodel = (private.model.value):gsub("%s","")
+				private.isMacro = isMacro(private.model)
+				private.gapticks = (private.model == Model.CP650) and GAP_TICKS_CP650 or GAP_TICKS_DEFAULT
+				private.echopending = nil
+				private.time = Timer.New()
+				return setmetatable( self, CPSeries)
+	 		end
+	
+	
+		--	------------------------------------
+		--		public function :Start(socket)
+		--			param: socket connected to processor
+		--	------------------------------------
+	
+	 		function CPSeries:Start(Sock)
+				local private = privates[self]
+				private.cache = {}
+				private.echopending = nil   -- no outbound message sent yet on this connection
+				private.lastmsg = nil       -- nothing in flight to retransmit yet
+				-- Start with the poll interval already elapsed, so the first
+				-- poll after a connect is immediate rather than a second late.
+				private.sincepoll = POLL_INTERVAL_TICKS
+	 			private.sock = Sock
+	 		    private.sock.Data = function(sock,data) readData(self) end
+	  			private.time.EventHandler = function(timer) Poll(self) end
+	   			private.time:Start(POLLTIME)
+				private.waiting=0
+				-- Start with the gap already elapsed, so the first poll after a
+				-- connect puts the handshake query on the wire immediately
+				-- instead of idling for one gap period.
+				private.sincesend = private.gapticks
+	  	 		private.npoll = 0
+	    	    private.ready=false
+	    		for _,elem in pairs(Actions) do
+	    		 	setState(self,elem,false)
+	    		end
+				-- precompile the per-model response patterns once (skip absent
+				-- columns and the SEP row, which never maps to an action)
+				local sep = CPServices[SEP][private.model.index]
+				private.recv = {}
+				for t=1,6 do
+					local param = CPServices[t][private.model.index]
+					if param then
+						local pat = '^'..param:gsub('%p','%%%0')..sep..'?(.*)'
+						table.insert(private.recv,{pat=pat,action=Actions[t]})
+					end
+				end
+	     		if private.model == Model.CP750 then
+					local tmplist = {}
+					for _,v in pairs(CP750) do
+						table.insert(tmplist,v.value)
+					end
+					setValue(self,Actions.formlist,tmplist)
+				end
+		 		request(self,private.model)
+	  	  	end
+	
+		--	------------------------------------
+		--		public function :Stop()
+		--	------------------------------------
+	
+	 		function CPSeries:Stop()
+	 			local private = privates[self]
+				private.time:Stop()
+	 		end
+	
+		--	------------------------------------
+		--		public function :Action( control, value )
+		--			param: control, value to send to processor
+		--	------------------------------------
+	
+			function CPSeries:Action(control,value)
+				local private = privates[self]
+				local action = Actions[control]
+				-- unknown control or a write to the device-populated formlist:
+				-- ignore rather than corrupting state (a formlist write used to
+				-- overwrite the list with a non-table and crash the next ipairs)
+				if not action or action == Actions.formlist then return end
+				if not private.ready then return end
+	 		    if action == Actions.formname and not private.isMacro then
+			    	-- map the chosen name to its list index; ignore if it isn't a
+			    	-- current list entry (storing a string into the numeric format
+			    	-- mirror would crash the next format poll)
+			    	local idx
+					for t,elem in ipairs(getValue(self,Actions.formlist)) do
+						if value == elem then idx = t break end
+					end
+					if idx == nil then return end
+					action, value = Actions.format, idx
+					if self.EventHandler then
+						self.EventHandler(action.key,value)
+				end end
+				if action == Actions.reset then
+					value = value or true
+					if self.EventHandler then
+						self.EventHandler(Actions.formname.key,"")
+					end
+				end
+	      		setValue(self,action,value,true)
+			end
+	
+		 	-- ------------ internal local utility functions  -----------------
+	
+	  		local function trimstr(str) if(str) then str = str:match("^(.-)%s*$") end return str end
+			local function comparetables(t1, t2) if #t1 ~= #t2 then return false end for i=1,#t1 do if t1[i] ~= t2[i] then return false end end return true end
+			getValue = function(self,action) return privates[self].value[action.index][action.key] end
+			getState = function(self,action) return privates[self].value[action.index]["state"] end
+			setState = function(self,action,state)  privates[self].value[action.index]["state"] = state end
+	
+			-- A stored value can be a Lua boolean (Actions.reset's `value or true`,
+			-- Mute's Controls.Mute.Boolean) or a number (everything arriving off
+			-- the wire, via tonumber() in received() below) for the exact same
+			-- logical action -- `false == 0` is never true in Lua (no boolean/
+			-- number coercion), so without this, an incoming wire echo of a value
+			-- just set locally as a boolean failed the "already equal" check and
+			-- re-fired the EventHandler redundantly. Normalize booleans to 0/1
+			-- before comparing so both representations of the same value compare
+			-- equal.
+			local function normalize(v) if type(v) == 'boolean' then return v and 1 or 0 end return v end
+	
+			local function isEqual(a,b)
+	 			if type(a)=='table' and type(b) == "table" then
+					return comparetables( a, b)
+				elseif type(a)~='table' and type(b) ~= "table" then
+					return normalize(a) == normalize(b) end return false
+			end
+	
+		 	Print = function(show,...)     --    show=false      show=true     show=nil
+		 		if Properties.plugin_show_debug.Value == 0 then return end
+		 		local tcp = Properties["TCP Log"]
+				if ( tcp.Value == 'Command' and show ~= false ) or (tcp.Value == 'All' and show ~= nil) then
+				print(...) end
+		 	end
+	
+			local function doClose(self)
+				local private = privates[self]
+				if self.EventHandler then
+					self.EventHandler("close", private.model.value)
+				end
+			end
+	
+			-- Format button number <-> wire token, per model. Returns nil for an
+			-- out-of-range button (the caller then falls back to a query instead
+			-- of sending garbage / indexing a nil entry).
+			local function getButtonName(model,btnNum)
+				if type(btnNum) ~= "number" then return nil end
+				if model == Model.CP650 then return tostring(btnNum - 1) end     --is CP650
+				if model == Model.CP750 then local b = CP750[btnNum] return b and b.key or nil end  --is CP750
+				return tostring(btnNum)                                          --is macro model
+			 end
+	
+			 local function getButtonNum(model,btnName)
+			 	local function index(btnName)
+			 		for _,btn in pairs(CP750) do
+			 			if btn.key == btnName then return btn.index end
+			 	end end
+				if model == Model.CP650 then local n = tonumber(btnName) return n and n+1 or nil end  --is CP650
+				if model == Model.CP750 then return index(btnName) end                                --is CP750
+				return tonumber(btnName)                                                               --is macro model
+			 end
+	
+			setValue = function(self,action,value,isevent)
+				local private = privates[self]
+	   	 		isevent = isevent or false
+	  	 		if isEqual(getValue(self,action),value) then
+					return
+				end
+	 			if action == Actions.format and value==0 then
+	 				if self.EventHandler then
+	 					self.EventHandler(Actions.reset.key,getValue(self,Actions.format))
+	 				end
+	 			end
+	 			if getState(self,action) == false or isevent then
+			    	private.value[action.index][action.key] = value
+				end
+				if isevent then
+					setState(self,action,true)
+				elseif self.EventHandler and (action~=Actions.format or value >0 ) then
+						self.EventHandler(action.key,getValue(self,action))
+	 			end
+				 if (action == Actions.format or action == Actions.formname )
+	 			  and getValue(self,Actions.reset) == true then
+	 				setValue(self,Actions.reset,false,true)
+	 			end
+	 			if private.isMacro then
+					if action == Actions.format and self.EventHandler then
+						local s = getValue(self,Actions.formname)
+						if s ~= nil then self.EventHandler(Actions.formname.key,s) end
+					end
+				else
+					if action == Actions.formlist then
+						for t,v in ipairs(getValue(self,Actions.formlist)) do
+							if t == getValue(self,Actions.format) then
+								setValue(self,Actions.format,t)
+						end end
+					elseif action == Actions.format then
+						local s
+						for t,v in ipairs(getValue(self,Actions.formlist)) do
+							if t == getValue(self,Actions.format) then s = v end
+						end
+						-- The format index has no entry in the list yet: the device
+						-- has not reported its format list, or reported a shorter
+						-- one. Leave the name mirror alone and stay quiet instead of
+						-- publishing a nil formname -- the plugin's event handler
+						-- asserts on a nil result, so pressing a format button
+						-- before the list arrived used to crash the component.
+						-- Same rule Action() already applies to the reverse
+						-- direction, where an unresolvable name is ignored.
+						if s ~= nil then
+							setValue(self,Actions.formname,s)
+							if self.EventHandler then
+								self.EventHandler(Actions.formname.key,s)
+							end
+						end
+					end
+		  		end
+			end
+	
+			local function writeSocket(self,msg,updated)
+	 			local private = privates[self]
+				if not private.sock.IsConnected then doClose(self) return end -- don't write to a dead socket
+	     		local function write()
+	     			private.sock:Write(msg..'\r\n')
+	     		end
+	     		pcall(write)      -- write to socket
+				private.sincesend = 0   -- the gap is measured from the last send
+				-- CP650 raw-echoes the sent line before its real response
+				-- ("Protocol Guarantees": expect RESPONSE, not echo). Arm the
+				-- expectation for readData() below; other models never set
+				-- this, so their read path is unchanged.
+				private.echopending = (private.model == Model.CP650) and msg or nil
+				-- Remember what is in flight, so a response lost in transit can
+				-- be retried at QUERY_TIMEOUT rather than only being noticed by
+				-- the watchdog, which kills the whole connection.
+				private.lastmsg = msg
+				Print(updated,'TX',msg)
+			end
+	
+			request = function(self,model)
+				local private = privates[self]
+				local param = CPServices[Actions.reset.index][model.index]
+				table.insert(private.cache, CPProtocol.FormatQuery(private.libmodel,param))
+				if #private.cache > QMAX then
+					table.remove(private.cache, 1)   -- saturation: drop the oldest first
+				end
+			end
+	
+			readData = function(self)
+	 			local private = privates[self]
+	 			local watchdog = false
+	 			repeat
+	    			local str = trimstr(private.sock:ReadLine(TcpSocket.EOL.Any));
+	    			if str and str ~='' then
+	    				if private.echopending and str == private.echopending then
+	    					-- The mechanical CP650 echo of what we just sent, not a
+	    					-- real reply: discard it without touching the watchdog
+	    					-- or calling received() on it, so it can neither be
+	    					-- misread as the answer (e.g. a query's echoed "?" is
+	    					-- not a value) nor prematurely satisfy the busy/one-
+	    					-- in-flight wait for the real response. Cleared after
+	    					-- one match: only the first identical line is the
+	    					-- mechanical echo -- a second one is a genuine (if
+	    					-- repetitive) reply and must be processed normally.
+	    					private.echopending = nil
+	    				else
+	    					watchdog = true received(self,str)
+	    				end
+	    			end
+				until str==nil or private.sock.IsConnected == false
+	 			if not private.sock.IsConnected then doClose(self) end
+	 			if (watchdog) then private.waiting = 0 end
+	 		end
+	
+			-- True while any action carries a locally-set value the device has
+			-- not confirmed yet -- i.e. a user action still on its way out.
+			-- While that is the case the poll interval is bypassed, so a fader
+			-- move is never held back by the idle polling rate. Gating the whole
+			-- send block rather than the individual message keeps the action
+			-- rotation intact: holding only the query slots would stall the
+			-- rotation on a held slot and never reach the one carrying the SET.
+			local function hasPendingSet(self)
+				for _,elem in ipairs(Actions) do
+					if getState(self,elem) then return true end
+				end
+				return false
+			end
+	
+			local function pollAction(self)
+				local private = privates[self]
+	  			local action = nil
+				local num = 1
+	 			num = private.npoll %  2 == 1 and 2 or num
+	 			num = private.npoll %  4 == 3 and 3 or num
+	 			num = private.npoll %  8 == 7 and 4 or num
+	 			num = private.npoll % 0x2000 == 0 and 5 or num
+	 			private.npoll = ( private.npoll + 1 ) % 0x2000
+	  			for _,elem in pairs(Actions) do
+	  				if elem.index == num then action = elem end
+	  			end
+				return action
+	 		end
+	
+			-- --------------------------------------------
+			--  	Poll : send TCP Packet to Processor
+			-- -------------------------------------------
+	
+	 		Poll = function(self)
+				local msg
+	  			local private = privates[self]
+	    		if private.waiting > WATCHDOG_TICKS then
+	  				doClose(self) return end
+				private.sincesend = private.sincesend + 1
+				private.sincepoll = private.sincepoll + 1
+				-- Query timeout: the in-flight command has gone unanswered this
+				-- long, so retransmit it ONCE. Deliberately not resetting the
+				-- waiting counter -- it keeps running toward the watchdog, so a
+				-- link that is genuinely dead still gets declared dead on time;
+				-- this only buys a lost single response a second chance first.
+				-- Exact equality, so it fires on one tick only, never a retry
+				-- storm.
+				if private.waiting == QUERY_TIMEOUT_TICKS and private.lastmsg then
+					writeSocket(self, private.lastmsg, false)
+				end
+	  			if private.waiting ==0 then
+					-- Hold the wire until the model's minimum gap has passed.
+					-- Returning before the waiting counter is bumped is what
+					-- keeps this a hold and not a deadlock: waiting only starts
+					-- counting once a command is actually in flight, so the next
+					-- tick gets to try again instead of waiting forever for a
+					-- response to a command that was never sent.
+					if private.sincesend < private.gapticks then return end
+	  			  	local updated = false
+	  		    	if #private.cache == 0 then
+						-- Idle polling runs at POLL_INTERVAL, not at tick rate.
+						-- Checked before pollAction() so a held tick doesn't
+						-- consume a rotation slot. Queued messages (the branch
+						-- below) and the retransmit above are deliberately not
+						-- rate-limited -- neither is idle polling.
+						if not hasPendingSet(self) and private.sincepoll < POLL_INTERVAL_TICKS then
+							return
+						end
+						private.sincepoll = 0
+	  					local result = '?'
+						local action = pollAction(self)
+	  					local param = CPServices[action.index][private.model.index]
+	  		 			if param == nil then return end
+	  					if ( action ~= Actions.format or getValue(self,Actions.reset)==false ) and
+	  						getState(self,action) and action ~= Actions.formlist then
+	  						result = getValue(self,action)
+	  			    		if action == Actions.format then
+	  			    			result = getButtonName(private.model,result)
+	  			    			if result == nil then result = '?' end -- invalid format value: query instead of a bad SET
+	  			   		 	end
+	  			    		if action == Actions.fader or action == Actions.mute then
+	  			    			-- The stored value can be a Lua boolean, not a
+	  			    			-- number: runtime.lua pushes Controls.Mute.Boolean
+	  			    			-- straight through Action(). Both string.format
+	  			    			-- and arithmetic reject a boolean outright, so the
+	  			    			-- first Mute press used to throw out of the poll
+	  			    			-- timer. Normalize to 0/1 exactly the way isEqual()
+	  			    			-- already does for the same reason, and fall back
+	  			    			-- to a query for anything still not numeric rather
+	  			    			-- than crash or put garbage on the wire -- the same
+	  			    			-- rule the format branch above already applies.
+	  			    			result = normalize(result)
+	  			    			if type(result) ~= "number" then
+	  			    				result = '?'
+	  			    			elseif action == Actions.fader then
+	  			    				result = string.format('%.0f',result * 10)
+	  			    			else
+	  			    				result = string.format('%.0f',result)
+	  			    			end
+	  			    		end
+	  			    		updated = getState(self,action)
+	  			    	end
+						if result == '?' then
+							msg = CPProtocol.FormatQuery(private.libmodel,param)
+						else
+							msg = CPProtocol.FormatMessage(private.libmodel,param,result)
+						end
+					else msg = table.remove(private.cache, 1) end   -- FIFO: oldest queued message first
+	  				writeSocket(self, msg, updated )
+	  			end
+	  			private.waiting = private.waiting + 1
+	  		end
+	
+	  		-- -------------------------------------------
+	
+			-- 		TCP Packet received from processor
+			-- -------------------------------------------
+	
+		    received = function(self,msg)
+	      	 	local private = privates[self]
+	     		local result,action
+	    	    Print(false,"RX",string.sub(msg,1,30))
+	      	 	for _,r in ipairs(private.recv) do
+	      	 		result = string.match(msg,r.pat)
+	      	 		if result ~= nil then action = r.action break end
+	      	 	end
+	    	 		if action==nil then      -- unreconigzed action
+					if private.isMacro then -- Element List for CP850/CP950/CP950A
+						-- bound the accumulator: real macro lists are well under
+						-- this, so orphan/garbage "n:name" lines can't grow it
+						-- without limit
+						if #private.tmplist < 512 then
+	 						table.insert(private.tmplist,string.match(msg,'%d+:(.*)'))
+	 					end
+	      				return
+	      			end
+	      			Print(true,string.sub(msg,1,30))
+	      			return --ignore action
+	      		end
+				if not private.ready then
+					if CPServices[action.index][private.model.index] == CPServices[Actions.reset.index][private.model.index] then
+	   	 				private.ready = true
+	   	 				if self.EventHandler then
+	    					self.EventHandler('ready',private.model.value)
+	    				end
+	    			end
+	    			return
+	   		    end
+	   			if action == Actions.formlist then
+					if private.model == Model.CP650 then
+						local tmp = {} 	local pos = 1
+	                   	while pos do
+	        				local v = result:match('(%d+)',pos)
+							if v == nil then break end
+	        				table.insert(tmp,'Format '.. v)
+							pos = result:find(',',pos)
+							if pos then pos = pos + 1 end
+						end result = tmp
+					else   -- macro list (CP850/CP950/CP950A)
+						private.tmplist = {}
+						readData(self) -- FIX: was readData(self,true) -- readData only takes
+						               -- self, the second argument was silently ignored
+						result = private.tmplist
+				end	end
+	    		if  action == Actions.format then
+	      			result = getButtonNum(private.model,result)
+	      			if result == nil then return end -- unparseable format token: ignore, don't crash
+					setState(self,action,false)
+	      		end
+	  	   		if action == Actions.fader or action ==  Actions.mute then
+	      		  local n = tonumber(result)
+	      		  if n == nil then return end -- non-numeric value (nan/garbage): ignore, don't crash
+	      		  n = tonumber(string.format('%.f',n))
+	      		  if n == nil then return end -- an overflowed value (e.g. 1e400 -> inf) formats to a string
+	      		                               -- tonumber can't parse back ("inf"/"nan"), ignore rather than crash
+	  	   			if action == Actions.fader then
+	      		  		n = n / 10
+					end
+	      		  result = n
+	      		end
+	   			if isEqual(getValue(self,action),result) then
+					setState(self,action,false)
+					return
+				end
+				Print(nil,"RX",string.sub(msg,1,30))
+	      		setValue(self,action,result)
+	  		end
+	
+		end  -- end do
+	
+	   -- ##############################################################
+	   --			CPSeries Application
+	   -- ##############################################################
+	
+		do
+	
+			-- Objects
+			-- CPSeries instance and TcpSocket: must stay global (never local),
+			-- same GC rule as Timer -- both are captured as upvalues by closures
+			-- already reachable from global Controls.*.EventHandler fields, so
+			-- nothing here was actually leaking, but this keeps the convention
+			-- uniform and removes any doubt.
+			DolbyCP = CPSeries.New(Properties.Model.Value)
+	
+			DolbyFaderEventHandler = function(ctrl)
+				if ctrl ~= DolbyCP then
+					DolbyCP:Action("fader", DKNob.Value)
+				end
+			end
+	
+			-- sock wraps TcpSocket.New() via the shared SocketConn module
+			-- (Developer/shared/socket.lua) -- construction, address
+			-- validation, and Connect/Disconnect/IsConnected all go through
+			-- it; event-handler wiring stays here since it's plugin-specific
+			-- (SetStatus, DolbyCP). The raw TcpSocket is sock.Socket.
+			sock = SocketConn.New(2)
+	
+			-- Custom functions
+	
+			local function SetStatus(state, msg)
+				if Controls.Status.Value ~= state then
+					Print(true, 'Set Status ' .. state)
+					Controls.Status.Value = state
+				end
+				Controls["Status.Led"].Value = state
+				if Controls.Status.Value == 0 then Controls["Status.Led"].Color = 'lightgreen'
+				end
+				if msg ~= nil then Controls.Status.String = string.sub(msg, 1, 30)
+				else Controls.Status.String = '' end
+			end
+	
+			local function connect()
+				Controls.Refresh.IsDisabled = false
+				if SocketConn.ValidateAddress(Controls.Address.String) then
+					SetStatus(5, '')
+					-- port comes from the CPModels config (adds CP950 / CP950A)
+					local CPPort = CPModels.DefaultPort((Properties.Model.Value):gsub("%s", ""))
+					sock:Connect(Controls.Address.String, CPPort)
+				else
+					if System.IsEmulating then
+						SetStatus(0, "Emulation")
+					else
+						SetStatus(2, "Invalid Address")
+					end
+				end
+			end
+	
+			local function disconnect(recon)
+				DolbyCP:Stop()
+				sock:Disconnect()
+				if recon then SetStatus(5, 'Connect')
+				else SetStatus(2, 'Offline') end
+			end
+	
+			local function refreshCNX()
+				disconnect(true)
+				Controls.Refresh.IsDisabled = true
+				Timer.CallAfter(connect, 1)
+			end
+	
+			local function sockError(msg)
+				if sock:IsConnected() then
+					sock:Disconnect()
+					Print(true, 'SOCK', msg)
+					Print(true, 'SOCK', "Closed")
+					SetStatus(2, msg)
+					DolbyCP:Stop()
+					Timer.CallAfter(refreshCNX, 2)
+				end
+			end
+	
+			-- Event handlers
+	
+			sock.Socket.Connected = function()
+				Print(true, 'SOCK', "Connected")
+				DolbyCP:Start(sock.Socket)
+			end
+	
+			sock.Socket.Closed = function()
+				Print(true, 'SOCK', 'Closed')
+				SetStatus(4, "Offline")
+			end
+	
+			sock.Socket.Timeout = function()
+				Print(true, 'SOCK', 'Timeout')
+				SetStatus(2, "Timeout")
+			end
+	
+			sock.Socket.Error = function(_, err)
+				Print(true, 'SOCK', "Remote Server Error " .. err)
+				SetStatus(2, err)
+			end
+	
+			sock.Socket.Reconnect = function()
+				Print(true, 'SOCK', "Reconnecting")
+				SetStatus(5, "Attempt Reconnect")
+			end
+	
+			Controls.Address.EventHandler = refreshCNX
+			Controls.Refresh.EventHandler = refreshCNX
+	
+			DolbyCP.EventHandler = function(service, result)
+				local action = {
+					["close"] = function() local msg = 'unknown Dolby ' .. result sockError(msg) end,
+					["ready"] = function() Print(true, 'found "Dolby ' .. result .. '"') SetStatus(0) end,
+					["formlist"] = function() Controls.Select.Choices = result end,
+					["formname"] = function() Controls.Select.String = result end,
+					["mute"] = function() Controls.Mute.Boolean = (result ~= 0) end,
+					["fader"] = function()
+						DKNob.Value = result
+						DKNob.EventHandler(DolbyCP)
+					end,
+					["format"] = function()
+						local i = tonumber(result)
+						-- bound-check: a format index outside the selector range is
+						-- ignored rather than indexing a nil button (out-of-bounds crash)
+						if not i or i < 1 or i > #Controls.Selector then return end
+						Controls.Selector[i].Value = 1
+						Controls.Selector[i].EventHandler(DolbyCP)
+					end,
+					["reset"] = function()
+						local i = tonumber(result)
+						if not i or i < 1 or i > #Controls.Selector then return end
+						Controls.Selector[i].Value = 0
+					end,
+				}
+				assert(service, "Plugin Event Error: service=nil")
+				assert(result, "Plugin Event Error: result=nil")
+				assert(action[service], "Plugin Event Error: service")
+				action[service]()
+			end
+	
+			Controls.Mute.EventHandler = function(ctrl)
+				DolbyCP:Action("mute", Controls.Mute.Boolean)
+			end
+	
+			Controls.Select.EventHandler = function(ctrl)
+				DolbyCP:Action("formname", Controls.Select.String)
+			end
+	
+			for numBtn, ctl in ipairs(Controls.Selector) do
+				ctl.EventHandler = function(ctrl)
+					if ctl.Boolean then
+						for _, ctrl in ipairs(Controls.Selector) do
+							if ctrl ~= ctl then ctrl.Value = 0 end
+						end
+						if ctrl ~= DolbyCP then DolbyCP:Action("format", numBtn) end
+					else
+						for _, ctl in ipairs(Controls.Selector) do
+							if ctl.Boolean then return end
+						end
+						DolbyCP:Action("reset")
+					end
+				end
+			end
+	
+			-- Init
+	
+			-- 'Start' has no declared ControlType (GetControls just says
+			-- { Name = "Start" }), so .Boolean isn't confirmed safe on it --
+			-- unlike DolbySweep/MultiFlip-Flop's own 'Start', which are both
+			-- explicit ControlType="Button". .Value is always numeric
+			-- regardless of ControlType (confirmed via vendor/qsc-q-sys's
+			-- Component.GetControls docs), so this compares/assigns numerically
+			-- rather than risking .Boolean on an unconfirmed control. Previously
+			-- compared against the Lua literal `false`, which a number can never
+			-- equal -- this block never ran, so the one-time init below never
+			-- fired on first compile.
+			if Controls.Start.Value == 0 then
+				Controls.Start.Value = 1
+				DKNob.Value = 7.0
+				DKNob.EventHandler(DolbyCP)
+				Controls.Mute.Boolean = false
+				Controls.Selector[1].Value = 1
+				Controls.Selector[1].EventHandler(DolbyCP)
+			end
+	
+			refreshCNX()
+	
+		end
+end

@@ -1,0 +1,76 @@
+# Programming-focused optional skills
+#
+# PURPOSE: Offer these skills as optional recommendations during config import
+# into target repos. Not a strict mirror of what's currently installed
+# locally -- a catalogued entry can outlive an uninstall (see the
+# DO-NOT-remove note below).
+#
+# FORMAT: skill-name -> owner/repo
+#
+# INSTALL: Each skill can be installed individually with:
+#   npx skills add owner/repo -s skill-name
+# Or all skills from a repository:
+#   npx skills add owner/repo
+#
+# Search available skills: npx skills find <query>
+# Browse at: https://skills.sh/
+#
+# DO NOT remove an entry here just because a skill was uninstalled from a
+# repo -- "uninstall X" means the local .claude/skills/X only. Only edit
+# this file when told to explicitly (see config-export-import.md's
+# standing rule, 2026-07-31), or when an entry is independently proven
+# wrong (dead pointer, broken without a missing dependency).
+#
+# 2026-07-31: all entries below verified with WebFetch against their real
+# repos. Two names were corrected to their closest verified equivalent,
+# each under a different owner/repo than originally assumed. Two other
+# candidates had no verified single-skill source under any name and are
+# left out entirely, not listed.
+#
+# 2026-08-01: standing rule -- before adding ANY new entry to this file or
+# to recommended-skills.txt, run it through skill-security-auditor first
+# (all 3 scanners) and record the verdict in the entry's own parenthetical
+# note. Full rule text (false-positive caveats, what "record the verdict"
+# means): recommended-skills.txt's own header. Not repeated here.
+
+# Core development & architecture
+superpowers (full suite: brainstorming, dispatching-parallel-agents, executing-plans, finishing-a-development-branch, receiving-code-review, requesting-code-review, subagent-driven-development, systematic-debugging, test-driven-development, using-git-worktrees, using-superpowers, verification-before-completion, writing-plans; security-audited PASS 2026-08-01) -> obra/superpowers
+  install: npx skills add obra/superpowers -s brainstorming -s dispatching-parallel-agents -s executing-plans -s finishing-a-development-branch -s receiving-code-review -s requesting-code-review -s subagent-driven-development -s systematic-debugging -s test-driven-development -s using-git-worktrees -s using-superpowers -s verification-before-completion -s writing-plans
+
+# Code quality & security
+code-simplification (security-audited PASS 2026-08-01) -> addyosmani/agent-skills
+  install: npx skills add addyosmani/agent-skills -s code-simplification
+skill-security-auditor (security-audited PASS 2026-08-01) -> borghei/Claude-Skills
+  install: npx skills add borghei/Claude-Skills -s skill-security-auditor
+
+# Development tools & practices
+systemd-services (create/manage/monitor systemd services and timers on Linux: unit files, socket activation, resource limits, journalctl, production hardening -- installed 2026-08-01; security-audited PASS 2026-08-01, skill-security-auditor, markdown-only skill, 0 findings across all 3 scanners) -> bagelhole/devops-security-agent-skills
+  install: npx skills add bagelhole/devops-security-agent-skills -s systemd-services
+
+# Language-specific
+# NOT included in a bulk "install the programming skills" request -- these
+# are tied to one language, not generic dev practice like the groups above.
+# Install only when asked for by name. On a bulk request, still MENTION this
+# section by name as an available optional extra rather than silently
+# skipping it -- let the user decide, don't decide for them.
+lua (security-audited PASS 2026-08-01) -> mindrally/skills
+  install: npx skills add mindrally/skills -s lua
+swift (security-audited PASS 2026-08-01) -> mindrally/skills
+  install: npx skills add mindrally/skills -s swift
+cpp (security-audited PASS 2026-08-01) -> mindrally/skills
+  install: npx skills add mindrally/skills -s cpp
+swiftui-specialist (Apple-authored, exported from Xcode 27; suite also has: swiftui-whats-new-27, uikit-app-modernization, test-modernizer, c-bounds-safety, audit-xcode-security-settings, device-interaction; security-audited PASS 2026-08-01, whole suite) -> superagents-lab/xcode27-skills
+  install: npx skills add superagents-lab/xcode27-skills -s swiftui-specialist
+apple-silicon (M-series native ARM64 optimization: unified memory, AMX, Metal Performance Shaders, sysctl, Instruments, Rosetta 2, 16KB page size; C/Swift/CLI tooling -- security-audited PASS 2026-08-01, skill-security-auditor, markdown-only skill, 0 findings across all 3 scanners) -> mohitmishra786/low-level-dev-skills
+  install: npx skills add mohitmishra786/low-level-dev-skills -s apple-silicon
+macos-native (native macOS app development: AppKit, Cocoa, Catalyst, menu bar apps, system extensions; Swift -- complements apple-silicon above (that's hardware/perf, this is UI framework), not redundant with it -- security-audited PASS 2026-08-01, skill-security-auditor, markdown-only skill, 0 findings across all 3 scanners) -> travisjneuman/.claude
+  install: npx skills add travisjneuman/.claude -s macos-native
+# 2026-08-01: `swift`'s own description covers SwiftUI too, so it and
+# `swiftui-specialist` overlap on SwiftUI-specific triggers if both ever
+# get installed together -- not a name/path conflict, a functional one
+# (verified against both skills' real descriptions, not assumed). Not
+# fully redundant (`swift` also covers non-UI Swift: architecture,
+# testing, App Store compliance), so neither is dropped from this list.
+# Standing precedence rule for that overlap: `swiftui-specialist` wins
+# for anything SwiftUI-specific (newer, Xcode-27-current, narrower
+# scope); `swift` still applies for plain-Swift topics it doesn't cover.

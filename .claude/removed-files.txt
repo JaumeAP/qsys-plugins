@@ -1,0 +1,71 @@
+# Files that were once part of this repo's .claude/ tooling and have
+# since been deliberately removed here. One path per line, relative to
+# .claude/ (comments start with #). On import (config-export-import.md
+# step 2.2), any path in this list still present under the target
+# repo's .claude/ gets deleted -- an older bundle may have installed it
+# there before it was retired, and a plain blind-copy of the current
+# bundle would otherwise leave that stale copy in place forever,
+# orphaned and (for a hook) unregistered. If the deleted path is under
+# hooks/, also remove its settings.json registration.
+#
+# hooks/local-merge-reminder.sh, hooks/sync-command-reminder.sh --
+# removed 2026-07-26: both mechanized a "merge the working branch
+# directly into the default branch, no pull request" policy that was
+# deliberately left out of this repo's CLAUDE.md when the config bundle
+# was first imported, to keep this repo's PR-based workflow. Leaving
+# the hooks in place kept nudging the declined policy despite CLAUDE.md
+# no longer stating it.
+hooks/local-merge-reminder.sh
+hooks/sync-command-reminder.sh
+
+# hooks/check-reply-format.sh, hooks/reply-format-preflight.sh --
+# removed 2026-07-30, explicit user request. Same failure mode as the
+# two hooks at the top of this list: they mechanically enforced reply
+# rules (mandatory leading "Rebut:" line, Catalan-only, the
+# bold/em-dash/ellipsis/header/table ban, numbered-lists-only) that were
+# taken out of the common CLAUDE.md that same day, in favor of deferring
+# to the `caveman` skill. A target repo that kept them would keep
+# blocking replies over rules its own CLAUDE.md no longer states -- and
+# merge-settings.sh preserves a target's existing hook registrations, so
+# without this entry the stale registration would survive the import too.
+# They stay on disk in the source repo, dead and unregistered, with their
+# own retirement notes; this list is only about target repos.
+hooks/check-reply-format.sh
+hooks/reply-format-preflight.sh
+
+# The HANDOFF.md session-continuity system -- removed from the common
+# CLAUDE.md in two steps (2026-07-27: HANDOFF.md deleted here and its
+# rules folded back into CLAUDE.md; 2026-07-30: split out again as
+# docs/continuity-notes.md, which is what the common section names now).
+# Recorded here because this file is the bundle's record of what the
+# common part dropped, and until now that removal was the one such
+# change with no entry -- an importer had no way to tell the handoff
+# rules were retired rather than merely missing from a partial bundle.
+#
+# The two hooks that mechanized it are listed below. Note they were
+# never bundle content in the first place -- they do not exist in this
+# repo and never travelled on export; only CPSeries has them. They are
+# listed anyway, which is a deliberate widening of what this file is
+# for: it now also retires a system the bundle itself moved on from,
+# not just files the bundle once shipped. Same 2026-07-30 user call that
+# added step 2.4b to config-export-import.md ("the new system travels
+# with the export and the import removes the old one").
+#
+# IMPORTANT, and the reason this file alone is not enough: a live
+# HANDOFF.md holds real state, and it sits at the repo ROOT, which this
+# list cannot even express (every path here is relative to .claude/).
+# Pruning these two hooks without migrating that content would leave a
+# repo with no continuity record at all. config-export-import.md step
+# 2.4b is the binding half -- migrate HANDOFF.md into
+# docs/continuity-notes.md FIRST, then delete it. Do not treat these two
+# lines as the whole job.
+hooks/require-handoff-read.sh
+hooks/check-handoff-pushed.sh
+
+# hooks/no-commit-on-main.sh -- removed 2026-08-01, explicit user
+# request. This repo switched from branch+PR to direct-to-main commits
+# (github-rules' own default for a solo repo with no CI), so the hard
+# block on `git commit` while HEAD is on main no longer fits this
+# repo's chosen workflow. Re-importing a bundle that still bundles this
+# hook must not silently reinstate it here.
+hooks/no-commit-on-main.sh
