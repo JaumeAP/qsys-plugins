@@ -22,9 +22,6 @@ Core principle: **the sequence completes or the repo is left clean — never hal
 - A push fails or is refused and the chain must stop cleanly.
 - A pull request cannot be merged because it conflicts.
 
-Not for: deciding *whether* `docs/continuity-notes.md` should be rewritten. That is a
-separate concern — see the `continuity-notes-rules` skill.
-
 ## Quick reference
 
 | Question | Answer |
@@ -38,7 +35,7 @@ separate concern — see the `continuity-notes-rules` skill.
 | Nothing to commit | Guard the commit — a clean tree makes `git commit` exit 1 and kill the chain. |
 | Remote CI | Not a merge gate when local verification covers the same checks. |
 | Pull request conflicts | Cap suspended: leave the PR open, end on the working branch, tell the user. |
-| Remote branch | Not deleted by this sequence. |
+| Remote branch | Not deleted by `sincronitza`. A session close deletes every branch already merged, local and remote. |
 
 ## Before the sequence
 
@@ -73,9 +70,6 @@ Then verify locally that the project builds and its tests pass — the project's
 `CLAUDE.md` names the exact commands when it names any. A change touching only
 documentation or tooling runs neither. A failing build or test stops here: nothing is
 pushed, and the user is told.
-
-If the close being performed regenerates the continuity notes, write them **before** call 1, so
-`git add -A` picks it up.
 
 ## The sequence
 
@@ -126,8 +120,9 @@ and `git log --oneline --graph -10`. This is outside the cap.
 The run ends on the default branch with the local working branch deleted. After a
 mid-session "sincronitza", further work starts on a new branch.
 
-The remote branch is left alone. Do not try to delete it if the environment has no
-permission for it, and if a deletion fails, do not retry it or report it.
+After `sincronitza` the remote branch is left alone (a session close deletes it, see
+below). Do not try to delete it if the environment has no permission for it, and if a
+deletion fails, do not retry it or report it.
 
 If `refs/remotes/origin/HEAD` was missing during inspection, `git remote set-head origin -a`
 usually fixes it once and spares the next run the fallback. It fails with
@@ -135,32 +130,32 @@ usually fixes it once and spares the next run the fallback. It fails with
 then on the remote, which is outside this skill's scope — report it rather than working
 around it every run.
 
-## Closing the window, at a session close only
+## A session close leaves the repo clean
 
-A session close ends the session, so it ends the window too. After the sequence
-has been verified and the reply is written -- the merge reported, anything that
-failed reported -- the last call of the run closes it:
+"Tanca la sessió" (2026-10-06, explicit user request) does three things, in
+this order, and nothing else:
 
-```bash
-claude-session-close
-```
+1. **Dump the memory.** If the session learned anything worth keeping, write it
+   to Claude's memory (the `productivity:memory-management` skill). Nothing to
+   keep: say so in one line and go on.
+2. **Leave nothing to commit, push or merge.** Run the sequence above until the
+   working tree is clean, no commit is unpushed and no branch is waiting for a
+   pull request.
+3. **Delete every branch already merged into the default branch, local and
+   remote.** Local: `git branch --merged <default>`, then `git branch -d`.
+   Remote: `git branch -r --merged origin/<default>`, then
+   `git push origin --delete <branch>`. Never the default branch, never a branch
+   not fully merged. A remote deletion that fails is reported once, not retried.
 
-That command belongs to the `new-session` plugin, which owns the windows;
-nothing in the harness closes one, because a session close is a phrase the model
-acts on and not a harness event. It does not kill the session: it queues `/exit`
-in the window, which the harness submits when this turn ends, and a watcher
-closes the window once the session has exited on its own. So the reply being
-written right now does reach the user, and the command returns before the window
-is gone -- it succeeding means the exit was queued, not that the window closed.
-Still nothing follows it: the queued `/exit` ends the turn whatever is left in
-it, so no question and no verification can come after. A window it cannot reach
-(no iTerm2, no controlling terminal) is reported and left open, and so is a
-window showing a menu, where the line would confirm the highlighted row instead
-of being read: that answers 2, with nothing queued and no watcher armed.
+`sincronitza` does not do 3: the work goes on, and the remote branch is left alone.
 
-**Only at a session close.** `sincronitza` is a mid-session command: the branch
-is integrated and the work goes on, so the window stays. Closing there would
-kill a session with work still in front of it.
+## The window stays open
+
+A session close leaves the session clean and does not touch the window: the
+sequence is verified, the reply is written, and the session stays as it is,
+ready to be archived. Closing the window belongs to the `archiving` skill, which
+runs when the user says "arxiva la sessió" and ends with `claude-session-close`.
+Never run `claude-session-close` from here.
 
 ## Failure paths
 
@@ -194,7 +189,6 @@ Conventional Commits.
 | Commit | Subject |
 |---|---|
 | Merge | `merge: <branch> into <default>` |
-| Regenerated continuity notes at close | `docs: regenerate the continuity notes at session close` |
 | Pending work swept up by a mid-session sync | `chore: sync pending work` |
 
 ## Common mistakes
@@ -211,5 +205,5 @@ Conventional Commits.
 | Assuming the default branch is `main` | The PR targets a base that does not exist in a `master` repo. |
 | Resolving a PR conflict by picking a side | Discards someone's intent without asking. |
 | Retrying a failed remote-branch deletion | Noise; the remote branch is not this sequence's job. |
-| Closing the window after `sincronitza` | Kills a session that was going to carry on working. |
+| Closing the window after `sincronitza` or a session close | Kills a session that was going to carry on working, or that the user still has to archive; only archiving closes the window. |
 | Closing the window before the reply is written | The session dies with what it still had to say; the user reads nothing. |
