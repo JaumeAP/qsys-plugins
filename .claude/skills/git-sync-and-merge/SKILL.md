@@ -132,30 +132,21 @@ around it every run.
 
 ## A session close leaves the repo clean
 
-"Tanca la sessió" (2026-10-06, explicit user request) does three things, in
-this order, and nothing else:
+The session close is the `session-close` skill of the `new-session` plugin
+(2026-10-07, explicit user request: opening, closing and archiving a session
+live together). Its git part is this skill's, in two steps:
 
-1. **Dump the memory.** If the session learned anything worth keeping, write it
-   to Claude's memory (the `productivity:memory-management` skill). Nothing to
-   keep: say so in one line and go on.
-2. **Leave nothing to commit, push or merge.** Run the sequence above until the
+1. **Leave nothing to commit, push or merge.** Run the sequence above until the
    working tree is clean, no commit is unpushed and no branch is waiting for a
    pull request.
-3. **Delete every branch already merged into the default branch, local and
+2. **Delete every branch already merged into the default branch, local and
    remote.** Local: `git branch --merged <default>`, then `git branch -d`.
    Remote: `git branch -r --merged origin/<default>`, then
    `git push origin --delete <branch>`. Never the default branch, never a branch
    not fully merged. A remote deletion that fails is reported once, not retried.
 
-`sincronitza` does not do 3: the work goes on, and the remote branch is left alone.
-
-## The window stays open
-
-A session close leaves the session clean and does not touch the window: the
-sequence is verified, the reply is written, and the session stays as it is,
-ready to be archived. Closing the window belongs to the `archiving` skill, which
-runs when the user says "arxiva la sessió" and ends with `claude-session-close`.
-Never run `claude-session-close` from here.
+`sincronitza` does not do step 2: the work goes on, and the remote branch is
+left alone. This skill never closes the window.
 
 ## Failure paths
 
@@ -205,5 +196,5 @@ Conventional Commits.
 | Assuming the default branch is `main` | The PR targets a base that does not exist in a `master` repo. |
 | Resolving a PR conflict by picking a side | Discards someone's intent without asking. |
 | Retrying a failed remote-branch deletion | Noise; the remote branch is not this sequence's job. |
-| Closing the window after `sincronitza` or a session close | Kills a session that was going to carry on working, or that the user still has to archive; only archiving closes the window. |
+| Closing the window from this skill | Kills a session that was going to carry on working; only `session-close` closes the window. |
 | Closing the window before the reply is written | The session dies with what it still had to say; the user reads nothing. |
