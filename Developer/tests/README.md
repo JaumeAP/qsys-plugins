@@ -46,6 +46,8 @@ timing, or the actual Designer UI still has to be checked on the bench.
 | `test_stress.lua` | Stress and fuzz pass over all five plugins, see below. |
 | `wire_trace.lua` | Behavioural trace, see below. |
 | `test_emulator_source.lua` | The CP Series Emulator protocol core straight from its source (`Developer/plugins/CP Series Emulator/protocol.lua`): generic params, CP750 clipping, both CP650 query framings. |
+| `test_host_stub.lua` | The host helpers themselves: `qsys.set` (handler only on a real change) and the PLUGCC-style include assembler `plugcc.lua`. |
+| `test_runtime_live.lua` | Not in `run.sh`. Dolby CPSeries Control's `runtime.lua`, assembled from source, on the live host (`host-emulator/live_host.lua`: real TCP, real clock) against `processor_sim`: reaches Status 0, falls away and recovers when the processor stops, goes silent, or is absent at start. Every wait bounded; exits 77 without the binary or luasocket. |
 | `live_bridge.lua` | Not in `run.sh`. The Dolby CPSeries Control logic over a real TCP socket against JaumeAP/CPSeries' `processor_sim` (`CPSIM_BIN=...`), per model, printing the wire traffic. Every wait is bounded: the simulator runs under `timeout`, connects time out, and the run has an overall deadline. Exits 77 without luasocket or the binary. |
 
 The `test_dist_*` files matter more than they look. A distributable is a
