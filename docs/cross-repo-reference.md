@@ -24,9 +24,9 @@ behaviour is `docs/specs/` there (the Cinema Control spec, split by section).
 2. Framing. `sys.*` models query with `param ?` (confirmed by the manual).
    For the CP650 the toolkit uses `KEY?`, its own unverified convention. This
    plugin family uses `KEY=?` and calls it Dolby-verified, so `KEY=?` stays
-   here. The toolkit's simulators do not understand `KEY=?` (checked 2026-10-24:
-   the C++ one echoes `MASTER=?` and never answers); that is a toolkit gap,
-   not a plugin one.
+   here. The toolkit's simulators did not understand `KEY=?` (checked 2026-10-24:
+   the C++ one echoed `MASTER=?` and never answered); fixed the same day in
+   `JaumeAP/CPSeries` PR 57, they now accept both framings.
 3. The CP650 echoes the raw command line before its real response.
 4. Number text. Whole floats print as integers with every digit
    (`70.0` -> `70`, `1e20` -> `100000000000000000000`); other floats print as

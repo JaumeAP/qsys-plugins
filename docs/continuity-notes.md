@@ -1174,8 +1174,8 @@ history actually matters.)
 
 Explicit user request ("update the plugins with all the information from the
 other two repositories"). Scope chosen by the user: emulator generic,
-Control protocol and models, docs. Not done: fixing the CPSeries simulators'
-lack of `KEY=?` (user did not select it).
+Control protocol and models, docs. Fixing the CPSeries simulators'
+lack of `KEY=?` followed the same day (see below).
 
 - `Dolby CPSeries Control` 4.0.0.13: `CPProtocol.FormatValue` prints floats as
   the toolkit does; `CPModels` gained the CP750 ranges and connection limits.
@@ -1186,9 +1186,10 @@ lack of `KEY=?` (user did not select it).
   clip, numbers stored canonically, the CP650 answers `KEY=?` (verified) and
   `KEY?` (toolkit). The fixed fader/mute/format/macro handlers kept their
   behaviour; they now also clip and normalize.
-- Conflict found: the CPSeries simulators (C++ and Lua) read `MASTER=?` as a
-  query for the param `MASTER=`, so they cannot stand in for the CP650 as this
-  plugin family talks to it. Open for the CPSeries repo.
+- Conflict found and closed: the CPSeries simulators (C++ and Lua) read
+  `MASTER=?` as a query for the param `MASTER=`, so they could not stand in
+  for the CP650 as this plugin family talks to it. Fixed the same day in
+  `JaumeAP/CPSeries` PR 57 (both framings accepted).
 - The built root `.qplug` files are stale until the build workflow runs for
   both plugins (PLUGCC.exe is Windows only). `Developer/tests/run.sh` is green
   against the old builds plus the new source-level tests.
