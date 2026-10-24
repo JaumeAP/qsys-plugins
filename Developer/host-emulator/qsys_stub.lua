@@ -239,6 +239,22 @@ function M.install(opts)
 	return env
 end
 
+-- Assign a control's value the way the Q-SYS host does: the plugin's
+-- EventHandler runs only when the value really changed (and a Trigger
+-- control, which has no value, is not handled here -- call :Trigger()). A
+-- test that calls EventHandler by hand after writing the same value again
+-- exercises a call the real host never makes.
+-- Returns true when the handler ran.
+function M.set(ctrl, value)
+	local old = ctrl.Value
+	ctrl.Value = value
+	if ctrl.Value ~= old and ctrl.EventHandler then
+		ctrl.EventHandler(ctrl)
+		return true
+	end
+	return false
+end
+
 -- The control set the CP Series plugin declares (PascalCase since v4.0).
 M.CPSERIES_CONTROLS = {
 	"Start", "Ref", "Level", "Gain", "Increase", "Decrease", "Address",

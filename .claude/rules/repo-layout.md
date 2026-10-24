@@ -239,6 +239,12 @@ docs/continuity-notes.md (dated history). -->
     │   │                             above], Properties, System); every test file
     │   │                             adds this directory to its own package.path
     │   │                             alongside Developer/tests/ itself.
+    │   ├── live_host.lua             Opt-in live variant of Timer/TcpSocket (real TCP via
+    │   │                             luasocket, real clock, ReconnectTimeout/ReadTimeout events)
+    │   │                             for running a runtime.lua against a real peer (added
+    │   │                             2026-10-24); qsys_stub.lua stays the deterministic one
+    │   ├── plugcc.lua                PLUGCC-style #include assembler, to load a plugin from
+    │   │                             Developer/plugins source instead of a stale root .qplug
     │   └── components/                One file per Q-SYS embedded component Type
     │                                 (mixer.lua, sine.lua, gain.lua, filter_lowpass.lua,
     │                                 equalizer_parametric.lua, stepper.lua), each
