@@ -1,0 +1,157 @@
+name: build-qplug
+
+# Builds the root .qplug distributables from Developer/plugins/<Name>/plugin.lua
+# with QSC's PLUGCC.exe (a .NET assembly), on Windows (native) and on macOS
+# (through mono), then checks the two outputs are byte-identical. With
+# `commit` on, the Windows-built files are pushed to a branch named
+# ci/qplug-<run id> under their root names, ready for a pull request.
+# Manual dispatch only.
+
+on:
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: Plugin folder under Developer/plugins, or all
+        type: choice
+        required: true
+        default: Dolby CPSeries Control
+        options:
+          - all
+          - Dolby CPSeries Control
+          - CP Series Emulator
+          - DolbyFader
+          - Dolby Sweep
+          - MultiFlip-Flop
+          - SubharmonicSynth
+          - StateTrigger
+          - DolbyKnobTest
+      commit:
+        description: Push the Windows-built files to a branch
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.list.outputs.plugins }}
+    steps:
+      - id: list
+        shell: bash
+        run: |
+          if [ "${{ inputs.plugin }}" = "all" ]; then
+            echo 'plugins=["Dolby CPSeries Control","CP Series Emulator","DolbyFader","Dolby Sweep","MultiFlip-Flop","SubharmonicSynth","StateTrigger","DolbyKnobTest"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'plugins=["${{ inputs.plugin }}"]' >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+        plugin: ${{ fromJson(needs.plan.outputs.plugins) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Fetch the compiler (BasePlugin and its nested PluginCompile)
+        shell: bash
+        run: git submodule update --init --recursive vendor/qsys-plugins/BasePlugin
+      - name: Install mono (macOS)
+        if: runner.os == 'macOS'
+        run: brew install mono
+      - name: Compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$PWD"
+          compiler="$root/vendor/qsys-plugins/BasePlugin/PluginCompile/PLUGCC.exe"
+          test -f "$compiler" || { echo "PLUGCC.exe not found at $compiler"; ls -R "$root/vendor/qsys-plugins/BasePlugin" | head -40; exit 1; }
+          # PLUGCC resolves relative #include paths against its working directory.
+          cd "Developer/plugins/${{ matrix.plugin }}"
+          mark="$(mktemp)"
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            mono "$compiler" "${{ matrix.plugin }}" plugin.lua
+          else
+            "$compiler" "${{ matrix.plugin }}" plugin.lua
+          fi
+          # Wherever it wrote the result, find it: any .qplug newer than the marker.
+          mkdir -p "$root/out"
+          found="$(find "$PWD" "$HOME/Documents" -name '*.qplug' -newer "$mark" -not -path '*/node_modules/*' 2>/dev/null | head -5)"
+          echo "found: $found"
+          test -n "$found" || { echo "no .qplug was produced"; exit 1; }
+          first="$(echo "$found" | head -1)"
+          cp "$first" "$root/out/${{ matrix.plugin }}.qplug"
+          echo "built from: $first"
+      - name: Show what was built
+        shell: bash
+        run: |
+          f="out/${{ matrix.plugin }}.qplug"
+          wc -c "$f"
+          if grep -q '#include' "$f"; then echo "LEFTOVER #include in the output"; grep -n '#include' "$f" | head; exit 1; fi
+          grep -n 'BuildVersion' "$f" | head -2
+          echo "===== BEGIN ${{ matrix.plugin }} ${{ runner.os }} ====="
+          cat "$f"
+          echo "===== END ${{ matrix.plugin }} ${{ runner.os }} ====="
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qplug-${{ runner.os }}-${{ matrix.plugin }}
+          path: out/${{ matrix.plugin }}.qplug
+
+  compare:
+    needs: [plan, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Windows and macOS outputs must match byte for byte
+        shell: bash
+        run: |
+          set -u
+          fail=0
+          while read -r name; do
+            w="artifacts/qplug-Windows-$name/$name.qplug"
+            m="artifacts/qplug-macOS-$name/$name.qplug"
+            if cmp -s "$w" "$m"; then echo "identical: $name"; else echo "DIFFERENT: $name"; fail=1; diff <(tr -d '\r' < "$w") <(tr -d '\r' < "$m") | head -5 || true; fi
+          done < <(echo '${{ needs.plan.outputs.plugins }}' | python3 -c 'import json,sys; print("\n".join(json.load(sys.stdin)))')
+          exit $fail
+
+  publish:
+    if: inputs.commit
+    needs: [plan, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Copy under the root names and push a branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          declare -A ROOT=(
+            ["Dolby CPSeries Control"]="Dolby CPSeries Control V4.0.qplug"
+            ["CP Series Emulator"]="CP Series Emulator.qplug"
+            ["DolbyFader"]="DolbyFader.qplug"
+            ["Dolby Sweep"]="Dolby Sweep V2.0.qplug"
+            ["MultiFlip-Flop"]="MultiFlip-Flop.qplug"
+            ["SubharmonicSynth"]="SubharmonicSynth.qplug"
+            ["StateTrigger"]="StateTrigger.qplug"
+            ["DolbyKnobTest"]="DolbyKnobTest.qplug"
+          )
+          while read -r name; do
+            cp "artifacts/qplug-Windows-$name/$name.qplug" "${ROOT[$name]}"
+          done < <(echo '${{ needs.plan.outputs.plugins }}' | python3 -c 'import json,sys; print("\n".join(json.load(sys.stdin)))')
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "ci/qplug-${{ github.run_id }}"
+          git add -- '*.qplug'
+          git commit -m "Rebuild root .qplug files with PLUGCC (run ${{ github.run_id }})"
+          git push origin "ci/qplug-${{ github.run_id }}"
