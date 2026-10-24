@@ -62,7 +62,11 @@ jobs:
           submodules: false
       - name: Fetch the compiler (BasePlugin and its nested PluginCompile)
         shell: bash
-        run: git submodule update --init --recursive vendor/qsys-plugins/BasePlugin
+        run: |
+          # BasePlugin's nested PluginCompile submodule is declared with an SSH URL,
+          # and the runner has no key: read it over HTTPS instead.
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule update --init --recursive vendor/qsys-plugins/BasePlugin
       - name: Install mono (macOS)
         if: runner.os == 'macOS'
         run: brew install mono
