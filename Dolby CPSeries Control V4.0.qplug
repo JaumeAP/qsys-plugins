@@ -209,7 +209,7 @@ PluginInfo =
 {
 	Name = "Dolby~CP Series Control",
 	Version = "4.0",
-	BuildVersion = "4.0.0.14",
+	BuildVersion = "4.0.0.15",
 	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
 	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
 	Manufacturer = "Dolby",
@@ -1538,6 +1538,8 @@ if Controls then
 	
 			sock.Socket.Closed = function()
 				Print(true, 'SOCK', 'Closed')
+				-- stop polling a dead link; Connected starts it again after a reconnect
+				DolbyCP:Stop()
 				SetStatus(4, "Offline")
 			end
 	
@@ -1551,6 +1553,7 @@ if Controls then
 	
 			sock.Socket.Error = function(_, err)
 				Print(true, 'SOCK', "Remote Server Error " .. err)
+				DolbyCP:Stop()
 				SetStatus(2, err)
 			end
 	
