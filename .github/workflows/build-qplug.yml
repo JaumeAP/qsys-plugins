@@ -161,3 +161,19 @@ jobs:
           git add -- ./*.qplug
           git commit -m "Rebuild root .qplug files with PLUGCC (run ${{ github.run_id }})"
           git push origin "ci/qplug-${{ github.run_id }}"
+      - name: Release with the Windows, macOS and root sets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          while read -r name; do
+            cp "artifacts/qplug-Windows-$name/$name.qplug" "release/Windows-$name.qplug"
+            cp "artifacts/qplug-macOS-$name/$name.qplug" "release/macOS-$name.qplug"
+          done < <(echo '${{ needs.plan.outputs.plugins }}' | python3 -c 'import json,sys; print("\n".join(json.load(sys.stdin)))')
+          for f in ./*.qplug; do cp "$f" "release/root-$(basename "$f")"; done
+          gh release create "qplug-${{ github.run_id }}" release/* \
+            --target "ci/qplug-${{ github.run_id }}" \
+            --title "qplug build ${{ github.run_id }}" \
+            --notes "PLUGCC output: Windows-*, macOS-* and root-* (LF, as committed on ci/qplug-${{ github.run_id }})."
