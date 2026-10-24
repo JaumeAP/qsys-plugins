@@ -98,7 +98,9 @@ jobs:
         run: |
           f="out/${{ matrix.plugin }}.qplug"
           wc -c "$f"
-          if grep -q '#include' "$f"; then echo "LEFTOVER #include in the output"; grep -n '#include' "$f" | head; exit 1; fi
+          # An unexpanded directive is the comment  --[[ #include "x.lua" ]]  (a plain
+          # mention of "#include" in prose is fine).
+          if grep -nE '\-\-\[\[ *#include +"' "$f"; then echo "LEFTOVER #include directive in the output"; exit 1; fi
           grep -n 'BuildVersion' "$f" | head -2
           echo "===== BEGIN ${{ matrix.plugin }} ${{ runner.os }} ====="
           cat "$f"
