@@ -39,6 +39,10 @@
 -- and a client silent for ReadTimeout (10s) is dropped through a Timeout
 -- handler (before, ReadTimeout fired into nothing).
 
+-- v1.0.0.5: the status follows the number of connected clients (one leaving
+-- no longer reports "no client" while others remain), and a failed Listen
+-- shows a fault instead of "Listening".
+
 --[[ #include "info.lua" ]]
 
 -- Constants

@@ -102,6 +102,8 @@
 
 		sock.Socket.Closed = function()
 			Print(true, 'SOCK', 'Closed')
+			-- stop polling a dead link; Connected starts it again after a reconnect
+			DolbyCP:Stop()
 			SetStatus(4, "Offline")
 		end
 
@@ -115,6 +117,7 @@
 
 		sock.Socket.Error = function(_, err)
 			Print(true, 'SOCK', "Remote Server Error " .. err)
+			DolbyCP:Stop()
 			SetStatus(2, err)
 		end
 
