@@ -117,7 +117,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Windows and macOS outputs must match byte for byte
+      - name: Windows and macOS outputs must match (line endings aside)
         shell: bash
         run: |
           set -u
@@ -125,7 +125,7 @@ jobs:
           while read -r name; do
             w="artifacts/qplug-Windows-$name/$name.qplug"
             m="artifacts/qplug-macOS-$name/$name.qplug"
-            if cmp -s "$w" "$m"; then echo "identical: $name"; else echo "DIFFERENT: $name"; fail=1; diff <(tr -d '\r' < "$w") <(tr -d '\r' < "$m") | head -5 || true; fi
+            if cmp -s <(tr -d '\r' < "$w") <(tr -d '\r' < "$m"); then echo "identical (ignoring CRLF vs LF): $name"; else echo "DIFFERENT: $name"; fail=1; diff <(tr -d '\r' < "$w") <(tr -d '\r' < "$m") | head -5 || true; fi
           done < <(echo '${{ needs.plan.outputs.plugins }}' | python3 -c 'import json,sys; print("\n".join(json.load(sys.stdin)))')
           exit $fail
 
@@ -153,11 +153,11 @@ jobs:
             ["DolbyKnobTest"]="DolbyKnobTest.qplug"
           )
           while read -r name; do
-            cp "artifacts/qplug-Windows-$name/$name.qplug" "${ROOT[$name]}"
+            tr -d '\r' < "artifacts/qplug-Windows-$name/$name.qplug" > "${ROOT[$name]}"
           done < <(echo '${{ needs.plan.outputs.plugins }}' | python3 -c 'import json,sys; print("\n".join(json.load(sys.stdin)))')
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "ci/qplug-${{ github.run_id }}"
-          git add -- '*.qplug'
+          git add -- ./*.qplug
           git commit -m "Rebuild root .qplug files with PLUGCC (run ${{ github.run_id }})"
           git push origin "ci/qplug-${{ github.run_id }}"
