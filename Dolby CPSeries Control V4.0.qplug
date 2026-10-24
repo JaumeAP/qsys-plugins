@@ -189,11 +189,27 @@
 --        switch against Q-SYS Help's docs. Now normalizes booleans to 0/1
 --        before comparing.
 
+-- v4.0.0.13 - brought in line with the CPSeries toolkit (JaumeAP/CPSeries,
+--        cpx50.comms): protocol.lua now prints a float the way the toolkit
+--        does (whole values as integers with every digit, others as the
+--        shortest string that round-trips, tostring's 14 digits dropped);
+--        models.lua gains the documented CP750 parameter ranges
+--        (RangeOf / ValidateRange / ClipToRange) and the documented
+--        connection limit per model. Wire framing is unchanged, the
+--        CP650 "KEY=?" query stays (Dolby-verified, the toolkit's "KEY?" is
+--        not), and the toolkit's non-ASCII rejection is deliberately not
+--        ported (a macro name with an accent must still reach the wire).
+--        See docs/cross-repo-reference.md.
+-- v4.0.0.14 - every socket wait is bounded: shared/socket.lua sets
+--        ReadTimeout (10s) and ReconnectTimeout (5s) explicitly next to
+--        WriteTimeout (2s); a connect still not up after 5s is abandoned
+--        and retried; the Timeout event now drops and reconnects the link
+--        instead of only showing "Timeout".
 PluginInfo =
 {
 	Name = "Dolby~CP Series Control",
 	Version = "4.0",
-	BuildVersion = "4.0.0.12",
+	BuildVersion = "4.0.0.14",
 	Id = "349d7196-f9b3-4293-8571-6d81ea6971da",
 	Description = "QSys Control Plugin for Dolby CP Series Cinema Processors",
 	Manufacturer = "Dolby",
@@ -630,7 +646,10 @@ if Controls then
 		return true
 	end
 	
-	-- Wraps TcpSocket.New(): sets WriteTimeout (default 2s) and exposes the raw
+	-- Wraps TcpSocket.New(): sets WriteTimeout (default 2s), ReadTimeout
+	-- (default 10s, fires the Timeout event on a silent link) and
+	-- ReconnectTimeout (default 5s) explicitly rather than trusting the host's
+	-- defaults, and exposes the raw
 	-- socket as .Socket for the caller to wire event handlers (.Connected,
 	-- .Closed, .Timeout, .Error, .Reconnect) and to pass to code that needs the
 	-- raw TcpSocket instance itself (e.g. CPSeries:Start(sock.Socket)). The
@@ -638,10 +657,12 @@ if Controls then
 	-- convention as a bare TcpSocket (see qsys-plugin-development.md's "Q-SYS
 	-- runtime globals" section): a local one can be collected once nothing else
 	-- references it, silently killing the connection.
-	function SocketConn.New(writeTimeout)
+	function SocketConn.New(writeTimeout, readTimeout, reconnectTimeout)
 		local self = setmetatable({}, SocketConn)
 		self.Socket = TcpSocket.New()
 		self.Socket.WriteTimeout = writeTimeout or 2
+		self.Socket.ReadTimeout = readTimeout or 10
+		self.Socket.ReconnectTimeout = reconnectTimeout or 5
 		return self
 	end
 	
@@ -677,6 +698,10 @@ if Controls then
 				CP950A = { port = 61408, namespace = "sys.*"     },
 			}
 	
+			-- Documented connection limit per model (Dolby CP Cinema Control spec,
+			-- "Models Supported"); not verified against hardware.
+			CPModels.MAX_CONNECTIONS = { CP650 = 1, CP750 = 20, CP850 = 20, CP950 = 20, CP950A = 20 }
+	
 			function CPModels.DefaultPort(model)
 				local c = CPModels.CONFIG[model]
 				assert(c,"CPModels.DefaultPort: unknown model '"..tostring(model).."'")
@@ -687,6 +712,42 @@ if Controls then
 				local c = CPModels.CONFIG[model]
 				assert(c,"CPModels.UsesKeyValue: unknown model '"..tostring(model).."'")
 				return c.namespace == "KEY=VALUE"
+			end
+	
+			-- CP750 key parameter ranges (dB / ms / Hz), from the spec's "Key
+			-- Parameters (CP750)" table via the CPSeries toolkit. The ch_level_*
+			-- and eq_* families share one range each. Real hardware clips a SET to
+			-- these silently.
+			CPModels.CP750_PARAM_RANGES = {
+				["cp750.sys.master_level"]       = { 0, 96 },
+				["cp750.sys.ch_level"]           = { -96, 12 },
+				["cp750.sys.mute"]               = { 0, 1 },
+				["cp750.sys.surround_delay"]     = { 0, 150 },
+				["cp750.sys.subwoofer_filter"]   = { 50, 100 },
+				["cp750.sys.eq"]                 = { -60, 60 },
+				["cp750.sys.mute_fade_out_time"] = { 200, 5000 },
+			}
+	
+			function CPModels.RangeOf(param)
+				local ranges = CPModels.CP750_PARAM_RANGES
+				if ranges[param] then return ranges[param] end
+				if param:find("cp750.sys.ch_level_",1,true) == 1 then return ranges["cp750.sys.ch_level"] end
+				if param:find("cp750.sys.eq_",1,true) == 1 then return ranges["cp750.sys.eq"] end
+				return nil
+			end
+	
+			-- True when value is inside the documented range of param, or param has none.
+			function CPModels.ValidateRange(param,value)
+				local r = CPModels.RangeOf(param)
+				if not r then return true end
+				return value >= r[1] and value <= r[2]
+			end
+	
+			-- value clipped to the documented range of param (unchanged when it has none).
+			function CPModels.ClipToRange(param,value)
+				local r = CPModels.RangeOf(param)
+				if not r then return value end
+				return math.max(r[1],math.min(r[2],value))
 			end
 	
 		end
@@ -705,14 +766,65 @@ if Controls then
 	
 			CPProtocol = {}
 	
+			-- Python repr layout of `digits` x 10^(exp10 - #digits + 1): scientific
+			-- form when the decimal exponent is < -4 or >= 16.
+			local function layoutrepr(digits,exp10)
+				digits = digits:gsub("0+$","")
+				if digits == "" then digits = "0" end
+				if exp10 < -4 or exp10 >= 16 then
+					local mant = digits:sub(1,1)
+					if #digits > 1 then mant = mant.."."..digits:sub(2) end
+					return string.format("%se%s%02d",mant,exp10 < 0 and "-" or "+",math.abs(exp10))
+				elseif exp10 >= 0 then
+					local intlen = exp10 + 1
+					if #digits <= intlen then return digits..string.rep("0",intlen - #digits) end
+					return digits:sub(1,intlen).."."..digits:sub(intlen + 1)
+				end
+				return "0."..string.rep("0",-exp10 - 1)..digits
+			end
+	
+			-- Wire text of a float, as the CPSeries toolkit prints it
+			-- (cpx50.comms.protocol._fmt_value): whole floats as integers with
+			-- every digit (70.0 -> "70", 1e20 -> "100000000000000000000"), others
+			-- as the shortest digit string that round-trips (0.1 -> "0.1", 1e-5
+			-- -> "1e-05"; tostring keeps only 14 digits). The correctly rounded
+			-- n-digit string can fail to round-trip where a neighbouring n-digit
+			-- string does (2^-24 is "5.960464477539063e-08"), so the neighbours
+			-- are tried before n + 1 digits. nan / inf print as "nan" / "inf".
+			local function fmtfloat(v)
+				if v ~= v then return "nan" end
+				if v == math.huge then return "inf" end
+				if v == -math.huge then return "-inf" end
+				if v == math.floor(v) then
+					if v == 0 then return "0" end
+					return string.format("%.0f",v)
+				end
+				local sign = v < 0 and "-" or ""
+				local a = math.abs(v)
+				for n = 1,17 do
+					local mstr,estr = string.format("%."..(n - 1).."e",a):match("^([%d.]+)e([+-]%d+)$")
+					local e = tonumber(estr)
+					local m = math.tointeger(tonumber((mstr:gsub("%.",""))))
+					for _,cand in ipairs({m,m + 1,m - 1}) do
+						if cand > 0 and tonumber(string.format("%de%d",cand,e - (n - 1))) == a then
+							local digits = tostring(cand)
+							return sign..layoutrepr(digits,e - (n - 1) + #digits - 1)
+						end
+					end
+				end
+				return string.format("%.17g",v)
+			end
+	
 			local function fmtvalue(v)
 				if type(v) == "boolean" then return v and "1" or "0" end
 				if type(v) == "number" then
-					if v == math.floor(v) then return tostring(math.floor(v)) end -- whole numbers as ints: 70.0 -> "70"
-					return tostring(v)
+					if math.type(v) == "integer" then return tostring(v) end
+					return fmtfloat(v)
 				end
 				return tostring(v)
 			end
+	
+			CPProtocol.FormatValue = fmtvalue
 	
 			-- Reject a param/value with an embedded newline/CR: commands are framed
 			-- one per line, so it would split into two commands or corrupt the stream.
@@ -1364,6 +1476,9 @@ if Controls then
 				else Controls.Status.String = '' end
 			end
 	
+			local CONNECT_TIMEOUT = 5   -- seconds before a connect attempt is abandoned
+			local refreshCNX            -- defined below; connect() schedules it on a timeout
+	
 			local function connect()
 				Controls.Refresh.IsDisabled = false
 				if SocketConn.ValidateAddress(Controls.Address.String) then
@@ -1371,6 +1486,16 @@ if Controls then
 					-- port comes from the CPModels config (adds CP950 / CP950A)
 					local CPPort = CPModels.DefaultPort((Properties.Model.Value):gsub("%s", ""))
 					sock:Connect(Controls.Address.String, CPPort)
+					-- TcpSocket has no connect timeout of its own: if the link is
+					-- still not up after CONNECT_TIMEOUT, give up this attempt and
+					-- start a fresh one, instead of waiting on it indefinitely.
+					Timer.CallAfter(function()
+						if not sock:IsConnected() and Controls.Status.Value == 5 then
+							Print(true, 'SOCK', 'Connect timeout')
+							SetStatus(2, "Connect timeout")
+							Timer.CallAfter(refreshCNX, 2)
+						end
+					end, CONNECT_TIMEOUT)
 				else
 					if System.IsEmulating then
 						SetStatus(0, "Emulation")
@@ -1387,7 +1512,7 @@ if Controls then
 				else SetStatus(2, 'Offline') end
 			end
 	
-			local function refreshCNX()
+			refreshCNX = function()
 				disconnect(true)
 				Controls.Refresh.IsDisabled = true
 				Timer.CallAfter(connect, 1)
@@ -1416,9 +1541,12 @@ if Controls then
 				SetStatus(4, "Offline")
 			end
 	
+			-- ReadTimeout (shared/socket.lua) expired with nothing received: the
+			-- link is silent, so drop it and reconnect rather than only flagging it.
 			sock.Socket.Timeout = function()
 				Print(true, 'SOCK', 'Timeout')
 				SetStatus(2, "Timeout")
+				sockError("Timeout")
 			end
 	
 			sock.Socket.Error = function(_, err)

@@ -56,7 +56,7 @@ function GetControlLayout(props)
 	local graphics = {}
 	local left = -4
 	local top = -4
-
+	
 	layout["GainDb"] = {
 		PrettyName = "GainDb (native Knob, dB)",
 		Style = "Knob",
@@ -64,7 +64,7 @@ function GetControlLayout(props)
 		Position = { left + 26, top + 28 },
 		Size = { 36, 36 },
 	}
-
+	
 	table.insert(graphics, {
 		Type = "GroupBox",
 		Text = "DolbyKnob Test",
@@ -74,7 +74,7 @@ function GetControlLayout(props)
 		Position = { left + 8, top + 8 },
 		Size = { 90, 100 },
 	})
-
+	
 	table.insert(graphics, {
 		Type = "Label",
 		Text = "GainDb\n(dB)",
