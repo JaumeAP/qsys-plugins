@@ -58,9 +58,11 @@ behaviour is `docs/specs/` there (the Cinema Control spec, split by section).
 8. Simulators. `cpp/processor_sim.cpp` (C++17, Linux and macOS) is the full
    fake processor: both dialects, the CP650 echo, range clipping, and the
    options `--latency`, `--drop-after`, `--silent`, `--partial-response`,
-   `--no-clip`, `--seed`, `--serial`, `--fd`, `--log`, `--control`, and
-   SIGUSR1 to drop connections. `lua/sim_server.lua` is the Lua one without
-   the fault options. The `CP Series Emulator` plugin takes its behaviour
+   `--no-clip`, `--seed`, `--seed-list` (multi-line replies such as
+   `sys.macros`), `--profile` (seeds everything Dolby CPSeries Control polls),
+   `--serial`, `--fd`, `--log` (timestamped trace), `--control` (stdin
+   commands), and SIGUSR1 to drop connections. `lua/sim_server.lua` takes the
+   same options, except `--serial` and `--fd`. The `CP Series Emulator` plugin takes its behaviour
    from them (v1.0.0.3): any param is stored and read back, CP750 SETs clip,
    numbers are stored canonically, the CP650 answers `KEY=?` and `KEY?`.
    What it does not do: fault injection, a connection limit, the `--serial`
