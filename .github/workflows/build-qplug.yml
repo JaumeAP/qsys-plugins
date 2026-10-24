@@ -5,7 +5,8 @@ name: build-qplug
 # (through mono), then checks the two outputs match (line endings aside). With
 # `release` on, a GitHub release qplug-<run id> carries the files: the
 # Windows-built set under its final names (LF), plus the raw Windows-* and
-# macOS-* sets. Nothing is committed: the built files live only in releases.
+# macOS-* sets. Dolby CPSeries Control also ships encrypted (.qplugx). Nothing
+# is committed: the built files live only in releases.
 # Manual dispatch only.
 
 on:
@@ -110,6 +111,26 @@ jobs:
         with:
           name: qplug-${{ runner.os }}-${{ matrix.plugin }}
           path: out/${{ matrix.plugin }}.qplug
+      # Dolby CPSeries Control is also shipped encrypted (.qplugx), with QSC's
+      # own Plugin Encryption Tool (a Windows binary), from the Windows build.
+      - name: Encrypt (Dolby CPSeries Control, Windows)
+        if: runner.os == 'Windows' && matrix.plugin == 'Dolby CPSeries Control'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule update --init vendor/qsys-plugins/PluginEncryptionTool
+          tool="$PWD/vendor/qsys-plugins/PluginEncryptionTool/release/plugin_tool_release.exe"
+          "$tool" encrypt "$PWD/out/Dolby CPSeries Control.qplug" "$PWD/out/Dolby CPSeries Control.qplugx"
+          test -s "out/Dolby CPSeries Control.qplugx" || { echo "no .qplugx was produced"; exit 1; }
+          wc -c "out/Dolby CPSeries Control.qplugx"
+          head -c 120 "out/Dolby CPSeries Control.qplugx"; echo
+          if grep -q 'BuildVersion' "out/Dolby CPSeries Control.qplugx"; then echo "plain source visible in the .qplugx"; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows' && matrix.plugin == 'Dolby CPSeries Control'
+        with:
+          name: qplugx-Dolby CPSeries Control
+          path: out/Dolby CPSeries Control.qplugx
 
   compare:
     needs: [plan, build]
@@ -160,6 +181,9 @@ jobs:
             cp "artifacts/qplug-Windows-$name/$name.qplug" "release/Windows-$name.qplug"
             cp "artifacts/qplug-macOS-$name/$name.qplug" "release/macOS-$name.qplug"
           done < <(echo '${{ needs.plan.outputs.plugins }}' | python3 -c 'import json,sys; print("\n".join(json.load(sys.stdin)))')
+          if [ -f "artifacts/qplugx-Dolby CPSeries Control/Dolby CPSeries Control.qplugx" ]; then
+            cp "artifacts/qplugx-Dolby CPSeries Control/Dolby CPSeries Control.qplugx" "release/Dolby CPSeries Control V4.0.qplugx"
+          fi
           gh release create "qplug-${{ github.run_id }}" release/* \
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
