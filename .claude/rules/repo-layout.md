@@ -50,10 +50,13 @@ docs/continuity-notes.md (dated history). -->
 ├── docs/
 │   └── continuity-notes.md           Dated institutional memory, not auto-loaded
 │
-├── *.qplug / *.qplugx                Distributable plugins (repo root), built by
-│   │                                 QSC's own PLUGCC.exe via
-│   │                                 .github/workflows/build-qplug.yml (see
-│   │                                 "Developer workflow" below)
+├── *.qplug / *.qplugx                *.qplug are NOT committed since 2026-10-24: they
+│   │                                 are GitHub release assets built by QSC's own
+│   │                                 PLUGCC.exe via .github/workflows/build-qplug.yml
+│   │                                 (see "Developer workflow" below). The *.qplug
+│   │                                 names below are those assets' names; /*.qplug
+│   │                                 and /build/ are gitignored. The *.qplugx stay
+│   │                                 at the repo root.
 │   ├── DolbyFader.qplug              (v2.0)
 │   ├── DolbyFader.qplugx
 │   ├── Dolby Sweep V2.0.qplug
@@ -296,12 +299,14 @@ docs/continuity-notes.md (dated history). -->
         └── wire_trace.lua            Diffs two builds by the bytes they put on the wire
 ```
 
-**`Developer/` holds the source of truth.** The root-level `.qplug` files are
-single-file distributable builds produced from `Developer/plugins/<Name>/
-plugin.lua` (and its `#include`d siblings) by QSC's own `PLUGCC.exe`, run via
-`.github/workflows/build-qplug.yml` (see "Developer workflow" below) — never
-hand-edit them, or they drift from `Developer/` and the next rebuild silently
-discards the hand edit. The four root `.qplugx` files are packaged builds
+**`Developer/` holds the source of truth.** The `.qplug` distributables are
+single-file builds produced from `Developer/plugins/<Name>/plugin.lua` (and its
+`#include`d siblings) by QSC's own `PLUGCC.exe`, run via
+`.github/workflows/build-qplug.yml` (see "Developer workflow" below). They are
+no longer committed (2026-10-24, explicit user request): each run with
+`release` on publishes them as a GitHub release `qplug-<run id>`. The tests
+assemble the source into the gitignored `build/` instead (`Developer/tests/
+harness.lua`). The four root `.qplugx` files are packaged builds
 produced from those same `.qplug` files by `.github/workflows/build-qplugx.yml`
 (or Designer's own "Save as compiled plugin") — also never hand-edited;
 regenerate the same way after any `.qplug` rebuild.

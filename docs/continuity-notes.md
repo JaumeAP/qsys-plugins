@@ -1193,3 +1193,16 @@ lack of `KEY=?` followed the same day (see below).
 - The built root `.qplug` files are stale until the build workflow runs for
   both plugins (PLUGCC.exe is Windows only). `Developer/tests/run.sh` is green
   against the old builds plus the new source-level tests.
+
+## 2026-10-24: built .qplug files leave the repository
+
+Explicit user request: the generated `.qplug` files are not kept at the repo
+root. The eight root files were removed; `.github/workflows/build-qplug.yml`
+now takes a `release` input and publishes a GitHub release `qplug-<run id>`
+(final names from the Windows build with LF, plus raw `Windows-*` and
+`macOS-*` sets) instead of pushing a branch. `Developer/tests/harness.lua`
+assembles the source into the gitignored `build/` with `plugcc.lua`, so the
+`test_dist_*` files now check the assembled source, not real PLUGCC output;
+`QPLUG_DIR=<folder>` tests a release download instead. The assembler is more
+lenient than PLUGCC, so the CI leftover-include check remains the PLUGCC
+guard. The `.qplugx` files stay at the root.

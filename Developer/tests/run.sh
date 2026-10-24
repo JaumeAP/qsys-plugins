@@ -22,6 +22,10 @@ fails=0
 pass() { printf '  \033[32mok\033[0m   %s\n' "$1"; }
 fail() { printf '  \033[31mFAIL\033[0m %s\n' "$1"; fails=$((fails + 1)); }
 
+# The distributables are assembled from source (see harness.lua); loading the
+# harness builds them into <repo>/build.
+(cd "$here" && "$LUA" -e 'arg = { [0] = "./harness.lua" } package.path = "./?.lua;" .. package.path require("harness")') || exit 1
+
 echo "syntax"
 while IFS= read -r -d '' f; do
 	if "$LUAC" -p "$f" 2>/dev/null; then
@@ -32,9 +36,8 @@ while IFS= read -r -d '' f; do
 	fi
 done < <(
 	find "$repo/Developer/shared" -name '*.lua' -print0
-	find "$repo/Developer/plugins" -maxdepth 1 -name '*.qplug' -print0
 	find "$repo/Developer/plugins" -mindepth 2 -name '*.lua' -print0
-	find "$repo" -maxdepth 1 -name '*.qplug' -print0
+	find "$repo/build" -maxdepth 1 -name '*.qplug' -print0 2>/dev/null
 )
 
 [ "${1:-}" = "--syntax-only" ] && { echo; [ "$fails" -eq 0 ] && echo "syntax OK" || echo "$fails syntax failure(s)"; exit $((fails > 0)); }

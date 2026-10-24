@@ -9,17 +9,36 @@ M.tests_dir = here
 M.repo = here .. "/../.."
 M.plugins = M.repo .. "/Developer/plugins"
 
--- Root distributables, by plugin.
-M.DIST = {
-	cpseries        = M.repo .. "/Dolby CPSeries Control V4.0.qplug",
-	fader           = M.repo .. "/DolbyFader.qplug",
-	sweep           = M.repo .. "/Dolby Sweep V2.0.qplug",
-	flipflop        = M.repo .. "/MultiFlip-Flop.qplug",
-	subharmonic     = M.repo .. "/SubharmonicSynth.qplug",
-	cpseriesemulator = M.repo .. "/CP Series Emulator.qplug",
-	statetrigger    = M.repo .. "/StateTrigger.qplug",
-	dolbyknobtest   = M.repo .. "/DolbyKnobTest.qplug",
+-- Distributables, by plugin. They are no longer committed: each one is the
+-- source assembled by host-emulator/plugcc.lua into <repo>/build/ when this
+-- module loads. Set QPLUG_DIR to a folder of real PLUGCC output (for example
+-- a release download) to test those files instead.
+local BUILD = {
+	cpseries         = { dir = "Dolby CPSeries Control", file = "Dolby CPSeries Control V4.0.qplug" },
+	fader            = { dir = "DolbyFader",             file = "DolbyFader.qplug" },
+	sweep            = { dir = "Dolby Sweep",            file = "Dolby Sweep V2.0.qplug" },
+	flipflop         = { dir = "MultiFlip-Flop",         file = "MultiFlip-Flop.qplug" },
+	subharmonic      = { dir = "SubharmonicSynth",       file = "SubharmonicSynth.qplug" },
+	cpseriesemulator = { dir = "CP Series Emulator",     file = "CP Series Emulator.qplug" },
+	statetrigger     = { dir = "StateTrigger",           file = "StateTrigger.qplug" },
+	dolbyknobtest    = { dir = "DolbyKnobTest",          file = "DolbyKnobTest.qplug" },
 }
+M.BUILD = BUILD
+
+local out_dir = os.getenv("QPLUG_DIR")
+if not out_dir then
+	out_dir = M.repo .. "/build"
+	os.execute('mkdir -p "' .. out_dir .. '"')
+	local plugcc = dofile(M.repo .. "/Developer/host-emulator/plugcc.lua")
+	for _, b in pairs(BUILD) do
+		local f = assert(io.open(out_dir .. "/" .. b.file, "wb"))
+		f:write(plugcc.assemble(M.plugins .. "/" .. b.dir .. "/plugin.lua"))
+		f:close()
+	end
+end
+
+M.DIST = {}
+for key, b in pairs(BUILD) do M.DIST[key] = out_dir .. "/" .. b.file end
 
 M.MODELS = { "CP 650", "CP 750", "CP 850", "CP 950", "CP 950A" }
 

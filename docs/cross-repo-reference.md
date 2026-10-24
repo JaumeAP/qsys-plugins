@@ -96,5 +96,5 @@ behaviour is `docs/specs/` there (the Cinema Control spec, split by section).
 3. Tests: `Developer/tests/test_modules.lua` (formatting, ranges) and
    `Developer/tests/test_emulator_source.lua` (the emulator source, not the
    built file).
-4. The root `.qplug` files are not rebuilt. Dispatch the build workflow for
-   both plugins; until then `test_dist_*` still run the previous builds.
+4. The `.qplug` files are no longer committed. Dispatch the build workflow
+   with `release` on; `test_dist_*` assemble the current source meanwhile.

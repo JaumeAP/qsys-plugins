@@ -3,3 +3,5 @@
 __pycache__/
 .claude/settings.local.json
 claude-config-bundle.skill
+/build/
+/*.qplug

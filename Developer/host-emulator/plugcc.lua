@@ -1,7 +1,7 @@
 -- Source assembler standing in for QSC's PLUGCC.exe `#include` expansion, so a
--- plugin can be loaded straight from Developer/plugins/<Name>/plugin.lua (the
--- root .qplug files are built by PLUGCC.exe on Windows only and can lag the
--- source).
+-- plugin can be loaded straight from Developer/plugins/<Name>/plugin.lua. The
+-- test harness also uses it to assemble the distributables into build/ (the
+-- real PLUGCC output only exists in the build-qplug release assets).
 --
 -- A directive is a Lua comment on its own line:  --[[ #include "x.lua" ]]
 -- Rules, as qsys-plugin-development.md records them for PLUGCC: a relative
