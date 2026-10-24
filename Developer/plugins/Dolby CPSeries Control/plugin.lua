@@ -189,6 +189,17 @@
 --        switch against Q-SYS Help's docs. Now normalizes booleans to 0/1
 --        before comparing.
 
+-- v4.0.0.13 - brought in line with the CPSeries toolkit (JaumeAP/CPSeries,
+--        cpx50.comms): protocol.lua now prints a float the way the toolkit
+--        does (whole values as integers with every digit, others as the
+--        shortest string that round-trips, tostring's 14 digits dropped);
+--        models.lua gains the documented CP750 parameter ranges
+--        (RangeOf / ValidateRange / ClipToRange) and the documented
+--        connection limit per model. Wire framing is unchanged, the
+--        CP650 "KEY=?" query stays (Dolby-verified, the toolkit's "KEY?" is
+--        not), and the toolkit's non-ASCII rejection is deliberately not
+--        ported (a macro name with an accent must still reach the wire).
+--        See docs/cross-repo-reference.md.
 --[[ #include "info.lua" ]]
 
 -- Constants

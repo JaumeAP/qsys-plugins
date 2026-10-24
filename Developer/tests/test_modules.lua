@@ -502,4 +502,37 @@ do
 	cp:Stop()
 end
 
+h.section("number formatting (CPSeries toolkit parity)")
+do
+	local vectors = {
+		{ 70.0, "70" }, { -0.0, "0" }, { 0.1, "0.1" }, { 1 / 3, "0.3333333333333333" },
+		{ 1e-5, "1e-05" }, { 1.5e-7, "1.5e-07" }, { 1e20, "100000000000000000000" },
+		{ 123456789.125, "123456789.125" }, { 0.30000000000000004, "0.30000000000000004" },
+		{ 2 ^ -24, "5.960464477539063e-08" }, { -2 ^ -24, "-5.960464477539063e-08" },
+		{ 0.0001, "0.0001" }, { 5e-324, "5e-324" },
+		{ 0 / 0, "nan" }, { math.huge, "inf" }, { -math.huge, "-inf" },
+		{ 7, "7" }, { true, "1" }, { false, "0" }, { "Main Screen", "Main Screen" },
+	}
+	for _, v in ipairs(vectors) do
+		h.check(CPProtocol.FormatValue(v[1]) == v[2],
+			("FormatValue(%s) == %s (got %s)"):format(tostring(v[1]), v[2], tostring(CPProtocol.FormatValue(v[1]))))
+	end
+	h.check(CPProtocol.FormatMessage("CP850", "sys.fader", 70.0) == "sys.fader 70", "FormatMessage prints a whole float as an integer")
+	h.check(CPProtocol.FormatMessage("CP650", "MASTER", 0.1) == "MASTER=0.1", "FormatMessage keeps the shortest round-trip fraction")
+end
+
+h.section("documented ranges")
+do
+	h.check(CPModels.RangeOf("cp750.sys.master_level")[2] == 96, "master_level range is 0..96")
+	h.check(CPModels.RangeOf("cp750.sys.ch_level_3")[1] == -96, "ch_level_* resolves to the ch_level range")
+	h.check(CPModels.RangeOf("cp750.sys.eq_7")[2] == 60, "eq_* resolves to the eq range")
+	h.check(CPModels.RangeOf("sys.fader") == nil, "a param without a documented range has none")
+	h.check(CPModels.ValidateRange("cp750.sys.mute", 1) and not CPModels.ValidateRange("cp750.sys.mute", 2), "ValidateRange checks the bounds")
+	h.check(CPModels.ValidateRange("sys.fader", 1e30), "an unranged param always validates")
+	h.check(CPModels.ClipToRange("cp750.sys.master_level", 200) == 96, "ClipToRange clips above")
+	h.check(CPModels.ClipToRange("cp750.sys.master_level", -1) == 0, "ClipToRange clips below")
+	h.check(CPModels.ClipToRange("sys.fader", 200) == 200, "ClipToRange leaves an unranged param alone")
+	h.check(CPModels.MAX_CONNECTIONS.CP650 == 1 and CPModels.MAX_CONNECTIONS.CP850 == 20, "documented connection limits")
+end
+
 h.report()
