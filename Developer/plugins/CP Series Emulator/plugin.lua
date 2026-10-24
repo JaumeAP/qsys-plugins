@@ -35,6 +35,10 @@
 -- Behaviour taken from the toolkit's simulator (cpp/processor_sim.cpp in
 -- JaumeAP/CPSeries); see docs/cross-repo-reference.md.
 
+-- v1.0.0.4: every socket wait is bounded: WriteTimeout (2s) on each client,
+-- and a client silent for ReadTimeout (10s) is dropped through a Timeout
+-- handler (before, ReadTimeout fired into nothing).
+
 --[[ #include "info.lua" ]]
 
 -- Constants

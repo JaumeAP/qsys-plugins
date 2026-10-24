@@ -30,7 +30,16 @@
 		-- Event handlers
 
 		server.EventHandler = function(SocketInstance)
+			-- Every wait bounded: a client silent for ReadTimeout is dropped
+			-- (Dolby CPSeries Control polls every second, so a live one never
+			-- is), and a write to a client that stopped reading gives up after
+			-- WriteTimeout.
 			SocketInstance.ReadTimeout = 10
+			SocketInstance.WriteTimeout = 2
+			SocketInstance.Timeout = function(s)
+				s:Disconnect()
+				SetStatus(4, "Listening on " .. PORT[MODEL] .. ", idle client dropped")
+			end
 			SocketInstance.EventHandler = SocketHandler
 			SetStatus(0, "Client connected")
 			SocketInstance.Closed = function()

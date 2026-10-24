@@ -22,7 +22,10 @@ function SocketConn.ValidateAddress(ip)
 	return true
 end
 
--- Wraps TcpSocket.New(): sets WriteTimeout (default 2s) and exposes the raw
+-- Wraps TcpSocket.New(): sets WriteTimeout (default 2s), ReadTimeout
+-- (default 10s, fires the Timeout event on a silent link) and
+-- ReconnectTimeout (default 5s) explicitly rather than trusting the host's
+-- defaults, and exposes the raw
 -- socket as .Socket for the caller to wire event handlers (.Connected,
 -- .Closed, .Timeout, .Error, .Reconnect) and to pass to code that needs the
 -- raw TcpSocket instance itself (e.g. CPSeries:Start(sock.Socket)). The
@@ -30,10 +33,12 @@ end
 -- convention as a bare TcpSocket (see qsys-plugin-development.md's "Q-SYS
 -- runtime globals" section): a local one can be collected once nothing else
 -- references it, silently killing the connection.
-function SocketConn.New(writeTimeout)
+function SocketConn.New(writeTimeout, readTimeout, reconnectTimeout)
 	local self = setmetatable({}, SocketConn)
 	self.Socket = TcpSocket.New()
 	self.Socket.WriteTimeout = writeTimeout or 2
+	self.Socket.ReadTimeout = readTimeout or 10
+	self.Socket.ReconnectTimeout = reconnectTimeout or 5
 	return self
 end
 

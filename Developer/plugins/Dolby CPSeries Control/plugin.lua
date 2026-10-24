@@ -200,6 +200,11 @@
 --        not), and the toolkit's non-ASCII rejection is deliberately not
 --        ported (a macro name with an accent must still reach the wire).
 --        See docs/cross-repo-reference.md.
+-- v4.0.0.14 - every socket wait is bounded: shared/socket.lua sets
+--        ReadTimeout (10s) and ReconnectTimeout (5s) explicitly next to
+--        WriteTimeout (2s); a connect still not up after 5s is abandoned
+--        and retried; the Timeout event now drops and reconnects the link
+--        instead of only showing "Timeout".
 --[[ #include "info.lua" ]]
 
 -- Constants
