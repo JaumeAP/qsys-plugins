@@ -48,8 +48,12 @@ local MODELS = {
 -- Start the simulator on a free port; returns pid and port.
 local function start_sim(spec)
 	local seeds = {}
-	for k, v in pairs(spec.seed) do seeds[#seeds + 1] = ("--seed '%s=%s'"):format(k, v) end
-	local cmd = ("sh -c 'echo $$; exec %s --model %s --port 0 %s' 2>&1"):format(BIN, spec.sim, table.concat(seeds, " "))
+	-- Double quotes: the whole command already sits inside sh -c '...'.
+	for k, v in pairs(spec.seed) do seeds[#seeds + 1] = ('--seed "%s=%s"'):format(k, v) end
+	-- `timeout` bounds the simulator's whole life (and so the banner read
+	-- below, which cannot itself time out on a pipe).
+	local cmd = ("sh -c 'echo $$; exec timeout 300 %s --model %s --port 0 %s' 2>&1"):format(
+		BIN, spec.sim, table.concat(seeds, " "))
 	local pipe = assert(io.popen(cmd, "r"))
 	local pid = pipe:read("*l")
 	local banner = pipe:read("*l") or ""
@@ -61,7 +65,9 @@ end
 -- The plugin's socket, backed by a real TCP connection. Lines are buffered
 -- here; `Data` is the callback commlib installs, called when lines arrived.
 local function real_socket(port)
-	local conn = assert(socket.connect("127.0.0.1", port))
+	local conn = assert(socket.tcp())
+	conn:settimeout(5)
+	assert(conn:connect("127.0.0.1", port))
 	conn:settimeout(0)
 	local s = { IsConnected = true, buffer = "", lines = {}, writes = {} }
 	function s:Write(m)
@@ -109,13 +115,17 @@ local function ask(port, line, model_sim)
 	return reply
 end
 
+-- The whole run is bounded too: no single step may keep it going past this.
+local DEADLINE = socket.gettime() + 240
+local function check_deadline()
+	if socket.gettime() > DEADLINE then error("live bridge: overall deadline exceeded") end
+end
+
 local wanted = {}
 for i = 1, #arg do wanted[#wanted + 1] = arg[i] end
 if #wanted == 0 then wanted = h.MODELS end
 
-for _, model in ipairs(wanted) do
-	local spec = assert(MODELS[model], "unknown model " .. model)
-	h.section("live " .. model)
+local function run_model(model, spec, sim)
 
 	local env = qsys.install({ properties = qsys.cpseries_properties(model) })
 	Model = {}
@@ -131,7 +141,7 @@ for _, model in ipairs(wanted) do
 	assert(loadfile(dir .. "/protocol.lua"))()
 	assert(loadfile(dir .. "/commlib.lua"))()
 
-	local pid, port = start_sim(spec)
+	local port = sim.port
 	local cp = CPSeries.New(model)
 	local events = {}
 	cp.EventHandler = function(service, result) events[#events + 1] = { service = service, result = result } end
@@ -143,6 +153,7 @@ for _, model in ipairs(wanted) do
 	local function run_until(done, ticks)
 		local t0 = socket.gettime()
 		for i = 1, ticks or 400 do
+			check_deadline()
 			if done() then print(("   (%d ticks, %.2fs)"):format(i, socket.gettime() - t0)) return true end
 			timer.EventHandler()
 			sock:pump(0.01)
@@ -184,7 +195,18 @@ for _, model in ipairs(wanted) do
 
 	cp:Stop()
 	sock:Disconnect()
+end
+
+for _, model in ipairs(wanted) do
+	local spec = assert(MODELS[model], "unknown model " .. model)
+	h.section("live " .. model)
+	local pid, port, pipe = start_sim(spec)
+	-- Whatever happens in the run, the simulator is stopped before moving on
+	-- (closing its pipe would otherwise wait for it to exit by itself).
+	local ok, err = pcall(run_model, model, spec, { port = port })
 	os.execute("kill -INT " .. pid .. " 2>/dev/null")
+	pipe:close()
+	h.check(ok, model .. ": run completed (" .. tostring(err) .. ")")
 end
 
 h.report()

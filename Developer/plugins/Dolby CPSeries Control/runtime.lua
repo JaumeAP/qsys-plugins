@@ -40,6 +40,9 @@
 			else Controls.Status.String = '' end
 		end
 
+		local CONNECT_TIMEOUT = 5   -- seconds before a connect attempt is abandoned
+		local refreshCNX            -- defined below; connect() schedules it on a timeout
+
 		local function connect()
 			Controls.Refresh.IsDisabled = false
 			if SocketConn.ValidateAddress(Controls.Address.String) then
@@ -47,6 +50,16 @@
 				-- port comes from the CPModels config (adds CP950 / CP950A)
 				local CPPort = CPModels.DefaultPort((Properties.Model.Value):gsub("%s", ""))
 				sock:Connect(Controls.Address.String, CPPort)
+				-- TcpSocket has no connect timeout of its own: if the link is
+				-- still not up after CONNECT_TIMEOUT, give up this attempt and
+				-- start a fresh one, instead of waiting on it indefinitely.
+				Timer.CallAfter(function()
+					if not sock:IsConnected() and Controls.Status.Value == 5 then
+						Print(true, 'SOCK', 'Connect timeout')
+						SetStatus(2, "Connect timeout")
+						Timer.CallAfter(refreshCNX, 2)
+					end
+				end, CONNECT_TIMEOUT)
 			else
 				if System.IsEmulating then
 					SetStatus(0, "Emulation")
@@ -63,7 +76,7 @@
 			else SetStatus(2, 'Offline') end
 		end
 
-		local function refreshCNX()
+		refreshCNX = function()
 			disconnect(true)
 			Controls.Refresh.IsDisabled = true
 			Timer.CallAfter(connect, 1)
@@ -92,9 +105,12 @@
 			SetStatus(4, "Offline")
 		end
 
+		-- ReadTimeout (shared/socket.lua) expired with nothing received: the
+		-- link is silent, so drop it and reconnect rather than only flagging it.
 		sock.Socket.Timeout = function()
 			Print(true, 'SOCK', 'Timeout')
 			SetStatus(2, "Timeout")
+			sockError("Timeout")
 		end
 
 		sock.Socket.Error = function(_, err)

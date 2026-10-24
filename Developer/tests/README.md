@@ -45,6 +45,8 @@ timing, or the actual Designer UI still has to be checked on the bench.
 | `test_dist_subharmonic.lua` | The root SubharmonicSynth distributable, both host passes, the one-time init and the bypass routing. |
 | `test_stress.lua` | Stress and fuzz pass over all five plugins, see below. |
 | `wire_trace.lua` | Behavioural trace, see below. |
+| `test_emulator_source.lua` | The CP Series Emulator protocol core straight from its source (`Developer/plugins/CP Series Emulator/protocol.lua`): generic params, CP750 clipping, both CP650 query framings. |
+| `live_bridge.lua` | Not in `run.sh`. The Dolby CPSeries Control logic over a real TCP socket against JaumeAP/CPSeries' `processor_sim` (`CPSIM_BIN=...`), per model, printing the wire traffic. Every wait is bounded: the simulator runs under `timeout`, connects time out, and the run has an overall deadline. Exits 77 without luasocket or the binary. |
 
 The `test_dist_*` files matter more than they look. A distributable is a
 single-file build with the modules pasted inline, and a module inlined before
