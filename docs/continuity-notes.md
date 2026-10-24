@@ -1169,3 +1169,26 @@ history actually matters.)
   first confirming it actually tracks `origin/main` (`git branch -vv`)
   -- prefer operating against `origin/main` directly (fetch + merge/push
   using the `origin/main` ref) until local `main` is confirmed trustworthy.
+
+## 2026-10-24: Dolby plugins brought in line with CPSeries and Q-Sys
+
+Explicit user request ("update the plugins with all the information from the
+other two repositories"). Scope chosen by the user: emulator generic,
+Control protocol and models, docs. Not done: fixing the CPSeries simulators'
+lack of `KEY=?` (user did not select it).
+
+- `Dolby CPSeries Control` 4.0.0.13: `CPProtocol.FormatValue` prints floats as
+  the toolkit does; `CPModels` gained the CP750 ranges and connection limits.
+  Wire framing untouched. The toolkit's non-ASCII rejection was NOT ported, on
+  purpose: it exists for Python's transport, and a macro name with an accent
+  must still reach a Q-SYS socket.
+- `CP Series Emulator` 1.0.0.3: any param is stored and read back, CP750 SETs
+  clip, numbers stored canonically, the CP650 answers `KEY=?` (verified) and
+  `KEY?` (toolkit). The fixed fader/mute/format/macro handlers kept their
+  behaviour; they now also clip and normalize.
+- Conflict found: the CPSeries simulators (C++ and Lua) read `MASTER=?` as a
+  query for the param `MASTER=`, so they cannot stand in for the CP650 as this
+  plugin family talks to it. Open for the CPSeries repo.
+- The built root `.qplug` files are stale until the build workflow runs for
+  both plugins (PLUGCC.exe is Windows only). `Developer/tests/run.sh` is green
+  against the old builds plus the new source-level tests.

@@ -104,6 +104,107 @@ local function macroIndex(name)
 	return nil
 end
 
+-- CP750 key parameter ranges (dB / ms / Hz), from the Dolby CP Cinema Control
+-- spec's "Key Parameters (CP750)" table via the CPSeries toolkit
+-- (cpx50.comms.models). The ch_level_* and eq_* families share one range each.
+-- Real hardware clips a SET to these silently, so the emulator does too.
+local RANGES = {
+	['cp750.sys.master_level']       = { 0, 96 },
+	['cp750.sys.ch_level']           = { -96, 12 },
+	['cp750.sys.mute']               = { 0, 1 },
+	['cp750.sys.surround_delay']     = { 0, 150 },
+	['cp750.sys.subwoofer_filter']   = { 50, 100 },
+	['cp750.sys.eq']                 = { -60, 60 },
+	['cp750.sys.mute_fade_out_time'] = { 200, 5000 },
+}
+
+local function rangeOf(param)
+	if RANGES[param] then return RANGES[param] end
+	if param:find('cp750.sys.ch_level_', 1, true) == 1 then return RANGES['cp750.sys.ch_level'] end
+	if param:find('cp750.sys.eq_', 1, true) == 1 then return RANGES['cp750.sys.eq'] end
+	return nil
+end
+
+local function isDigit(c) return c ~= '' and c >= '0' and c <= '9' end
+
+-- float(str) as Python parses it (the CPSeries reference): optional sign,
+-- digits with '_' between digits, fraction, exponent, or inf / nan. Anything
+-- else (hex, empty, words) is not a number and is stored as text.
+local function parseNumber(s)
+	local sign, word = s:lower():match('^([+-]?)(%a+)$')
+	if word == 'inf' or word == 'infinity' then return sign == '-' and -math.huge or math.huge end
+	if word == 'nan' then return 0 / 0 end
+	local clean = {}
+	for k = 1, #s do
+		local c = s:sub(k, k)
+		if c == '_' then
+			if not (isDigit(s:sub(k - 1, k - 1)) and isDigit(s:sub(k + 1, k + 1))) then return nil end
+		else
+			clean[#clean + 1] = c
+		end
+	end
+	clean = table.concat(clean)
+	local body = clean:match('^[+-]?(.*)$')
+	local mantissa, exponent = body:match('^([^eE]*)[eE](.*)$')
+	if not mantissa then mantissa = body end
+	if exponent and not exponent:match('^[+-]?%d+$') then return nil end
+	if not (mantissa:match('^%d+%.?%d*$') or mantissa:match('^%.%d+$')) then return nil end
+	return tonumber(clean)
+end
+
+-- Wire text of a number: whole values as integers, others as the shortest
+-- string that round-trips (tostring would keep only 14 digits).
+local function formatNumber(v)
+	if v ~= v then return 'nan' end
+	if v == math.huge then return 'inf' end
+	if v == -math.huge then return '-inf' end
+	if v == math.floor(v) then
+		if v == 0 then return '0' end
+		return string.format('%.0f', v)
+	end
+	for prec = 1, 17 do
+		local text = string.format('%.' .. prec .. 'g', v)
+		if tonumber(text) == v then return text end
+	end
+	return string.format('%.17g', v)
+end
+
+-- What a SET leaves in the state: a number is clipped to the param's
+-- documented range (when it has one) and re-printed canonically; anything
+-- else is kept verbatim.
+local function normalize(param, raw)
+	local num = parseNumber(raw)
+	if num == nil then return raw end
+	local range = rangeOf(param)
+	if range and not (num >= range[1] and num <= range[2]) then
+		num = math.max(range[1], math.min(range[2], num))
+	end
+	return formatNumber(num)
+end
+
+-- Every param the fixed handlers below do not know: SET stores, GET reads it
+-- back, an unknown GET stays silent (like the real processor).
+local other = {}
+
+local function strip(s) return (s:gsub('^%s+', ''):gsub('%s+$', '')) end
+
+-- (param, 'get') / (param, 'set', value) for any wire line, or nil.
+local function parseAny(msg)
+	if KEYVALUE[MODEL] then
+		if msg:sub(-1) == '?' then
+			return strip((msg:sub(1, -2):gsub('=$', ''))), 'get'
+		end
+		local p, v = msg:match('^(.-)=(.*)$')
+		if p then return strip(p), 'set', strip(v) end
+		return nil
+	end
+	local p, v = msg:match('^%s*(%S+)%s+(%S.*)$')
+	if not p then return nil end
+	v = strip(v)
+	if v == '?' then return p, 'get' end
+	return p, 'set', v
+end
+
 function SocketHandler(sock, event)
 	if event ~= TcpSocket.Events.Data then return end
 
@@ -130,22 +231,28 @@ function SocketHandler(sock, event)
 	-- can't tell the two apart.
 	if MODEL == 'CP650' then write(msg) end
 
+	-- The CP650 query is "KEY=?" (this plugin's Dolby-verified framing); the
+	-- CPSeries toolkit sends "KEY?". Accept both.
+	if KEYVALUE[MODEL] and msg:sub(-1) == '?' and msg:sub(-2) ~= '=?' then
+		msg = msg:sub(1, -2) .. '=?'
+	end
+
 	if isGet(msg, params.fader) then write(formatMessage(params.fader, state.fader)) return end
 	do
 		local v = trySet(msg, params.fader)
-		if v then state.fader = v write(formatMessage(params.fader, state.fader)) return end
+		if v then state.fader = normalize(params.fader, v) write(formatMessage(params.fader, state.fader)) return end
 	end
 
 	if isGet(msg, params.mute) then write(formatMessage(params.mute, state.mute)) return end
 	do
 		local v = trySet(msg, params.mute)
-		if v then state.mute = v write(formatMessage(params.mute, state.mute)) return end
+		if v then state.mute = normalize(params.mute, v) write(formatMessage(params.mute, state.mute)) return end
 	end
 
 	if isGet(msg, params.format) then write(formatMessage(params.format, state.format)) return end
 	do
 		local v = trySet(msg, params.format)
-		if v then state.format = v write(formatMessage(params.format, state.format)) return end
+		if v then state.format = normalize(params.format, v) write(formatMessage(params.format, state.format)) return end
 	end
 
 	if params.formname then
@@ -182,5 +289,14 @@ function SocketHandler(sock, event)
 	if MODEL == 'CP750' and isGet(msg, 'cp750.sysinfo.version') then
 		write('cp750.sysinfo.version ' .. state.version)
 		return
+	end
+
+	-- Any other param: a stateful GET/SET, with CP750 range clipping.
+	local param, kind, value = parseAny(msg)
+	if kind == 'get' then
+		if other[param] ~= nil then write(formatMessage(param, other[param])) end
+	elseif kind == 'set' then
+		other[param] = normalize(param, value)
+		write(formatMessage(param, other[param]))
 	end
 end

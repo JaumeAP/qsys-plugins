@@ -44,6 +44,10 @@ session. Content is unchanged, only relocated.
    re-deriving something that looks settled, and append new dated entries
    there rather than here.
 
+4. `docs/cross-repo-reference.md` — what `JaumeAP/CPSeries` and `JaumeAP/Q-Sys`
+   know that bears on these plugins (models, framing, ranges, number text,
+   simulators, the CP850 design), and which of it the plugins took (2026-10-24).
+
 Native auto memory (`MEMORY.md`) does not substitute for any of this in this
 repo: it is machine-local under `~/.claude/projects/<project>/memory/`, and
 sessions here run in ephemeral containers that get reclaimed. Anything that

@@ -26,6 +26,15 @@
 -- one plugin actually uses). No functional change. See
 -- docs/continuity-notes.md for the full history.
 
+-- v1.0.0.3: protocol.lua answers any param, not just fader/mute/format/
+-- macros: a SET is stored (and confirmed with the stored value), a later
+-- GET reads it back, an unknown GET stays silent; CP750 SETs clip to the
+-- documented ranges (including the fixed handlers); numbers are stored
+-- canonically (70.0 -> 70, shortest round-trip fractions); the CP650 also
+-- answers the CPSeries toolkit's "KEY?" query next to its own "KEY=?".
+-- Behaviour taken from the toolkit's simulator (cpp/processor_sim.cpp in
+-- JaumeAP/CPSeries); see docs/cross-repo-reference.md.
+
 --[[ #include "info.lua" ]]
 
 -- Constants
