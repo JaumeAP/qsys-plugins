@@ -29,6 +29,18 @@
 
 		-- Event handlers
 
+		-- Clients currently connected: the status follows this count, so one
+		-- client leaving does not report "no client" while others remain.
+		local clients = 0
+
+		local function ReportClients(note)
+			if clients > 0 then
+				SetStatus(0, clients == 1 and "Client connected" or clients .. " clients connected")
+			else
+				SetStatus(4, "Listening on " .. PORT[MODEL] .. (note or ", no client"))
+			end
+		end
+
 		server.EventHandler = function(SocketInstance)
 			-- Every wait bounded: a client silent for ReadTimeout is dropped
 			-- (Dolby CPSeries Control polls every second, so a live one never
@@ -36,21 +48,34 @@
 			-- WriteTimeout.
 			SocketInstance.ReadTimeout = 10
 			SocketInstance.WriteTimeout = 2
+			local counted = true   -- leaving may be reported twice (Disconnect, then Closed)
+			local function Leave(note)
+				if not counted then return end
+				counted = false
+				clients = clients - 1
+				ReportClients(note)
+			end
 			SocketInstance.Timeout = function(s)
 				s:Disconnect()
-				SetStatus(4, "Listening on " .. PORT[MODEL] .. ", idle client dropped")
+				Leave(", idle client dropped")
 			end
 			SocketInstance.EventHandler = SocketHandler
-			SetStatus(0, "Client connected")
-			SocketInstance.Closed = function()
-				SetStatus(4, "Listening on " .. PORT[MODEL] .. ", no client")
-			end
+			clients = clients + 1
+			ReportClients()
+			SocketInstance.Closed = function() Leave() end
 		end
 
 		-- Init
 
 		SetStatus(5, "Starting")
-		server:Listen(PORT[MODEL])
-		SetStatus(4, "Listening on " .. PORT[MODEL] .. ", no client")
+		-- Listen can fail (port taken by another script or device): report it
+		-- instead of claiming to listen. ASSUMED: a failure surfaces as a Lua
+		-- error or a false return; the Q-SYS docs do not say which.
+		local ok, err = pcall(server.Listen, server, PORT[MODEL])
+		if ok and err ~= false then
+			ReportClients()
+		else
+			SetStatus(2, "Listen failed on " .. PORT[MODEL])
+		end
 
 	end
