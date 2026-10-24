@@ -458,25 +458,31 @@ Typical loop:
    (`plugin.lua` and its `#include`d siblings), or a shared file under
    `Developer/shared/` if the change affects more than one plugin.
 2. Run `Developer/tests/run.sh`. Fast, catches syntax errors and logic
-   regressions without leaving the terminal, but it only runs against the
-   already-built root `.qplug` for the runtime-pass checks — it can't catch
-   a PLUGCC `#include` resolution mistake, only step 4 does that.
+   regressions without leaving the terminal. The `test_dist_*` runtime-pass
+   checks run against `build/`, the source assembled by
+   `Developer/host-emulator/plugcc.lua` (set `QPLUG_DIR` to a folder of real
+   PLUGCC output to test that instead). The assembler is more lenient than
+   PLUGCC, so it can't catch a PLUGCC `#include` resolution mistake, only
+   step 4 does that.
 3. Bump `BuildVersion` (and `Version` if it's a breaking change) in the
    plugin's own `info.lua`, and in `plugin.lua`'s own header-comment version
    history.
 4. Dispatch `.github/workflows/build-qplug.yml` (`workflow_dispatch`, pick
-   the plugin) — `windows-latest`, runs PLUGCC.exe, uploads the built
-   `.qplug` as a workflow artifact AND echoes it in full to the job log
+   the plugin, `release` on to publish) — builds on `windows-latest` and on
+   `macos-latest` (mono), fails on a leftover include directive, checks the
+   two outputs match, uploads each `.qplug` as a workflow artifact AND
+   echoes it in full to the job log
    (`get_job_logs`/`actions_get` with `download_workflow_run_artifact` —
    the artifact's own blob-storage download URL is blocked by this
    session's egress proxy, but the GitHub API job log isn't). Read the log
    back, check it's what you expect (no literal, unexpanded `--[[ #include
    ... ]]` comment left in the output — that means the nested-include
-   first-line rule above was violated), and write it to the root `.qplug`
-   — never hand-edit the root file directly, it gets silently discarded on
-   the next rebuild.
-5. Re-run `Developer/tests/run.sh` against the newly-written root file —
-   this is the step that actually exercises the runtime pass end to end.
+   first-line rule above was violated). With `release` on, the files go to
+   the GitHub release `qplug-<run id>` (final names, Windows build, LF) —
+   nothing is committed, and a `.qplug` is never hand-edited.
+5. Download the release assets into a folder and re-run
+   `QPLUG_DIR=<folder> Developer/tests/run.sh` — this exercises the runtime
+   pass against the real PLUGCC output.
 6. Load the plugin in Q-SYS Designer; test in the emulator
    (`System.IsEmulating` is true) or against a `Dolby CP Emulator/*.quc` on
    the bench. Steps 2-5 are a filter, not a substitute for this step.
@@ -500,7 +506,6 @@ Typical loop:
   Controls and Reflect then return end` style any more.
 - Comments and identifiers are English; keep it that way.
 - After changing a shared file (`Developer/shared/*.lua`) or a plugin's own
-  private files, verify every plugin that `#include`s it gets its root
-  `.qplug` regenerated (it is easy to leave one stale) — check which
-  plugins reference the changed file before assuming only one needs a
-  rebuild.
+  private files, verify every plugin that `#include`s it is rebuilt into the
+  next release (it is easy to leave one out) — check which plugins reference
+  the changed file before assuming only one needs a rebuild.

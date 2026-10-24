@@ -2,9 +2,10 @@ name: build-qplug
 
 # Builds the root .qplug distributables from Developer/plugins/<Name>/plugin.lua
 # with QSC's PLUGCC.exe (a .NET assembly), on Windows (native) and on macOS
-# (through mono), then checks the two outputs are byte-identical. With
-# `commit` on, the Windows-built files are pushed to a branch named
-# ci/qplug-<run id> under their root names, ready for a pull request.
+# (through mono), then checks the two outputs match (line endings aside). With
+# `release` on, a GitHub release qplug-<run id> carries the files: the
+# Windows-built set under its final names (LF), plus the raw Windows-* and
+# macOS-* sets. Nothing is committed: the built files live only in releases.
 # Manual dispatch only.
 
 on:
@@ -25,8 +26,8 @@ on:
           - SubharmonicSynth
           - StateTrigger
           - DolbyKnobTest
-      commit:
-        description: Push the Windows-built files to a branch
+      release:
+        description: Publish the built files as a GitHub release
         type: boolean
         default: false
 
@@ -130,19 +131,20 @@ jobs:
           exit $fail
 
   publish:
-    if: inputs.commit
+    if: inputs.release
     needs: [plan, build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Copy under the root names and push a branch
+      - name: Create the release
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          declare -A ROOT=(
+          declare -A FINAL=(
             ["Dolby CPSeries Control"]="Dolby CPSeries Control V4.0.qplug"
             ["CP Series Emulator"]="CP Series Emulator.qplug"
             ["DolbyFader"]="DolbyFader.qplug"
@@ -152,28 +154,14 @@ jobs:
             ["StateTrigger"]="StateTrigger.qplug"
             ["DolbyKnobTest"]="DolbyKnobTest.qplug"
           )
-          while read -r name; do
-            tr -d '\r' < "artifacts/qplug-Windows-$name/$name.qplug" > "${ROOT[$name]}"
-          done < <(echo '${{ needs.plan.outputs.plugins }}' | python3 -c 'import json,sys; print("\n".join(json.load(sys.stdin)))')
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "ci/qplug-${{ github.run_id }}"
-          git add -- ./*.qplug
-          git commit -m "Rebuild root .qplug files with PLUGCC (run ${{ github.run_id }})"
-          git push origin "ci/qplug-${{ github.run_id }}"
-      - name: Release with the Windows, macOS and root sets
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
           mkdir -p release
           while read -r name; do
+            tr -d '\r' < "artifacts/qplug-Windows-$name/$name.qplug" > "release/${FINAL[$name]}"
             cp "artifacts/qplug-Windows-$name/$name.qplug" "release/Windows-$name.qplug"
             cp "artifacts/qplug-macOS-$name/$name.qplug" "release/macOS-$name.qplug"
           done < <(echo '${{ needs.plan.outputs.plugins }}' | python3 -c 'import json,sys; print("\n".join(json.load(sys.stdin)))')
-          for f in ./*.qplug; do cp "$f" "release/root-$(basename "$f")"; done
           gh release create "qplug-${{ github.run_id }}" release/* \
-            --target "ci/qplug-${{ github.run_id }}" \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
             --title "qplug build ${{ github.run_id }}" \
-            --notes "PLUGCC output: Windows-*, macOS-* and root-* (LF, as committed on ci/qplug-${{ github.run_id }})."
+            --notes "PLUGCC output built from ${{ github.sha }}. Files without a prefix are the Windows build with LF line endings; Windows-* and macOS-* are the raw outputs of each build."

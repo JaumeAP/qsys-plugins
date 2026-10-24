@@ -38,11 +38,11 @@ timing, or the actual Designer UI still has to be checked on the bench.
 | `../host-emulator/qsys_stub.lua` | The fake Q-SYS host. Timers never fire on their own; tests advance them with `env.tick(n)`, so the poll loop can be stepped one iteration at a time. |
 | `harness.lua` | Path resolution and the check counter. |
 | `test_modules.lua` | The CPSeries class straight from `Developer/plugins/Dolby CPSeries Control/{models,protocol,commlib}.lua`: query framing per model, the readiness handshake, fader scaling, both format-list dialects, and the guards against bad wire data. |
-| `test_dist_cpseries.lua` | The root CP Series distributable, both host passes. |
-| `test_dist_fader.lua` | The root Dolby Fader distributable, both host passes, plus the dB to Dolby-scale mapping. |
-| `test_dist_sweep.lua` | The root Dolby Sweep distributable, both host passes, the one-time init and a sweep tick. |
-| `test_dist_flipflop.lua` | The root MultiFlip-Flop distributable, both host passes, the Exclusive interlock and `Toggle_N`. |
-| `test_dist_subharmonic.lua` | The root SubharmonicSynth distributable, both host passes, the one-time init and the bypass routing. |
+| `test_dist_cpseries.lua` | The CP Series distributable, both host passes. |
+| `test_dist_fader.lua` | The Dolby Fader distributable, both host passes, plus the dB to Dolby-scale mapping. |
+| `test_dist_sweep.lua` | The Dolby Sweep distributable, both host passes, the one-time init and a sweep tick. |
+| `test_dist_flipflop.lua` | The MultiFlip-Flop distributable, both host passes, the Exclusive interlock and `Toggle_N`. |
+| `test_dist_subharmonic.lua` | The SubharmonicSynth distributable, both host passes, the one-time init and the bypass routing. |
 | `test_stress.lua` | Stress and fuzz pass over all five plugins, see below. |
 | `wire_trace.lua` | Behavioural trace, see below. |
 | `test_emulator_source.lua` | The CP Series Emulator protocol core straight from its source (`Developer/plugins/CP Series Emulator/protocol.lua`): generic params, CP750 clipping, both CP650 query framings. |
@@ -50,7 +50,7 @@ timing, or the actual Designer UI still has to be checked on the bench.
 | `test_runtime_live.lua` | Not in `run.sh`. Dolby CPSeries Control's `runtime.lua`, assembled from source, on the live host (`host-emulator/live_host.lua`: real TCP, real clock) against `processor_sim`: reaches Status 0, falls away and recovers when the processor stops, goes silent, or is absent at start. Every wait bounded; exits 77 without the binary or luasocket. |
 | `live_bridge.lua` | Not in `run.sh`. The Dolby CPSeries Control logic over a real TCP socket against JaumeAP/CPSeries' `processor_sim` (`CPSIM_BIN=...`), per model, printing the wire traffic. Every wait is bounded: the simulator runs under `timeout`, connects time out, and the run has an overall deadline. Exits 77 without luasocket or the binary. |
 
-The `test_dist_*` files matter more than they look. A distributable is a
+The `test_dist_*` files run against `build/` (gitignored), which the harness assembles from source with `host-emulator/plugcc.lua` each time it loads; `QPLUG_DIR=<folder>` points them at real PLUGCC output (for example a release download) instead. They matter more than they look. A distributable is a
 single-file build with the modules pasted inline, and a module inlined before
 something it depends on still *compiles* — `luac -p` cannot see it. Only
 running the file does, which is what these do.
@@ -85,7 +85,7 @@ organised. That makes it the tool to reach for after a refactor:
 
 ```sh
 cd Developer/tests
-lua5.3 wire_trace.lua "../../Dolby CPSeries Control V3.0.qplug" > new.txt
+lua5.3 wire_trace.lua "../../build/Dolby CPSeries Control V4.0.qplug" > new.txt
 lua5.3 wire_trace.lua /path/to/known-good.qplug                 > old.txt
 diff old.txt new.txt
 ```
