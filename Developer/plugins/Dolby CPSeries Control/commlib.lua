@@ -45,8 +45,9 @@
 		-- for state, never telling it about a user action.
 		local POLL_INTERVAL = 1.0
 		-- How many times a pending fader/mute SET is sent before giving up on
-		-- it. The pending state only clears when the device echoes back the
-		-- exact value; a device that quantizes or clamps never does, and the
+		-- it. The pending state of fader/mute/formname only clears when the
+		-- device echoes back the exact value; a device that quantizes or
+		-- clamps never does, and the
 		-- plugin would resend forever at gap rate while ignoring the real
 		-- state. After this many unconfirmed sends the local value is dropped
 		-- and the device's own value wins.
@@ -408,7 +409,9 @@
 		-- rotation on a held slot and never reach the one carrying the SET.
 		local function hasPendingSet(self)
 			for _,elem in ipairs(Actions) do
-				if getState(self,elem) then return true end
+				-- reset is local bookkeeping, never sent and never cleared:
+				-- counting it kept the poll interval bypassed for good
+				if elem ~= Actions.reset and getState(self,elem) then return true end
 			end
 			return false
 		end
@@ -474,7 +477,7 @@
   		 			if param == nil then return end
   					local pending = ( action ~= Actions.format or getValue(self,Actions.reset)==false ) and
   						getState(self,action) and action ~= Actions.formlist
-					if pending and (action == Actions.fader or action == Actions.mute) then
+					if pending then
 						local tries = (private.tries[action.index] or 0) + 1
 						if tries > MAX_SET_TRIES then
 							-- unconfirmed SET: stop resending, query instead, and let
@@ -580,6 +583,7 @@
       			result = getButtonNum(private.model,result)
       			if result == nil then return end -- unparseable format token: ignore, don't crash
 				setState(self,action,false)
+				private.tries[action.index] = nil
       		end
   	   		if action == Actions.fader or action ==  Actions.mute then
       		  local n = tonumber(result)
