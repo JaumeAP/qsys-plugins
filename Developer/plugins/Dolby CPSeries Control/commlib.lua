@@ -254,7 +254,7 @@
 		end
 
 	 	Print = function(show,...)     --    show=false      show=true     show=nil
-	 		if Properties.plugin_show_debug.Value == 0 then return end
+	 		if Properties.plugin_show_debug.Value == 0 or Properties.plugin_show_debug.Value == false then return end -- host value may be a number or a boolean
 	 		local tcp = Properties["TCP Log"]
 			if ( tcp.Value == 'Command' and show ~= false ) or (tcp.Value == 'All' and show ~= nil) then
 			print(...) end
@@ -305,7 +305,9 @@
 				setState(self,action,true)
 				private.tries[action.index] = nil   -- a new local value restarts the retry budget
 			elseif self.EventHandler and (action~=Actions.format or value >0 ) then
-					self.EventHandler(action.key,getValue(self,action))
+					-- a pending local value can be a Lua boolean; the handler
+					-- asserts on false, so publish the 0/1 form
+					self.EventHandler(action.key,normalize(getValue(self,action)))
  			end
 			 if (action == Actions.format or action == Actions.formname )
  			  and getValue(self,Actions.reset) == true then
@@ -318,10 +320,15 @@
 				end
 			else
 				if action == Actions.formlist then
-					for t,v in ipairs(getValue(self,Actions.formlist)) do
-						if t == getValue(self,Actions.format) then
-							setValue(self,Actions.format,t)
-					end end
+					-- the format is already known: publish its name now that
+					-- the list has arrived
+					local s = getValue(self,Actions.formlist)[getValue(self,Actions.format)]
+					if s ~= nil then
+						setValue(self,Actions.formname,s)
+						if self.EventHandler then
+							self.EventHandler(Actions.formname.key,s)
+						end
+					end
 				elseif action == Actions.format then
 					local s
 					for t,v in ipairs(getValue(self,Actions.formlist)) do
@@ -563,6 +570,9 @@
     			end
     			return
    		    end
+			-- the handshake query row is not a state: a late duplicate reply
+			-- must not land in the local reset slot
+			if action == Actions.reset then return end
    			if action == Actions.formlist then
 				if private.model == Model.CP650 then
 					local tmp = {} 	local pos = 1
@@ -582,8 +592,13 @@
     		if  action == Actions.format then
       			result = getButtonNum(private.model,result)
       			if result == nil then return end -- unparseable format token: ignore, don't crash
-				setState(self,action,false)
-				private.tries[action.index] = nil
+				-- a reply that predates the user's press must not cancel it:
+				-- clear the pending SET only when the reply is the echo, or the
+				-- SET has already been sent at least once
+				if private.tries[action.index] ~= nil or result == getValue(self,action) then
+					setState(self,action,false)
+					private.tries[action.index] = nil
+				end
       		end
   	   		if action == Actions.fader or action ==  Actions.mute then
       		  local n = tonumber(result)

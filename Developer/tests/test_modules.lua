@@ -467,6 +467,23 @@ do
 	h.check(last == 4.2, "then the device's own value is adopted (got " .. tostring(last) .. ")")
 end
 
+h.section("pending unmute vs device report")
+do
+	-- A local unmute is stored as the boolean false. A device mute report that
+	-- arrives before the SET goes out republishes the pending value; the
+	-- plugin's handler asserts on false, so it must be published as 0.
+	local cp, sock, events, timer = started("CP 850")
+	timer.EventHandler()
+	sock.lines = { "sys.fader 42" } sock.Data()        -- ready
+	cp:Action("mute", true)
+	cp:Action("mute", false)
+	sock.lines = { "sys.mute 1" } sock.Data()
+	local got
+	for _, e in ipairs(events) do if e.service == "mute" then got = e.result end end
+	h.check(got ~= nil and got ~= false, "a pending unmute is published as 0, never false (got " .. tostring(got) .. ")")
+	cp:Stop()
+end
+
 h.section("query timeout")
 do
 	-- A lost response is not a dead link. At QUERY_TIMEOUT (1.5s) the
