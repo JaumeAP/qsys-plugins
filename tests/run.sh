@@ -10,7 +10,7 @@
 set -uo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo="$(cd "$here/../.." && pwd)"
+repo="$(cd "$here/.." && pwd)"
 
 LUA="${LUA:-lua5.3}"
 LUAC="${LUAC:-luac5.3}"
@@ -35,8 +35,8 @@ while IFS= read -r -d '' f; do
 		"$LUAC" -p "$f" 2>&1 | sed 's/^/       /'
 	fi
 done < <(
-	find "$repo/Developer/shared" -name '*.lua' -print0
-	find "$repo/Developer/plugins" -mindepth 2 -name '*.lua' -print0
+	find "$repo/shared" -name '*.lua' -print0
+	find "$repo/plugins" -mindepth 2 -name '*.lua' -print0
 	find "$repo/build" -maxdepth 1 -name '*.qplug' -print0 2>/dev/null
 )
 

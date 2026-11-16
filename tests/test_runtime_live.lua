@@ -3,7 +3,7 @@
 -- the connection lifecycle the deterministic stub cannot reach. Status codes
 -- are the plugin's own: 0 OK, 2 fault, 4 offline/missing, 5 connecting.
 --
---   CPSIM_BIN=/path/to/processor_sim lua5.3 Developer/tests/test_runtime_live.lua [model]
+--   CPSIM_BIN=/path/to/processor_sim lua5.3 tests/test_runtime_live.lua [model]
 --
 -- Not part of run.sh (needs the binary and luasocket); exits 77 without them.
 -- Every wait is bounded. Scenarios per model:

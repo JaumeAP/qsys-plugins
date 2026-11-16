@@ -20,7 +20,7 @@
 		end
 
 		-- sock wraps TcpSocket.New() via the shared SocketConn module
-		-- (Developer/shared/socket.lua) -- construction, address
+		-- (shared/socket.lua) -- construction, address
 		-- validation, and Connect/Disconnect/IsConnected all go through
 		-- it; event-handler wiring stays here since it's plugin-specific
 		-- (SetStatus, DolbyCP). The raw TcpSocket is sock.Socket.

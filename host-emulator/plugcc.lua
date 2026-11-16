@@ -1,5 +1,5 @@
 -- Source assembler standing in for QSC's PLUGCC.exe `#include` expansion, so a
--- plugin can be loaded straight from Developer/plugins/<Name>/plugin.lua. The
+-- plugin can be loaded straight from plugins/<Name>/plugin.lua. The
 -- test harness also uses it to assemble the distributables into build/ (the
 -- real PLUGCC output only exists in the build-qplug release assets).
 --

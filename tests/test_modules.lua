@@ -1,4 +1,4 @@
--- CPSeries class, driven directly from Developer/plugins/Dolby CPSeries
+-- CPSeries class, driven directly from plugins/Dolby CPSeries
 -- Control/{models,protocol,commlib}.lua -- no plugin.lua, no distributable.
 -- Covers the protocol surface per model: the query framing Start() emits,
 -- the readiness handshake, fader scaling, the two format-list dialects, and

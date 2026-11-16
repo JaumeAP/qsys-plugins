@@ -6,8 +6,8 @@ local M = { failures = 0, checks = 0 }
 
 local here = arg and arg[0] and arg[0]:match("^(.*)[/\\][^/\\]*$") or "."
 M.tests_dir = here
-M.repo = here .. "/../.."
-M.plugins = M.repo .. "/Developer/plugins"
+M.repo = here .. "/.."
+M.plugins = M.repo .. "/plugins"
 
 -- Distributables, by plugin. They are no longer committed: each one is the
 -- source assembled by host-emulator/plugcc.lua into <repo>/build/ when this
@@ -29,7 +29,7 @@ local out_dir = os.getenv("QPLUG_DIR")
 if not out_dir then
 	out_dir = M.repo .. "/build"
 	os.execute('mkdir -p "' .. out_dir .. '"')
-	local plugcc = dofile(M.repo .. "/Developer/host-emulator/plugcc.lua")
+	local plugcc = dofile(M.repo .. "/host-emulator/plugcc.lua")
 	for _, b in pairs(BUILD) do
 		local f = assert(io.open(out_dir .. "/" .. b.file, "wb"))
 		f:write(plugcc.assemble(M.plugins .. "/" .. b.dir .. "/plugin.lua"))
