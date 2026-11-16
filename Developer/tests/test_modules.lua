@@ -422,8 +422,25 @@ do
 	h.check(math.abs(mn2 * TICK - 0.10) < 0.01,
 		"a pending local change is NOT rate-limited, it goes at gap rate (got " ..
 		string.format("%.2f", mn2 * TICK) .. "s)")
-	h.check(n2 > n,
-		"which means more sends than idle polling while it lasts (" .. n2 .. " vs " .. n .. ")")
+	h.check(n2 - n >= 5,
+		"which means clearly more sends than idle polling while it lasts (" .. n2 .. " vs " .. n .. ")")
+
+	-- 'reset' (every format button released) is local-only bookkeeping that
+	-- is never put on the wire; it must not count as a pending SET, or the
+	-- poll interval stays bypassed for the rest of the connection.
+	local cp3, sock3, _, timer3 = started("CP 850")
+	timer3.EventHandler()
+	sock3.lines = { "sys.fader 42" } sock3.Data()
+	cp3:Action("reset")
+	local before = #sock3.writes
+	for _ = 1, 300 do
+		timer3.EventHandler()
+		sock3.lines = { "sys.fader 42" } sock3.Data()
+	end
+	cp3:Stop()
+	local nreset = #sock3.writes - before
+	h.check(nreset <= 8,
+		"after a 'reset' idle polling stays at the poll interval (got " .. nreset .. " sends in 300 ticks)")
 end
 
 h.section("unconfirmed SET")

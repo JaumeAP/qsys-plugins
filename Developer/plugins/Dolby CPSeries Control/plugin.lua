@@ -214,7 +214,14 @@
 --        knob spanned -100..20 dB while the Dolby fader only spans -90..+10;
 --        values outside that were clamped on the fader side but left on Gain,
 --        so the knob showed a level the processor did not have. Gain is now
---        -90..10. Not breaking: no control or property renamed.
+--        -90..10. No control or property renamed; the narrower range only
+--        clamps values the processor could not hold anyway.
+-- v4.0.0.17 - follow-up from review of 4.0.0.16: the retry cap now covers
+--        every polled action (format and formname too, not just fader/mute),
+--        and the 'reset' action no longer counts as a pending SET -- it is
+--        never sent nor cleared, so after the first release of all format
+--        buttons the poll interval stayed bypassed for the rest of the
+--        connection.
 --[[ #include "info.lua" ]]
 
 -- Constants
