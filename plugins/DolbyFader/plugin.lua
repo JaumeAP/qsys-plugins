@@ -24,15 +24,15 @@
 -- (vendor/qsys-plugins/BasePlugin/PluginCompile, PLUGCC.exe) instead of
 -- this repo's own build_distributable.sh -- split into this file plus
 -- info.lua/controls.lua/layout.lua. No separate runtime.lua: this file's
--- own `if Controls then` block #include's Developer/shared/dolbyfader.lua
+-- own `if Controls then` block #include's shared/dolbyfader.lua
 -- (also used by CPSeries, moved there rather than duplicated) directly,
--- which in turn #include's Developer/shared/qknob.lua (also used by
+-- which in turn #include's shared/qknob.lua (also used by
 -- Dolby Sweep). Confirmed by trial (2026-07-29), two rules together:
 -- (1) a #include path always resolves relative to the ORIGINAL
 -- plugin.lua's own directory (the process cwd PLUGCC.exe is invoked
 -- from), never relative to whichever file textually contains the
 -- directive -- so shared/dolbyfader.lua's own internal include of
--- qknob.lua is written as the path seen from Developer/plugins/DolbyFader/
+-- qknob.lua is written as the path seen from plugins/DolbyFader/
 -- ("../../shared/qknob.lua"), the exact same string this file uses to
 -- reach shared/dolbyfader.lua itself, not the path seen from
 -- shared/dolbyfader.lua's own folder ("qknob.lua"). (2) a NESTED

@@ -1,6 +1,9 @@
 ---
 paths:
-  - "Developer/**"
+  - "plugins/**"
+  - "shared/**"
+  - "tests/**"
+  - "host-emulator/**"
   - "*.qplug"
   - "*.qplugx"
   - "vendor/**"
@@ -142,170 +145,169 @@ docs/continuity-notes.md (dated history). -->
 │                                     convention" below for what these two confirm
 │                                     vs. what qsc-q-sys added on top.
 │
-└── Developer/                        Working sources (edit here)
-    ├── plugins/                      One folder per plugin, each built by QSC's own
-    │   │                             PLUGCC.exe (see "Developer workflow" below).
-    │   │                             `plugin.lua` is the PLUGCC entry point; sibling
-    │   │                             files are pulled in via `--[[ #include "x.lua" ]]`
-    │   │                             Lua-comment directives.
-    │   ├── DolbyFader/
-    │   │   ├── plugin.lua            PluginInfo/Get*/GetComponents + runtime #include
-    │   │   ├── info.lua              PluginInfo table
-    │   │   ├── controls.lua          GetControls body
-    │   │   └── layout.lua            GetControlLayout body
-    │   ├── Dolby Sweep/
-    │   │   ├── plugin.lua
-    │   │   ├── info.lua
-    │   │   ├── properties.lua        GetProperties body
-    │   │   ├── controls.lua
-    │   │   ├── layout.lua
-    │   │   └── runtime.lua           Runtime logic; #include's ../../shared/qknob.lua
-    │   ├── MultiFlip-Flop/
-    │   │   ├── plugin.lua
-    │   │   ├── info.lua
-    │   │   ├── properties.lua
-    │   │   ├── controls.lua
-    │   │   ├── layout.lua
-    │   │   └── runtime.lua           No shared-file dependency (simplest case)
-    │   ├── Dolby CPSeries Control/
-    │   │   ├── plugin.lua            #include order: shared/dolbyfader.lua, models.lua,
-    │   │   │                         protocol.lua, commlib.lua, runtime.lua (all direct,
-    │   │   │                         depth-1 includes -- see the #include rules below)
-    │   │   ├── info.lua
-    │   │   ├── properties.lua
-    │   │   ├── controls.lua
-    │   │   ├── layout.lua
-    │   │   ├── models.lua            Per-model wire config (private to this plugin)
-    │   │   ├── protocol.lua          Per-model message formatting/GET framing (private)
-    │   │   ├── commlib.lua           CPSeries class, per-model protocol state machine
-    │   │   │                         (private to this plugin, formerly
-    │   │   │                         Developer/Modules/cpseries_commlib.lua)
-    │   │   └── runtime.lua           Application layer: TCP connection lifecycle,
-    │   │                             Controls wiring (formerly Developer/Modules/cpseries.lua)
-    │   ├── SubharmonicSynth/         Bass enhancement / subharmonic-style boost for
-    │       ├── plugin.lua            LFE/Sub channels (incorporated 2026-07-29 from an
-    │       │                         external contribution, restructured onto this
-    │       │                         repo's own convention -- see the Continuity notes
-    │       │                         below for the full incorporation story)
-    │       ├── info.lua
-    │       ├── controls.lua          No properties.lua -- GetProperties() returns {}
-    │       ├── layout.lua            directly in plugin.lua, same as DolbyFader
-    │       └── runtime.lua           Sub-path LPF+PEQ+Gain / dry-path Gain / 2->1 Mix;
-    │                                 guarded one-time init sets SubGain/QFactor/Cutoff
-    │                                 defaults (the original's per-control `DefaultValue`
-    │                                 field isn't a real Q-SYS key, so those defaults
-    │                                 never actually applied pre-incorporation)
-    │   ├── CP Series Emulator/       Fakes a Dolby processor over TCP for
-    │       ├── plugin.lua            bench-testing Dolby CPSeries Control without
-    │       ├── info.lua              hardware (added 2026-07-31). Model property (5
-    │       ├── properties.lua        choices) + Status/Status.Led indicator. The
-    │       ├── controls.lua          only plugin here with a 7th file: protocol.lua,
-    │       ├── layout.lua            split out of runtime.lua so it could briefly be
-    │       ├── protocol.lua          shared with a standalone Control Script version
-    │       └── runtime.lua           (removed the same day once this plugin covered
-    │                                 the same job with less to maintain -- see
-    │                                 docs/continuity-notes.md); kept as its own
-    │                                 private file rather than merged back into
-    │                                 runtime.lua. Not #include'd from Dolby CPSeries
-    │                                 Control's own private models.lua/protocol.lua --
-    │                                 this plugin keeps its own copy of the same wire
-    │                                 tables, kept in sync by hand.
-    │   ├── StateTrigger/             Inverse of MultiFlip-Flop: Boolean State_n in,
-    │   │   ├── plugin.lua            Trigger Out_n out (added 2026-07-31, given
-    │   │   ├── info.lua              a Channels property the same day, 1-256, same
-    │   │   ├── properties.lua        convention as MultiFlip-Flop's own InputCount,
-    │   │   ├── controls.lua          plus a Detection property: enum On/Off/Both,
-    │   │   ├── layout.lua            default Both). Runtime loops Channels times,
-    │   │   └── runtime.lua           one EventHandler per pair, re-reads
-    │   │                             Controls["State_"..t].Boolean (not the handler's
-    │   │                             own ctrl arg -- MultiFlip-Flop convention) and
-    │   │                             fires Controls["Out_"..t]:Trigger() per Detection.
-    │   └── DolbyKnobTest/            Scratch/test plugin (added 2026-07-31), not
-    │       ├── plugin.lua            production. v1.0.0.3: a single native
-    │       ├── info.lua              ControlType="Knob" control (GainDb,
-    │       ├── controls.lua          ControlUnit="dB", -90..10) -- no
-    │       └── layout.lua            QKnob/Text wrapper, no shared/qknob.lua
-    │                                 dependency, no runtime.lua (deleted,
-    │                                 nothing left to run). DolbyFader itself
-    │                                 is untouched by this.
-    ├── shared/                       Code #include'd by more than one plugin
-    │   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua (DolbyKnobTest no longer #include's this since v1.0.0.3 -- switched to a native Knob control)
-    │   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
-    ├── host-emulator/                The Q-SYS Designer host stub, its own module
-    │   │                             (added 2026-07-29, split out of Developer/tests/)
-    │   │                             so it reads as a standalone unit distinct from
-    │   │                             `Dolby CP Emulator/` (that one emulates the Dolby
-    │   │                             processors, this one emulates the Q-SYS Lua host)
-    │   ├── qsys_stub.lua             Stand-in for the Q-SYS host globals (Controls,
-    │   │                             Timer, TcpSocket, TcpSocketServer [added
-    │   │                             2026-07-31, for testing cp-series-emulator/
-    │   │                             above], Properties, System); every test file
-    │   │                             adds this directory to its own package.path
-    │   │                             alongside Developer/tests/ itself.
-    │   ├── live_host.lua             Opt-in live variant of Timer/TcpSocket (real TCP via
-    │   │                             luasocket, real clock, ReconnectTimeout/ReadTimeout events)
-    │   │                             for running a runtime.lua against a real peer (added
-    │   │                             2026-10-24); qsys_stub.lua stays the deterministic one
-    │   ├── plugcc.lua                PLUGCC-style #include assembler, to load a plugin from
-    │   │                             Developer/plugins source instead of a stale root .qplug
-    │   └── components/                One file per Q-SYS embedded component Type
-    │                                 (mixer.lua, sine.lua, gain.lua, filter_lowpass.lua,
-    │                                 equalizer_parametric.lua, stepper.lua), each
-    │                                 returning that Type's exact audio pin names for
-    │                                 GetWiring validation (qsys_stub.lua's
-    │                                 check_wiring); loaded lazily via this file's own
-    │                                 directory (debug.getinfo), not package.path
-    │                                 Standing convention: a new plugin needing a host
-    │                                 feature this stub doesn't model yet gets that
-    │                                 feature looked up in Q-SYS Help first (see the
-    │                                 file's own header comment), the stub extended to
-    │                                 add it -- never guessed, never worked around in
-    │                                 the plugin or the test instead
-    └── tests/                        Lua 5.3 test suite, no framework (see its README)
-        ├── run.sh                    Syntax pass over every source, then every test
-        ├── harness.lua               Path resolution + check counter
-        ├── test_modules.lua          CPSeries class, loaded straight from
-        │                             Developer/plugins/Dolby CPSeries Control/
-        │                             {models,protocol,commlib}.lua
-        ├── test_dist_cpseries.lua    Root CP Series distributable, both host passes
-        ├── test_dist_fader.lua       Root Dolby Fader distributable, both host passes
-        ├── test_dist_sweep.lua       Root Dolby Sweep distributable, both host passes
-        ├── test_dist_flipflop.lua    Root MultiFlip-Flop distributable, both host passes
-        ├── test_dist_subharmonic.lua Root SubharmonicSynth distributable, both host passes
-        ├── test_dist_cpseriesemulator.lua Root CP Series Emulator distributable
-        │                             (added 2026-07-31): definition pass, and a
-        │                             runtime pass per model exercising the built
-        │                             plugin's own server/Status wiring end to end
-        ├── test_dist_statetrigger.lua Root StateTrigger distributable (added
-        │                             2026-07-31, 19 checks): definition pass
-        │                             (incl. Detection property's own default/
-        │                             Choices), control/layout count for a given
-        │                             Channels, and runtime checks per Detection
-        │                             value (On/Off/Both) that each State_n only
-        │                             ever fires its own Out_n, gated by the
-        │                             selected edge(s)
-        ├── test_dist_dolbyknobtest.lua Root DolbyKnobTest distributable (added
-        │                             2026-07-31, rewritten 2026-08-01 for the
-        │                             v1.0.0.3 single-native-Knob shape, 11
-        │                             checks): definition pass (control count,
-        │                             ControlType/ControlUnit/Min/Max, layout),
-        │                             plus a runtime-pass load check -- no sync
-        │                             assertions, v1.0.0.3 has no runtime logic
-        ├── test_stress.lua           Stress/fuzz over all five plugins: asserts invariants
-        │                             (nothing throws, nothing publishes nil, every written
-        │                             value stays in range) rather than exact values. Fixed
-        │                             math.randomseed so a failure reproduces; carries its
-        │                             own anti-vacuity checks (see its README section)
-        └── wire_trace.lua            Diffs two builds by the bytes they put on the wire
+├── plugins/                      One folder per plugin, each built by QSC's own
+│   │                             PLUGCC.exe (see "Developer workflow" below).
+│   │                             `plugin.lua` is the PLUGCC entry point; sibling
+│   │                             files are pulled in via `--[[ #include "x.lua" ]]`
+│   │                             Lua-comment directives.
+│   ├── DolbyFader/
+│   │   ├── plugin.lua            PluginInfo/Get*/GetComponents + runtime #include
+│   │   ├── info.lua              PluginInfo table
+│   │   ├── controls.lua          GetControls body
+│   │   └── layout.lua            GetControlLayout body
+│   ├── Dolby Sweep/
+│   │   ├── plugin.lua
+│   │   ├── info.lua
+│   │   ├── properties.lua        GetProperties body
+│   │   ├── controls.lua
+│   │   ├── layout.lua
+│   │   └── runtime.lua           Runtime logic; #include's ../../shared/qknob.lua
+│   ├── MultiFlip-Flop/
+│   │   ├── plugin.lua
+│   │   ├── info.lua
+│   │   ├── properties.lua
+│   │   ├── controls.lua
+│   │   ├── layout.lua
+│   │   └── runtime.lua           No shared-file dependency (simplest case)
+│   ├── Dolby CPSeries Control/
+│   │   ├── plugin.lua            #include order: shared/dolbyfader.lua, models.lua,
+│   │   │                         protocol.lua, commlib.lua, runtime.lua (all direct,
+│   │   │                         depth-1 includes -- see the #include rules below)
+│   │   ├── info.lua
+│   │   ├── properties.lua
+│   │   ├── controls.lua
+│   │   ├── layout.lua
+│   │   ├── models.lua            Per-model wire config (private to this plugin)
+│   │   ├── protocol.lua          Per-model message formatting/GET framing (private)
+│   │   ├── commlib.lua           CPSeries class, per-model protocol state machine
+│   │   │                         (private to this plugin, formerly
+│   │   │                         Developer/Modules/cpseries_commlib.lua)
+│   │   └── runtime.lua           Application layer: TCP connection lifecycle,
+│   │                             Controls wiring (formerly Developer/Modules/cpseries.lua)
+│   ├── SubharmonicSynth/         Bass enhancement / subharmonic-style boost for
+│       ├── plugin.lua            LFE/Sub channels (incorporated 2026-07-29 from an
+│       │                         external contribution, restructured onto this
+│       │                         repo's own convention -- see the Continuity notes
+│       │                         below for the full incorporation story)
+│       ├── info.lua
+│       ├── controls.lua          No properties.lua -- GetProperties() returns {}
+│       ├── layout.lua            directly in plugin.lua, same as DolbyFader
+│       └── runtime.lua           Sub-path LPF+PEQ+Gain / dry-path Gain / 2->1 Mix;
+│                                 guarded one-time init sets SubGain/QFactor/Cutoff
+│                                 defaults (the original's per-control `DefaultValue`
+│                                 field isn't a real Q-SYS key, so those defaults
+│                                 never actually applied pre-incorporation)
+│   ├── CP Series Emulator/       Fakes a Dolby processor over TCP for
+│       ├── plugin.lua            bench-testing Dolby CPSeries Control without
+│       ├── info.lua              hardware (added 2026-07-31). Model property (5
+│       ├── properties.lua        choices) + Status/Status.Led indicator. The
+│       ├── controls.lua          only plugin here with a 7th file: protocol.lua,
+│       ├── layout.lua            split out of runtime.lua so it could briefly be
+│       ├── protocol.lua          shared with a standalone Control Script version
+│       └── runtime.lua           (removed the same day once this plugin covered
+│                                 the same job with less to maintain -- see
+│                                 docs/continuity-notes.md); kept as its own
+│                                 private file rather than merged back into
+│                                 runtime.lua. Not #include'd from Dolby CPSeries
+│                                 Control's own private models.lua/protocol.lua --
+│                                 this plugin keeps its own copy of the same wire
+│                                 tables, kept in sync by hand.
+│   ├── StateTrigger/             Inverse of MultiFlip-Flop: Boolean State_n in,
+│   │   ├── plugin.lua            Trigger Out_n out (added 2026-07-31, given
+│   │   ├── info.lua              a Channels property the same day, 1-256, same
+│   │   ├── properties.lua        convention as MultiFlip-Flop's own InputCount,
+│   │   ├── controls.lua          plus a Detection property: enum On/Off/Both,
+│   │   ├── layout.lua            default Both). Runtime loops Channels times,
+│   │   └── runtime.lua           one EventHandler per pair, re-reads
+│   │                             Controls["State_"..t].Boolean (not the handler's
+│   │                             own ctrl arg -- MultiFlip-Flop convention) and
+│   │                             fires Controls["Out_"..t]:Trigger() per Detection.
+│   └── DolbyKnobTest/            Scratch/test plugin (added 2026-07-31), not
+│       ├── plugin.lua            production. v1.0.0.3: a single native
+│       ├── info.lua              ControlType="Knob" control (GainDb,
+│       ├── controls.lua          ControlUnit="dB", -90..10) -- no
+│       └── layout.lua            QKnob/Text wrapper, no shared/qknob.lua
+│                                 dependency, no runtime.lua (deleted,
+│                                 nothing left to run). DolbyFader itself
+│                                 is untouched by this.
+├── shared/                       Code #include'd by more than one plugin
+│   ├── qknob.lua                 QKnob class: text control ⇄ value/position/string sync (self-contained, plain metatables, no external OOP base); #include'd by dolbyfader.lua and Dolby Sweep's own runtime.lua (DolbyKnobTest no longer #include's this since v1.0.0.3 -- switched to a native Knob control)
+│   └── dolbyfader.lua            Dolby fader runtime (dB ⇄ 0.0-10.0 Dolby scale); #include'd by DolbyFader and Dolby CPSeries Control
+├── host-emulator/                The Q-SYS Designer host stub, its own module
+│   │                             (added 2026-07-29, split out of tests/)
+│   │                             so it reads as a standalone unit distinct from
+│   │                             `Dolby CP Emulator/` (that one emulates the Dolby
+│   │                             processors, this one emulates the Q-SYS Lua host)
+│   ├── qsys_stub.lua             Stand-in for the Q-SYS host globals (Controls,
+│   │                             Timer, TcpSocket, TcpSocketServer [added
+│   │                             2026-07-31, for testing cp-series-emulator/
+│   │                             above], Properties, System); every test file
+│   │                             adds this directory to its own package.path
+│   │                             alongside tests/ itself.
+│   ├── live_host.lua             Opt-in live variant of Timer/TcpSocket (real TCP via
+│   │                             luasocket, real clock, ReconnectTimeout/ReadTimeout events)
+│   │                             for running a runtime.lua against a real peer (added
+│   │                             2026-10-24); qsys_stub.lua stays the deterministic one
+│   ├── plugcc.lua                PLUGCC-style #include assembler, to load a plugin from
+│   │                             plugins source instead of a stale root .qplug
+│   └── components/                One file per Q-SYS embedded component Type
+│                                 (mixer.lua, sine.lua, gain.lua, filter_lowpass.lua,
+│                                 equalizer_parametric.lua, stepper.lua), each
+│                                 returning that Type's exact audio pin names for
+│                                 GetWiring validation (qsys_stub.lua's
+│                                 check_wiring); loaded lazily via this file's own
+│                                 directory (debug.getinfo), not package.path
+│                                 Standing convention: a new plugin needing a host
+│                                 feature this stub doesn't model yet gets that
+│                                 feature looked up in Q-SYS Help first (see the
+│                                 file's own header comment), the stub extended to
+│                                 add it -- never guessed, never worked around in
+│                                 the plugin or the test instead
+└── tests/                        Lua 5.3 test suite, no framework (see its README)
+    ├── run.sh                    Syntax pass over every source, then every test
+    ├── harness.lua               Path resolution + check counter
+    ├── test_modules.lua          CPSeries class, loaded straight from
+    │                             plugins/Dolby CPSeries Control/
+    │                             {models,protocol,commlib}.lua
+    ├── test_dist_cpseries.lua    Root CP Series distributable, both host passes
+    ├── test_dist_fader.lua       Root Dolby Fader distributable, both host passes
+    ├── test_dist_sweep.lua       Root Dolby Sweep distributable, both host passes
+    ├── test_dist_flipflop.lua    Root MultiFlip-Flop distributable, both host passes
+    ├── test_dist_subharmonic.lua Root SubharmonicSynth distributable, both host passes
+    ├── test_dist_cpseriesemulator.lua Root CP Series Emulator distributable
+    │                             (added 2026-07-31): definition pass, and a
+    │                             runtime pass per model exercising the built
+    │                             plugin's own server/Status wiring end to end
+    ├── test_dist_statetrigger.lua Root StateTrigger distributable (added
+    │                             2026-07-31, 19 checks): definition pass
+    │                             (incl. Detection property's own default/
+    │                             Choices), control/layout count for a given
+    │                             Channels, and runtime checks per Detection
+    │                             value (On/Off/Both) that each State_n only
+    │                             ever fires its own Out_n, gated by the
+    │                             selected edge(s)
+    ├── test_dist_dolbyknobtest.lua Root DolbyKnobTest distributable (added
+    │                             2026-07-31, rewritten 2026-08-01 for the
+    │                             v1.0.0.3 single-native-Knob shape, 11
+    │                             checks): definition pass (control count,
+    │                             ControlType/ControlUnit/Min/Max, layout),
+    │                             plus a runtime-pass load check -- no sync
+    │                             assertions, v1.0.0.3 has no runtime logic
+    ├── test_stress.lua           Stress/fuzz over all five plugins: asserts invariants
+    │                             (nothing throws, nothing publishes nil, every written
+    │                             value stays in range) rather than exact values. Fixed
+    │                             math.randomseed so a failure reproduces; carries its
+    │                             own anti-vacuity checks (see its README section)
+    └── wire_trace.lua            Diffs two builds by the bytes they put on the wire
 ```
 
-**`Developer/` holds the source of truth.** The `.qplug` distributables are
-single-file builds produced from `Developer/plugins/<Name>/plugin.lua` (and its
+**`plugins/` and `shared/` hold the source of truth.** The `.qplug` distributables are
+single-file builds produced from `plugins/<Name>/plugin.lua` (and its
 `#include`d siblings) by QSC's own `PLUGCC.exe`, run via
 `.github/workflows/build-qplug.yml` (see "Developer workflow" below). They are
 no longer committed (2026-10-24, explicit user request): each run with
 `release` on publishes them as a GitHub release `qplug-<run id>`. The tests
-assemble the source into the gitignored `build/` instead (`Developer/tests/
+assemble the source into the gitignored `build/` instead (`tests/
 harness.lua`). The four root `.qplugx` files are packaged builds
 produced from those same `.qplug` files by `.github/workflows/build-qplugx.yml`
 (or Designer's own "Save as compiled plugin") — also never hand-edited;

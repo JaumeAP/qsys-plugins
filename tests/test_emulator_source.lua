@@ -1,4 +1,4 @@
--- CP Series Emulator protocol core, straight from Developer/plugins/
+-- CP Series Emulator protocol core, straight from plugins/
 -- CP Series Emulator/protocol.lua (not the built distributable, which
 -- test_dist_cpseriesemulator.lua covers). The file is a PLUGCC #include
 -- chunk that closes over a `MODEL` local the plugin declares first, so the

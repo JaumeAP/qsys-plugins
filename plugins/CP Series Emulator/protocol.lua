@@ -2,12 +2,12 @@
 -- directly by plugin.lua (depth-1, before runtime.lua). Split out of
 -- runtime.lua on its own (2026-07-31) rather than left inline, matching
 -- "Dolby CPSeries Control"'s own models.lua/protocol.lua/commlib.lua split
--- (private per-plugin files, not Developer/shared/ -- that directory is
+-- (private per-plugin files, not shared/ -- that directory is
 -- for code actually used by more than one plugin).
 --
 -- History: this file used to also back a standalone Control Script version
 -- (Developer/cp-series-emulator/cp-series-emulator.lua, predates this
--- plugin), briefly living in Developer/shared/ so both could reference the
+-- plugin), briefly living in shared/ so both could reference the
 -- same source instead of duplicating ~150 lines by hand. The Control
 -- Script was removed the same day once the Plugin covered the same job
 -- with less to maintain (no build step needed for a quick paste-into-
@@ -22,7 +22,7 @@
 -- PORT[MODEL])` and the Status UI wiring live in runtime.lua instead,
 -- since that part is plugin-specific, not protocol logic.
 
--- Per-model TCP port and wire dialect. Mirrors Developer/plugins/
+-- Per-model TCP port and wire dialect. Mirrors plugins/
 -- Dolby CPSeries Control/models.lua's CPModels.CONFIG exactly. Kept as its
 -- own copy rather than #include'd from there: that plugin's own
 -- models.lua/protocol.lua/commlib.lua are documented as private to it

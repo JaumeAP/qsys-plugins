@@ -34,7 +34,7 @@
 -- this repo's own build_distributable.sh -- split into this file plus
 -- info.lua/properties.lua/controls.lua/layout.lua/runtime.lua, built by
 -- PLUGCC.exe on Windows CI (.github/workflows/build-qplug.yml). qknob.lua
--- moved to Developer/shared/ (also used by DolbyFader/CPSeries) and is
+-- moved to shared/ (also used by DolbyFader/CPSeries) and is
 -- #include'd via a relative path -- PLUGCC.exe confirmed to resolve
 -- cross-folder #include paths (see CLAUDE.md continuity notes). No
 -- functional change from v2.0.0.1; the dev-only 'strict' globals guard

@@ -1,7 +1,7 @@
 -- Live bridge: the Dolby CPSeries Control plugin logic against a real
 -- processor simulator over a real TCP socket, with no Q-SYS Designer.
 --
--- The plugin's CPSeries class (Developer/plugins/Dolby CPSeries Control/
+-- The plugin's CPSeries class (plugins/Dolby CPSeries Control/
 -- {models,protocol,commlib}.lua) is driven through the host stub, the same
 -- way test_modules.lua does, except that its socket is a luasocket adapter
 -- connected to JaumeAP/CPSeries' processor_sim (cpp/processor_sim.cpp). Poll
@@ -10,7 +10,7 @@
 -- mute SET landing in the processor's state with the right framing, and for
 -- the CP650 the raw-echo fix over a real wire.
 --
---   lua5.3 Developer/tests/live_bridge.lua [model ...]     default: all five
+--   lua5.3 tests/live_bridge.lua [model ...]     default: all five
 --   CPSIM_BIN=/path/to/processor_sim                       the simulator binary
 --
 -- Not part of run.sh: it needs the binary and luasocket. Exit 1 on a failure,

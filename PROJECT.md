@@ -4,10 +4,10 @@ A collection of **QSC Q-SYS plugins** written in **Lua**, targeting Dolby
 cinema audio processors (CP650 → CP950 series) and general utility
 components. Plugins run inside **Q-SYS Designer** on QSC audio DSP cores.
 Authored in Lua, tested in Designer's emulator, distributed as `.qplug` /
-`.qplugx`. `Developer/` holds the source of truth; the root `.qplug` files
-are built artifacts and must never be hand-edited.
+`.qplugx`. `plugins/` and `shared/` hold the source of truth; the root
+`.qplug` files are built artifacts and must never be hand-edited.
 
-Test suite: `Developer/tests/run.sh`, plain Lua 5.3 (matching Designer's own
+Test suite: `tests/run.sh`, plain Lua 5.3 (matching Designer's own
 embedded version, not 5.4), no framework. `.claude/hooks/ensure-lua53.sh`
 (SessionStart) installs `lua5.3` if missing so a fresh container can run it.
 It stubs the Q-SYS host globals so plugin logic can be driven from a
@@ -32,11 +32,11 @@ session. Content is unchanged, only relocated.
    rules, the plugin definition/runtime API, the full Q-SYS Lua extension API
    table, module patterns, the mandatory structure/naming convention,
    `.qplug` vs `.qplugx`, the build workflow, and edit-time conventions.
-   Scoped to `Developer/plugins/**`, `Developer/shared/**`, root
+   Scoped to `plugins/**`, `shared/**`, root
    `*.qplug`/`*.qplugx`, `build-qplug*.yml`. Read it before editing plugin
    source.
 2. `.claude/rules/repo-layout.md` — the annotated directory tree. Scoped to
-   `Developer/**`, `vendor/**`, `Dolby CP Emulator/**`, `*.qplug`/`*.qplugx`,
+   `plugins/**`, `shared/**`, `tests/**`, `host-emulator/**`, `vendor/**`, `Dolby CP Emulator/**`, `*.qplug`/`*.qplugx`,
    `.github/workflows/**`.
 3. `docs/continuity-notes.md` — dated institutional memory: why past
    decisions were made, what was tried and reverted, the full reasoning

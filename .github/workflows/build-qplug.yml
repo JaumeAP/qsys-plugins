@@ -1,6 +1,6 @@
 name: build-qplug
 
-# Builds the root .qplug distributables from Developer/plugins/<Name>/plugin.lua
+# Builds the root .qplug distributables from plugins/<Name>/plugin.lua
 # with QSC's PLUGCC.exe (a .NET assembly), on Windows (native) and on macOS
 # (through mono), then checks the two outputs match (line endings aside). With
 # `release` on, a GitHub release qplug-<run id> carries the files: the
@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       plugin:
-        description: Plugin folder under Developer/plugins, or all
+        description: Plugin folder under plugins, or all
         type: choice
         required: true
         default: Dolby CPSeries Control
@@ -80,7 +80,7 @@ jobs:
           compiler="$root/vendor/qsys-plugins/BasePlugin/PluginCompile/PLUGCC.exe"
           test -f "$compiler" || { echo "PLUGCC.exe not found at $compiler"; ls -R "$root/vendor/qsys-plugins/BasePlugin" | head -40; exit 1; }
           # PLUGCC resolves relative #include paths against its working directory.
-          cd "Developer/plugins/${{ matrix.plugin }}"
+          cd "plugins/${{ matrix.plugin }}"
           mark="$(mktemp)"
           if [ "$RUNNER_OS" = "macOS" ]; then
             mono "$compiler" "${{ matrix.plugin }}" plugin.lua

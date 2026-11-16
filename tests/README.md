@@ -7,8 +7,8 @@ install beyond a Lua interpreter, which matches how the rest of this repo
 works.
 
 ```sh
-Developer/tests/run.sh                 # syntax pass, then every test
-Developer/tests/run.sh --syntax-only   # just luac -p over every source
+tests/run.sh                 # syntax pass, then every test
+tests/run.sh --syntax-only   # just luac -p over every source
 ```
 
 Runs from any working directory. Override the interpreter with
@@ -20,7 +20,7 @@ instead, or the binaries are named differently.
 Plugins normally only run inside Q-SYS Designer, against a real processor or
 one of the emulators in `Dolby CP Emulator/`. That makes the ordinary edit
 loop slow and manual, and it means nothing catches a regression before it
-reaches hardware. `Developer/host-emulator/qsys_stub.lua` stands in for the
+reaches hardware. `host-emulator/qsys_stub.lua` stands in for the
 host globals Q-SYS provides (`Controls`, `Timer`, `TcpSocket`, `Properties`,
 `System`) so the same code can be driven from a terminal -- a different
 target than `Dolby CP Emulator/`, which emulates the Dolby processors
@@ -37,7 +37,7 @@ timing, or the actual Designer UI still has to be checked on the bench.
 |---|---|
 | `../host-emulator/qsys_stub.lua` | The fake Q-SYS host. Timers never fire on their own; tests advance them with `env.tick(n)`, so the poll loop can be stepped one iteration at a time. |
 | `harness.lua` | Path resolution and the check counter. |
-| `test_modules.lua` | The CPSeries class straight from `Developer/plugins/Dolby CPSeries Control/{models,protocol,commlib}.lua`: query framing per model, the readiness handshake, fader scaling, both format-list dialects, and the guards against bad wire data. |
+| `test_modules.lua` | The CPSeries class straight from `plugins/Dolby CPSeries Control/{models,protocol,commlib}.lua`: query framing per model, the readiness handshake, fader scaling, both format-list dialects, and the guards against bad wire data. |
 | `test_dist_cpseries.lua` | The CP Series distributable, both host passes. |
 | `test_dist_fader.lua` | The Dolby Fader distributable, both host passes, plus the dB to Dolby-scale mapping. |
 | `test_dist_sweep.lua` | The Dolby Sweep distributable, both host passes, the one-time init and a sweep tick. |
@@ -45,7 +45,7 @@ timing, or the actual Designer UI still has to be checked on the bench.
 | `test_dist_subharmonic.lua` | The SubharmonicSynth distributable, both host passes, the one-time init and the bypass routing. |
 | `test_stress.lua` | Stress and fuzz pass over all five plugins, see below. |
 | `wire_trace.lua` | Behavioural trace, see below. |
-| `test_emulator_source.lua` | The CP Series Emulator protocol core straight from its source (`Developer/plugins/CP Series Emulator/protocol.lua`): generic params, CP750 clipping, both CP650 query framings. |
+| `test_emulator_source.lua` | The CP Series Emulator protocol core straight from its source (`plugins/CP Series Emulator/protocol.lua`): generic params, CP750 clipping, both CP650 query framings. |
 | `test_host_stub.lua` | The host helpers themselves: `qsys.set` (handler only on a real change) and the PLUGCC-style include assembler `plugcc.lua`. |
 | `test_runtime_live.lua` | Not in `run.sh`. Dolby CPSeries Control's `runtime.lua`, assembled from source, on the live host (`host-emulator/live_host.lua`: real TCP, real clock) against `processor_sim`: reaches Status 0, falls away and recovers when the processor stops, goes silent, or is absent at start. Every wait bounded; exits 77 without the binary or luasocket. |
 | `live_bridge.lua` | Not in `run.sh`. The Dolby CPSeries Control logic over a real TCP socket against JaumeAP/CPSeries' `processor_sim` (`CPSIM_BIN=...`), per model, printing the wire traffic. Every wait is bounded: the simulator runs under `timeout`, connects time out, and the run has an overall deadline. Exits 77 without luasocket or the binary. |
@@ -84,7 +84,7 @@ two builds that print the same trace behave the same however they are
 organised. That makes it the tool to reach for after a refactor:
 
 ```sh
-cd Developer/tests
+cd tests
 lua5.3 wire_trace.lua "../../build/Dolby CPSeries Control V4.0.qplug" > new.txt
 lua5.3 wire_trace.lua /path/to/known-good.qplug                 > old.txt
 diff old.txt new.txt

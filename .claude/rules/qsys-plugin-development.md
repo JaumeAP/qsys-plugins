@@ -1,7 +1,7 @@
 ---
 paths:
-  - "Developer/plugins/**"
-  - "Developer/shared/**"
+  - "plugins/**"
+  - "shared/**"
   - "*.qplug"
   - "*.qplugx"
   - ".github/workflows/build-qplug*.yml"
@@ -27,7 +27,7 @@ directory (the process cwd `PLUGCC.exe` is invoked from), never against
 whichever file's own text contains the directive. (2) A NESTED `#include`
 (one inside a file that itself got pulled in by another `#include`, as
 opposed to one written directly in `plugin.lua`) is only recognized if it is
-that file's first line. `Developer/shared/dolbyfader.lua`'s own `#include`
+that file's first line. `shared/dolbyfader.lua`'s own `#include`
 of `qknob.lua` and `Dolby Sweep/runtime.lua`'s own `#include` of
 `shared/qknob.lua` both satisfy this; `Dolby CPSeries Control/plugin.lua`
 avoids the question entirely by `#include`ing everything it needs directly
@@ -240,7 +240,7 @@ never guessed.
   everything after the guard line in a Developer head file is dropped by
   `build_distributable.sh` in favor of the explicitly inlined module list
   (see "Developer workflow" below), so strict-mode is active whenever the
-  plugin loads straight from `Developer/plugins/` (Designer, bench-testing)
+  plugin loads straight from `plugins/` (Designer, bench-testing)
   but never ships in the root distributable. Each plugin declares only the
   custom globals its own require chain creates on first write (host globals
   like `Controls`/`Properties`/`Timer`/`TcpSocket`/`System` already exist
@@ -253,7 +253,7 @@ never guessed.
   though `Print` is normally already host-provided, so `cpseries_commlib.lua`'s
   override — see below — never depends on load order). Verified by loading
   each Developer head file's runtime pass under a stubbed host (2026-07-27);
-  the repo's own `Developer/tests/` doesn't exercise this path (its
+  the repo's own `tests/` doesn't exercise this path (its
   dist tests run the already-built root files, which never see these
   lines), so this was checked by hand, not by `run.sh`.
   `MultiFlip-Flop` is NOT wired up: it has no custom globals to protect
@@ -269,7 +269,7 @@ never guessed.
   shared between `cpseries.lua` and `cpseries_commlib.lua`.
 - **`cpseries_commlib.lua`** (renamed from `cpseries_class.lua` 2026-07-27,
   explicit user request; `require("cpseries_class")` in `cpseries.lua` and
-  `Developer/tests/test_modules.lua` updated to match, no behavior change):
+  `tests/test_modules.lua` updated to match, no behavior change):
   the per-model (`CP650`/`CP750`/`CP850`/`CP950`/
   `index`/`key`/`value` fields (the old `setmeta`/`searchelem` reflection hack
   was removed 2026-07-27 along with the CP950/CP950A bump); doesn't reference
@@ -340,10 +340,10 @@ one's structure:
   (`Properties["Button Styles"]`) instead of dot notation
   (`Properties.ButtonStyles`), same as any Lua table with a non-identifier
   key. `MultiFlip-Flop`'s "Input Count" → `InputCount` rename (still 2026-07-27)
-  was cosmetic, not a fix: `Developer/plugins/MultiFlip-Flop V2.0.qplug`
+  was cosmetic, not a fix: `plugins/MultiFlip-Flop V2.0.qplug`
   reads it as `Properties["InputCount"]` both before and after, bracket
   notation either way, so the rename bought nothing. `cpseries`'s "TCP Log"
-  property (`Developer/plugins/Dolby CPSeries Control V4.0.qplug`, read via
+  property (`plugins/Dolby CPSeries Control V4.0.qplug`, read via
   `Properties["TCP Log"]` in `Developer/Modules/cpseries_commlib.lua`) was
   never renamed and was never broken — proof the constraint never existed.
   Leave "TCP Log" as-is; do not "fix" it, and do not rename other spaced
@@ -454,13 +454,13 @@ Windows binary), not a script in this repo — this repo's own
 Continuity notes in `CLAUDE.md` for the migration history).
 
 Typical loop:
-1. Edit the plugin's own files under `Developer/plugins/<Name>/`
+1. Edit the plugin's own files under `plugins/<Name>/`
    (`plugin.lua` and its `#include`d siblings), or a shared file under
-   `Developer/shared/` if the change affects more than one plugin.
-2. Run `Developer/tests/run.sh`. Fast, catches syntax errors and logic
+   `shared/` if the change affects more than one plugin.
+2. Run `tests/run.sh`. Fast, catches syntax errors and logic
    regressions without leaving the terminal. The `test_dist_*` runtime-pass
    checks run against `build/`, the source assembled by
-   `Developer/host-emulator/plugcc.lua` (set `QPLUG_DIR` to a folder of real
+   `host-emulator/plugcc.lua` (set `QPLUG_DIR` to a folder of real
    PLUGCC output to test that instead). The assembler is more lenient than
    PLUGCC, so it can't catch a PLUGCC `#include` resolution mistake, only
    step 4 does that.
@@ -481,7 +481,7 @@ Typical loop:
    the GitHub release `qplug-<run id>` (final names, Windows build, LF) —
    nothing is committed, and a `.qplug` is never hand-edited.
 5. Download the release assets into a folder and re-run
-   `QPLUG_DIR=<folder> Developer/tests/run.sh` — this exercises the runtime
+   `QPLUG_DIR=<folder> tests/run.sh` — this exercises the runtime
    pass against the real PLUGCC output.
 6. Load the plugin in Q-SYS Designer; test in the emulator
    (`System.IsEmulating` is true) or against a `Dolby CP Emulator/*.quc` on
@@ -496,16 +496,16 @@ Typical loop:
   Designer treat the plugin as a different one. Bump `Version`/`BuildVersion`
   instead.
 - Follow the "Plugin structure/naming convention" section above.
-- Keep a plugin's own runtime logic in its `Developer/plugins/<Name>/` folder
+- Keep a plugin's own runtime logic in its `plugins/<Name>/` folder
   (`runtime.lua`, or inline in `plugin.lua`'s own `if Controls then` block for
   MultiFlip-Flop/CPSeries-style short chains); code shared by more than one
-  plugin goes in `Developer/shared/` instead of being duplicated per plugin.
+  plugin goes in `shared/` instead of being duplicated per plugin.
 - Guard runtime code with `if Controls then ... end` so the definition pass
   never executes event logic — the sole exception is dead code, not a live
   convention choice: none of the four plugins here use the older `if not
   Controls and Reflect then return end` style any more.
 - Comments and identifiers are English; keep it that way.
-- After changing a shared file (`Developer/shared/*.lua`) or a plugin's own
+- After changing a shared file (`shared/*.lua`) or a plugin's own
   private files, verify every plugin that `#include`s it is rebuilt into the
   next release (it is easy to leave one out) — check which plugins reference
   the changed file before assuming only one needs a rebuild.

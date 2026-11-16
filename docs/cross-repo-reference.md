@@ -93,8 +93,8 @@ behaviour is `docs/specs/` there (the Cinema Control spec, split by section).
    connection limits. Wire framing unchanged.
 2. `CP Series Emulator` 1.0.0.3: generic stateful params, clipping, both CP650
    query framings.
-3. Tests: `Developer/tests/test_modules.lua` (formatting, ranges) and
-   `Developer/tests/test_emulator_source.lua` (the emulator source, not the
+3. Tests: `tests/test_modules.lua` (formatting, ranges) and
+   `tests/test_emulator_source.lua` (the emulator source, not the
    built file).
 4. The `.qplug` files are no longer committed. Dispatch the build workflow
    with `release` on; `test_dist_*` assemble the current source meanwhile.

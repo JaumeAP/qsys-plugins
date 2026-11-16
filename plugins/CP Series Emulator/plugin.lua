@@ -20,9 +20,9 @@
 -- v1.0.0.2: the standalone Control Script version removed entirely
 -- (explicit user request, once the Plugin covered the same job with less
 -- to maintain) -- protocol.lua moved from the briefly-shared
--- Developer/shared/ location back to a private per-plugin file, matching
+-- shared/ location back to a private per-plugin file, matching
 -- "Dolby CPSeries Control"'s own models.lua/protocol.lua/commlib.lua split
--- (private files, not shared -- Developer/shared/ is for code more than
+-- (private files, not shared -- shared/ is for code more than
 -- one plugin actually uses). No functional change. See
 -- docs/continuity-notes.md for the full history.
 

@@ -63,8 +63,8 @@
 --        here as models.lua/protocol.lua/commlib.lua/runtime.lua, their own
 --        require() calls dropped in favor of a fixed load order enforced
 --        directly by this file's own #include sequence below. Reuses
---        Developer/shared/dolbyfader.lua (also used by DolbyFader), which
---        pulls in Developer/shared/qknob.lua itself. All #include's here
+--        shared/dolbyfader.lua (also used by DolbyFader), which
+--        pulls in shared/qknob.lua itself. All #include's here
 --        are direct, depth-1 includes (written straight in this file), so
 --        PLUGCC.exe's nested-include-must-be-first-line rule (see
 --        DolbyFader's own plugin.lua header, and CLAUDE.md continuity
@@ -169,7 +169,7 @@
 --        what keeps the new gap a hold rather than a deadlock.
 -- v4.0.0.6 - TcpSocket construction, IPv4 address validation, and
 --        Connect/Disconnect/IsConnected now go through the new shared
---        Developer/shared/socket.lua module (SocketConn), so any future
+--        shared/socket.lua module (SocketConn), so any future
 --        plugin needing a TCP client can reuse them instead of duplicating
 --        this boilerplate -- per an explicit request to put socket
 --        operations in a module other plugins can call. Connection

@@ -274,7 +274,7 @@ end
 
 -- Structural validation for GetComponents/GetPins/GetWiring, the audio-path
 -- half of a plugin's definition pass that nothing in this file modeled
--- until 2026-07-29. Belongs here, not in Developer/tests/harness.lua (test-
+-- until 2026-07-29. Belongs here, not in tests/harness.lua (test-
 -- runner plumbing -- path resolution, the check counter, nothing about Q-SYS
 -- itself): what this function encodes is real Q-SYS platform behavior, the
 -- same category as the Trigger/Meter control-kind split and the .Value/
