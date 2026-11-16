@@ -205,6 +205,16 @@
 --        WriteTimeout (2s); a connect still not up after 5s is abandoned
 --        and retried; the Timeout event now drops and reconnects the link
 --        instead of only showing "Timeout".
+-- v4.0.0.16 - two fixes from an audit. (1) A pending fader/mute SET was only
+--        cleared when the device echoed the exact value; a device that
+--        quantizes or clamps never did, so the plugin resent the SET forever
+--        at gap rate (the poll interval is bypassed while a SET is pending)
+--        and ignored the real state. A SET is now sent at most MAX_SET_TRIES
+--        (3) times, then dropped and the device's value adopted. (2) The Gain
+--        knob spanned -100..20 dB while the Dolby fader only spans -90..+10;
+--        values outside that were clamped on the fader side but left on Gain,
+--        so the knob showed a level the processor did not have. Gain is now
+--        -90..10. Not breaking: no control or property renamed.
 --[[ #include "info.lua" ]]
 
 -- Constants

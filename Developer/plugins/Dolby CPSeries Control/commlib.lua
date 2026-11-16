@@ -44,6 +44,13 @@
 		-- (continuous, gap-limited): the spec rate-limits asking the device
 		-- for state, never telling it about a user action.
 		local POLL_INTERVAL = 1.0
+		-- How many times a pending fader/mute SET is sent before giving up on
+		-- it. The pending state only clears when the device echoes back the
+		-- exact value; a device that quantizes or clamps never does, and the
+		-- plugin would resend forever at gap rate while ignoring the real
+		-- state. After this many unconfirmed sends the local value is dropped
+		-- and the device's own value wins.
+		local MAX_SET_TRIES = 3
 
 		-- Poll runs off a POLLTIME timer and counts ticks, so both live here
 		-- as tick counts. Rounded up: rounding down would sit just under the
@@ -111,7 +118,7 @@
  			local self = {}
  			privates[self] = { value={	{ fader=0,state=false }, { mute=0,state=false }, { format=0,state=false },
  						{ formname="",state=false }, { formlist={},state=false }, { reset=false,state=false } },
- 						npoll=0, model=Model.CP850, sock=nil, ready=false, cache ={}, waiting=0,tmplist={} }
+ 						npoll=0, model=Model.CP850, sock=nil, ready=false, cache ={}, waiting=0,tmplist={}, tries={} }
  			local private = privates[self]
 			for _,elem in ipairs(Model) do
 				if elem.value == model then private.model = elem end
@@ -134,6 +141,7 @@
  		function CPSeries:Start(Sock)
 			local private = privates[self]
 			private.cache = {}
+			private.tries = {}
 			private.echopending = nil   -- no outbound message sent yet on this connection
 			private.lastmsg = nil       -- nothing in flight to retransmit yet
 			-- Start with the poll interval already elapsed, so the first
@@ -294,6 +302,7 @@
 			end
 			if isevent then
 				setState(self,action,true)
+				private.tries[action.index] = nil   -- a new local value restarts the retry budget
 			elseif self.EventHandler and (action~=Actions.format or value >0 ) then
 					self.EventHandler(action.key,getValue(self,action))
  			end
@@ -463,8 +472,21 @@
 					local action = pollAction(self)
   					local param = CPServices[action.index][private.model.index]
   		 			if param == nil then return end
-  					if ( action ~= Actions.format or getValue(self,Actions.reset)==false ) and
-  						getState(self,action) and action ~= Actions.formlist then
+  					local pending = ( action ~= Actions.format or getValue(self,Actions.reset)==false ) and
+  						getState(self,action) and action ~= Actions.formlist
+					if pending and (action == Actions.fader or action == Actions.mute) then
+						local tries = (private.tries[action.index] or 0) + 1
+						if tries > MAX_SET_TRIES then
+							-- unconfirmed SET: stop resending, query instead, and let
+							-- received() adopt whatever the device reports
+							setState(self,action,false)
+							private.tries[action.index] = nil
+							pending = false
+						else
+							private.tries[action.index] = tries
+						end
+					end
+  					if pending then
   						result = getValue(self,action)
   			    		if action == Actions.format then
   			    			result = getButtonName(private.model,result)
@@ -572,6 +594,7 @@
       		end
    			if isEqual(getValue(self,action),result) then
 				setState(self,action,false)
+				private.tries[action.index] = nil
 				return
 			end
 			Print(nil,"RX",string.sub(msg,1,30))
