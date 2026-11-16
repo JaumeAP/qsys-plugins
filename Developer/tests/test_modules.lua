@@ -422,8 +422,32 @@ do
 	h.check(math.abs(mn2 * TICK - 0.10) < 0.01,
 		"a pending local change is NOT rate-limited, it goes at gap rate (got " ..
 		string.format("%.2f", mn2 * TICK) .. "s)")
-	h.check(n2 > n * 5,
-		"which means far more sends than idle polling (" .. n2 .. " vs " .. n .. ")")
+	h.check(n2 > n,
+		"which means more sends than idle polling while it lasts (" .. n2 .. " vs " .. n .. ")")
+end
+
+h.section("unconfirmed SET")
+do
+	-- A device that never echoes the value it was sent (quantizes, clamps)
+	-- used to leave the SET pending forever: resent at gap rate, device state
+	-- ignored. Now it is sent MAX_SET_TRIES (3) times, then dropped, and the
+	-- device's own value wins.
+	local cp, sock, events, timer = started("CP 850")
+	timer.EventHandler()
+	sock.lines = { "sys.fader 42" } sock.Data()        -- ready
+	cp:Action("fader", 9.9)                             -- device will keep answering 4.2
+
+	for _ = 1, 400 do
+		timer.EventHandler()
+		sock.lines = { "sys.fader 42" } sock.Data()
+	end
+	cp:Stop()
+	local sets = 0
+	for _, m in ipairs(sock.writes) do if m == "sys.fader 99" then sets = sets + 1 end end
+	h.check(sets == 3, "an unconfirmed SET is sent exactly 3 times, not forever (got " .. sets .. ")")
+	local last
+	for _, e in ipairs(events) do if e.service == "fader" then last = e.result end end
+	h.check(last == 4.2, "then the device's own value is adopted (got " .. tostring(last) .. ")")
 end
 
 h.section("query timeout")
