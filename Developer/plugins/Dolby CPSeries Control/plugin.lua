@@ -222,6 +222,15 @@
 --        never sent nor cleared, so after the first release of all format
 --        buttons the poll interval stayed bypassed for the rest of the
 --        connection.
+-- v4.0.0.18 - fixes from a max review: a pending local unmute no longer
+--        throws out of the socket handler when a device mute report arrives
+--        (false is published as 0); a late CP750 handshake reply no longer
+--        lands in the reset slot; a format reply that predates the user's
+--        press no longer cancels it; the format name is published when the
+--        format list arrives after the format on CP650; text such as "5,5"
+--        written to the fader Level control reads as 5.5 and non-numeric text
+--        keeps the current level (QKnob); QKnob always writes back the
+--        normalized text; the debug-off check accepts a boolean property.
 --[[ #include "info.lua" ]]
 
 -- Constants
@@ -273,7 +282,7 @@ end
 
 function RectifyProperties(props)
 	if props and props["TCP Log"] and props.plugin_show_debug then
-		props["TCP Log"].IsHidden = (props.plugin_show_debug.Value == 0) -- FIX: 'not Value' never hid (0 is truthy in Lua)
+		props["TCP Log"].IsHidden = (props.plugin_show_debug.Value == 0 or props.plugin_show_debug.Value == false) -- 0 is truthy in Lua; the host value may be a number or a boolean
 	end
 	return props
 end

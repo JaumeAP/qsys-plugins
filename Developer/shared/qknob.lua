@@ -109,13 +109,19 @@
         numdecs = numDecs, tm = Timer.New() }
       self.EventHandler = nil
       privates[self].ctrl.EventHandler = function()
-         local newVal = formatstr(self,privates[self].ctrl.String)
+         local c = privates[self].ctrl
+         -- text that is not a number: put the current level back instead of
+         -- jumping to 0
+         if todigits(c.String) == nil then c.String = self.String return end
+         local newVal = formatstr(self,c.String)
 		 if self.String ~=newVal then
         	self.String =  newVal
     		if self.EventHandler then
-            	self.EventHandler(privates[self].ctrl)
+            	self.EventHandler(c)
         	end
         end
+        -- always show the normalized text, even when the level did not change
+        if c.String ~= newVal then c.String = newVal end
       end
       self.String = privates[self].ctrl.String
       privates[self].tm.EventHandler = function()
@@ -127,8 +133,9 @@
     todigits = function (a)
       local _
       a = tostring(a) or ""
+      a = a:gsub(",", ".")   -- decimal comma ("5,5") is 5.5, not 55
       a,_ = a:gsub("[^%d.-]", "")
-      return tonumber(a) or 0
+      return tonumber(a)     -- nil when the text is not a number
     end
 
     setposition = function(self,value)
@@ -151,7 +158,7 @@
     end
 
     formatval = function(self,val)
-      val = todigits(val)
+      val = todigits(val) or 0
       val = val < privates[self].min and privates[self].min or val
       val = val > privates[self].max and privates[self].max or val
       if privates[self].numdecs then
@@ -161,7 +168,7 @@
     end
 
     formatstr = function(self,val)
-      val = todigits(val)
+      val = todigits(val) or 0
       val = val < privates[self].min and privates[self].min or val
       val = val > privates[self].max and privates[self].max or val
       local neg = val<0 and true or false
